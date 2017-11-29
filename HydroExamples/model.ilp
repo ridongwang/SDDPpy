@@ -1,0 +1,15 @@
+\ Model Hydrovalley_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ AR1[1]: inflow[1] + 0.328397404318301 inflow0[0]
+   - 0.6951839351031071 inflow0[1] + 0.0913626214178796 inflow0[2]
+   - 0.0289323912343019 inflow0[3] - innovations[1] = 0
+Bounds
+ inflow0[0] >= 49.44424968855506
+ -infinity <= inflow0[1] <= 7.44736233297882
+ inflow0[2] >= 22.01852147052132
+ -infinity <= inflow0[3] <= 39.5565816885171
+ -infinity <= innovations[1] <= 10.734489
+End

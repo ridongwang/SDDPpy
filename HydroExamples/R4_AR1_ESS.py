@@ -4,6 +4,7 @@ Created on Nov 18, 2017
 @author: dduque
 '''
 from CutSharing.HydroExample import valley_chain
+from builtins import range
 '''
 Instance data
 '''
@@ -14,7 +15,7 @@ from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_d
 from CutSharing.SDPP_Alg import SDDP
 
 
-T = 8
+T = 52
 
 AR1Matrix = [] 
 Rmatrix = []
@@ -26,7 +27,8 @@ with open('../TimeSeries/AR1Matrix.csv', 'r') as f:
         x.pop(0)
         Rmatrix.append({})  
         for (j,val) in enumerate(x):
-            Rmatrix[-1]['inflow[%i]' %(j)] = float(val)  
+            x[j] = float(val)  
+            Rmatrix[-1]['inflow[%i]' %(j)] = x[j]
 
 
 
@@ -53,10 +55,7 @@ valley_chain = [
 nr = len(valley_chain) #Number of reservoirs
 
 
-prices = [1,2,3,4,3,4,3,4]
-
-#-14.79277465    5.371645909    25.53606646
-#-15.84729372    3.221556698    22.29040712
+prices = [np.minimum(x,5) for x in range(0,T)]
 
 def random_builder():
     rc = RandomContainer()
@@ -66,10 +65,9 @@ def random_builder():
         rc.append(rv_t)
         for (i,r) in enumerate(valley_chain):
             if t>0:
-                re = rv_t.addRandomElememnt('inflow[%i]' %(i), r.inflows)
-                re.addDependecyFunction({(t-1):Rmatrix[i]}, AR1_depedency)
+                re = rv_t.addRandomElememnt('innovations[%i]' %(i), r.inflows)
             else:
-                re = rv_t.addRandomElememnt('inflow[%i]' %(i), [0.0])
+                re = rv_t.addRandomElememnt('innovations[%i]' %(i), [0.0])
             rndVectors.append(rv_t)
     return rc
 
@@ -92,9 +90,13 @@ def model_builder(stage):
                                 obj = 0,
                                 vtype=GRB.CONTINUOUS, 
                                 name='reservoir_level0')
+    inflow = m.addVars(nr,lb=-GRB.INFINITY, ub=GRB.INFINITY, obj=0, vtype=GRB.CONTINUOUS, name='inflow')
+    inflow0 = m.addVars(nr, lb=0, ub=0, obj=0, vtype=GRB.CONTINUOUS, name='inflow0')
+    
+    
     outflow = m.addVars(nr, lb=0, obj=0, vtype=GRB.CONTINUOUS, name='outflow')
-    inflow = m.addVars(nr, lb=0, ub=0, obj=0, vtype=GRB.CONTINUOUS, name='inflow')
     spill = m.addVars(nr, lb=0, obj=0, vtype=GRB.CONTINUOUS, name='spill')
+    innovations = m.addVars(nr,  obj=0, vtype=GRB.CONTINUOUS, name='innovations')
     pour = m.addVars(nr, lb=0, obj=0, vtype=GRB.CONTINUOUS, name='pour')
     generation = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='generation')
     dispatch = m.addVars([(ri,tf)  for (ri,r) in enumerate(valley_chain) for tf in range(0,len(r.turbine.flowknots))],
@@ -103,13 +105,23 @@ def model_builder(stage):
         for v in reservoir_level0:
             reservoir_level0[v].lb = valley_chain[v].initial
             reservoir_level0[v].ub = valley_chain[v].initial
+        for v in inflow0:
+            inflow0[v].lb = 0
+            inflow0[v].ub = 0
+            inflow[v].lb = 0
+            inflow[v].ub = 0
+            
     m.update()
             
     in_state = [v.VarName for v in reservoir_level0.values()]
+    in_state.extend((v.VarName for v in inflow0.values()))
     out_state = [v.VarName for v in reservoir_level.values()]
-    rhs_vars = [v.VarName for v in inflow.values()]
+    out_state.extend((v.VarName for v in inflow.values()))
+    rhs_vars = [v.VarName for v in innovations.values()]
     
     #Constraints
+    #AR1 model as a constraint
+    m.addConstrs((inflow[i] - sum(AR1Matrix[i][j]*inflow0[j]  for j in range(0,len(valley_chain))) == innovations[i]    for i in range(0,len(valley_chain)) ), 'AR1')
     #Balance constraints
     m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + inflow[0] - outflow[0] - spill[0] + pour[0], 'balance[0]')
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1]     for i in range(1,nr)), 'balance')
@@ -124,15 +136,12 @@ def model_builder(stage):
     #Dispatched
     for (i,r) in enumerate(valley_chain):
         m.addConstr(quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots)))<= 1, 'dispatchCtr[%i]' %(i))
-    
+    #Objective
     objfun = -prices[stage]*generation + quicksum(r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain))
     m.setObjective(objfun, GRB.MINIMIZE)
     m.update()
-    
+
     return m, in_state, out_state, rhs_vars
-
-
-print('holaaaa')
 
 if __name__ == '__main__':
     algo = SDDP(T, model_builder, random_builder)

@@ -14,7 +14,7 @@ from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_d
 from CutSharing.SDPP_Alg import SDDP
 
 
-T = 8
+T = 52
 
 AR1Matrix = [] 
 Rmatrix = []
@@ -53,10 +53,7 @@ valley_chain = [
 nr = len(valley_chain) #Number of reservoirs
 
 
-prices = [1,2,3,4,3,4,3,4]
-
-#-14.79277465    5.371645909    25.53606646
-#-15.84729372    3.221556698    22.29040712
+prices = [np.minimum(x,5) for x in range(0,T)]
 
 def random_builder():
     rc = RandomContainer()
@@ -132,7 +129,6 @@ def model_builder(stage):
     return m, in_state, out_state, rhs_vars
 
 
-print('holaaaa')
 
 if __name__ == '__main__':
     algo = SDDP(T, model_builder, random_builder)

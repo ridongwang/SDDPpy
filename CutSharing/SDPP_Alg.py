@@ -6,6 +6,7 @@ Created on Nov 17, 2017
 from CutSharing.MathProgs import StageProblem,not_optimal_sp
 import CutSharing
 import numpy as np
+import time
 
 alg_options = CutSharing.alg_options()
 
@@ -28,7 +29,7 @@ class SDDP(object):
         self.ub = float('inf')
         self.upper_bounds = [] 
         self.pass_iteration = 0
-        
+        self.ini_time = time.time()
         
     def createStageProblems(self, T, model_builder):
         '''
@@ -75,7 +76,11 @@ class SDDP(object):
             #assert sp_output['status'] == CutSharing.SP_OPTIMAL, sp_output['status']
             if sp_output['status'] != CutSharing.SP_OPTIMAL:
                 for ss in sample_path: print(ss);
-                raise not_optimal_sp('A stage problem was not optimal')
+                print('GRB STATUS %i' %(sp.model.status))
+                sp.model.write('%s%i_.lp' %(sp_output['status'], i))
+                sp.model.computeIIS()
+                sp.model.write("model.ilp")
+                raise not_optimal_sp('A stage %i problem was not optimal' %(i))
             fp_out_states.append(sp_output['out_state'])
             if i == 0:
                 #sp.printPostSolutionInformation()
@@ -142,7 +147,8 @@ class SDDP(object):
     def iteration_update(self):
         
         if alg_options['outputlevel']>=2:
-            print('%3i %12.5e %12.5e' %(self.pass_iteration, self.lb, self.ub))
+            elapsed_time = time.time() - self.ini_time
+            print('%3i %12.5e %12.5e %12.2f' %(self.pass_iteration, self.lb, self.ub, elapsed_time))
         self.pass_iteration+=1
     
     def run(self):

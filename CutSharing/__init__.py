@@ -32,7 +32,7 @@ def gurobiStatusCodeToStr( intstatus ):
 
 def alg_options():
     options = {}
-    options['max_iter'] = 1500
+    options['max_iter'] = 1000
     options['outputlevel']  = 2
     return options
 
