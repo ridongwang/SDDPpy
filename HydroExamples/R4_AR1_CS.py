@@ -14,7 +14,7 @@ from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_d
 from CutSharing.SDPP_Alg import SDDP
 
 
-T = 52
+T = 100
 
 AR1Matrix = [] 
 Rmatrix = []

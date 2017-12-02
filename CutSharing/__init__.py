@@ -12,7 +12,9 @@ SP_OPTIMAL = 'sp_optimal'
 SP_INFEASIBLE = 'sp_infeasible'
 SP_UNKNOWN = 'sp_unknown'
 
-
+'''
+tolerances
+'''
 ZERO_TOL = 1E-8
 SDDP_OPT_TOL = 1E-3
 
@@ -24,16 +26,17 @@ def gurobiStatusCodeToStr( intstatus ):
         return SP_LOADED
     elif intstatus ==2:
         return SP_OPTIMAL
-    elif intstatus == 3:
+    elif intstatus in [3,4]:
         return SP_INFEASIBLE
-    elif intstatus == 4:
+    else:
         return SP_UNKNOWN
 
 
 def alg_options():
     options = {}
-    options['max_iter'] = 1000
+    options['max_iter'] = 100
     options['outputlevel']  = 2
+    options['n_sample_paths'] = 20
     return options
 
 

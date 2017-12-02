@@ -29,6 +29,7 @@ class SDDP(object):
         self.ub = float('inf')
         self.upper_bounds = [] 
         self.pass_iteration = 0
+        self.num_cuts = 0
         self.ini_time = time.time()
         
     def createStageProblems(self, T, model_builder):
@@ -45,20 +46,7 @@ class SDDP(object):
         for i in range(T):
             sp = StageProblem(i,model_builder, i==T-1)
             self.stage_problems.append(sp)
-   
-    def termination(self):
-        if self.pass_iteration > 1:
-            ub_bar = np.mean(self.upper_bounds)
-            ub_sd = np.std(self.upper_bounds)
-            if np.abs(self.lb  - ub_bar - 2*ub_sd/np.sqrt(len(self.upper_bounds)))<CutSharing.SDDP_OPT_TOL:
-                return True
-            self.ub = ub_bar
-                
-        if self.pass_iteration == alg_options['max_iter']:
-            return True
-        return False
 
-    
     def forwardpass(self, sample_path):
         '''
         Runs a forward pass given a sample path
@@ -109,7 +97,7 @@ class SDDP(object):
             stage_rnd_vector = self.random_container[t]
             omega_t = stage_rnd_vector.getOutcomes(sample_path)
             for outcome in omega_t:
-                sp_output = sp.solve(in_state_vals=None, 
+                sp_output = sp.solve(in_state_vals=forward_out_states[t-1], 
                                      random_realization=outcome, 
                                      forwardpass=False, 
                                      random_container=self.random_container, 
@@ -117,11 +105,12 @@ class SDDP(object):
                 
                 #sp.printPostSolutionInformation()
                 outputs_per_outcome.append(sp_output)
-            self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, omega_t, sample_path)
+            self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             del(outputs_per_outcome)
-        return None
+        self.num_cuts +=1   
         
-    def createStageCut(self, stage, stage_rnd_vector, outputs_per_outcome, omega, sample_path):
+        
+    def createStageCut(self, stage, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path):
         '''
         Calls the cut routine in the stage given as a parameter.
         Args:
@@ -134,27 +123,68 @@ class SDDP(object):
                 path for the next stage. Each scenario is represented as a 
                 dictionary where the key is the random element name and the
                 value is the the realization in each scenario.
+            forward_out_states 
             sample_path (list of dict): current sample path. Each element of the
                 list corresponds to the realizations of a different stage.
+            
         '''
         if stage<0:
             return
         sp_t = self.stage_problems[stage]
         sp_t1 = self.stage_problems[stage+1]
-        sp_t.createStageCut(self.pass_iteration, sp_t1, stage_rnd_vector, outputs_per_outcome,omega, sample_path )  
+        sp_t.createStageCut(self.num_cuts, sp_t1, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path )  
         
-        
-    def iteration_update(self):
-        
+    def printInit(self):
+        print('Number of passes: %i:' %(alg_options['max_iter']))
+        print('Sample paths per pass: %i:' %(alg_options['n_sample_paths']))
+        print('==========================================================================================')
+        print('%3s %15s %15s %15s %12s %12s %12s'
+              %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Total time'))
+        print('==========================================================================================')
+            
+    def iteration_update(self,fp_time, bp_time):
+        self.ub = np.mean(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(alg_options['n_sample_paths'])
         if alg_options['outputlevel']>=2:
             elapsed_time = time.time() - self.ini_time
-            print('%3i %12.5e %12.5e %12.2f' %(self.pass_iteration, self.lb, self.ub, elapsed_time))
-        self.pass_iteration+=1
+            print('%3i %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
+                  %(self.pass_iteration, self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
+        
+    def termination(self):
+        if self.pass_iteration > 0:
+            if (self.ub - self.ub_hw) < self.lb  < (self.ub +self.ub_hw):
+                return True                
+        if self.pass_iteration == alg_options['max_iter']:
+            return True
+        return False
     
     def run(self):
-        while self.termination()==False:
-            s_path = self.random_container.getSamplePath()
-            output_fp = self.forwardpass(sample_path = s_path)
-            output_bp = self.backwardpass(forward_out_states = output_fp, sample_path=s_path)
-            self.iteration_update()
+        self.printInit()
+        fp_time = 0
+        bp_time = 0
+        termination = False
+        while termination ==False:
+            
+            f_timer = time.time()
+            sample_paths = []
+            fp_outputs = [] 
+            self.upper_bounds = [] #rest upper bounds
+            for i in range(0,alg_options['n_sample_paths']):
+                s_path = self.random_container.getSamplePath()
+                output_fp = self.forwardpass(sample_path = s_path)
+                sample_paths.append(s_path)
+                fp_outputs.append(output_fp)
+            fp_time = time.time()-f_timer
+            self.iteration_update(fp_time, bp_time)
+            if self.termination():
+                termination = True
+                break
+            
+            b_timer = time.time()
+            for i in range(0,alg_options['n_sample_paths']):
+                s_path = sample_paths[i]
+                output_fp = fp_outputs[i]
+                self.backwardpass(forward_out_states = output_fp, sample_path=s_path)
+            self.pass_iteration+=1
+            bp_time = time.time()-b_timer
         

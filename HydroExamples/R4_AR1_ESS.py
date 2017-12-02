@@ -4,7 +4,7 @@ Created on Nov 18, 2017
 @author: dduque
 '''
 from CutSharing.HydroExample import valley_chain
-from builtins import range
+
 '''
 Instance data
 '''
@@ -15,7 +15,7 @@ from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_d
 from CutSharing.SDPP_Alg import SDDP
 
 
-T = 52
+T = 100
 
 AR1Matrix = [] 
 Rmatrix = []

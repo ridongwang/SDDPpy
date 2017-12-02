@@ -91,13 +91,13 @@ class StageProblem():
         ''' 
         tnow = time()   
         if self.stage > 0:
-            if forwardpass:
-                assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
-                for in_s_name in in_state_vals:
-                    sindex = in_s_name.index('[')
-                    newkey = in_s_name[:sindex]+'0'+in_s_name[sindex:]
-                    self.model.getVarByName(newkey).lb = in_state_vals[in_s_name]
-                    self.model.getVarByName(newkey).ub = in_state_vals[in_s_name]
+            #if forwardpass:
+            assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
+            for in_s_name in in_state_vals:
+                sindex = in_s_name.index('[')
+                newkey = in_s_name[:sindex]+'0'+in_s_name[sindex:]
+                self.model.getVarByName(newkey).lb = in_state_vals[in_s_name]
+                self.model.getVarByName(newkey).ub = in_state_vals[in_s_name]
                 
             self.update_cut_pool(random_container, random_realization)
                 
@@ -171,11 +171,30 @@ class StageProblem():
             
             
             
-    def createStageCut(self,pass_num, sp_next, stage_rnd_vector, stage_outcomes_outputs, omega, sample_path):
-        pi_bar = {}     #Expected duals of the transition function Ax = b + Bx0
-        srv = stage_rnd_vector
-        soo = stage_outcomes_outputs
+    def createStageCut(self, cut_id, sp_next, rnd_vector_next, outputs_next, sample_path_forward_states , sample_path):
+        '''
+        Creates a cut for this stage
         
+        Args:
+            cut_id (int): Numeric id of the cut (corresponds to the number of backward passes).
+            sp_next (StageProblem): stage problem object of the next stage
+                TODO: This might not be enougth for lags>1
+            rnd_vector_next (StageRandomVector): random vector containing the random variables 
+                of the next stage.
+            outputs_next (list of dict): list of outputs for every outcome in the next stage. 
+                Each element of the list is a dictionary with the same structure as the output
+                of ::func::StageProblem.solve.
+            sample_path_forward_states(dict): dictionary with the values of the states of this
+                stage that were computed in the forward pass associated with the current sample
+                path.
+            sample_path (list of dict): current sample path. Each element of the
+                list corresponds to the realizations of a different stage.
+        
+        '''
+        pi_bar = {}     #Expected duals of the transition function Ax = b + Bx0
+        srv = rnd_vector_next
+        soo = outputs_next
+        spfs = sample_path_forward_states
         
         for ctr in sp_next.ctrsForDuals:
             pi_bar[ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
@@ -185,13 +204,13 @@ class StageProblem():
             vo = sp_next.get_out_state_var(vi)
             cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
         
-        cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(self.model.getVarByName(vn).X*cut_gradiend_coeff[vn] for vn in self.out_state) 
+        cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in self.out_state) 
         
         stagewise_ind  = srv.is_independent
         
         new_cut = None
         if stagewise_ind:
-            new_cut = Cut(self, cut_gradiend_coeff,cut_intercept, pass_num)
+            new_cut = Cut(self, cut_gradiend_coeff,cut_intercept, cut_id)
         else:
             #ctrRHSvName
             alpha_bar = {}  #Expected duals of the cuts
@@ -209,7 +228,7 @@ class StageProblem():
             dep_rhs_vector = (pi_bar_abs_order + ab_D).dot(srv.autoreg_matrices[-1])
             dep_rhs = dep_rhs_vector.dot(omega_stage_abs_order).squeeze()
             ind_rhs = cut_intercept - dep_rhs
-            new_cut = Cut(self, cut_gradiend_coeff, cut_intercept, pass_num, 
+            new_cut = Cut(self, cut_gradiend_coeff, cut_intercept, cut_id, 
                           stagewise_ind=False,
                           ind_rhs=ind_rhs,
                           dep_rhs_vector=dep_rhs_vector)
@@ -229,4 +248,4 @@ class StageProblem():
             
     
     def __repr__(self):
-        return "SP%i: #cuts:%i" %(self.stage,len(self.cut_pool.cut_pool))
+        return "SP%i: #cuts:%i" %(self.stage,len(self.cut_pool.pool))
