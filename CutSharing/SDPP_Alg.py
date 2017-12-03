@@ -4,11 +4,11 @@ Created on Nov 17, 2017
 @author: dduque
 '''
 from CutSharing.MathProgs import StageProblem,not_optimal_sp
-import CutSharing
+import CutSharing as cs
 import numpy as np
 import time
 
-alg_options = CutSharing.alg_options()
+alg_options = cs.alg_options()
 
 class SDDP(object):
     '''
@@ -19,6 +19,7 @@ class SDDP(object):
         '''
         Constructor
         '''
+        self.stats = Stats()
         self.stage_problems = []
         self.createStageProblems(T, model_builder)
         self.random_container = random_builder()
@@ -61,8 +62,10 @@ class SDDP(object):
                                  random_container=self.random_container, 
                                  sample_path = sample_path)
             
-            #assert sp_output['status'] == CutSharing.SP_OPTIMAL, sp_output['status']
-            if sp_output['status'] != CutSharing.SP_OPTIMAL:
+            
+            
+            assert sp_output['status'] == cs.SP_OPTIMAL, sp_output['status']
+            if sp_output['status'] != cs.SP_OPTIMAL:
                 for ss in sample_path: print(ss);
                 print('GRB STATUS %i' %(sp.model.status))
                 sp.model.write('%s%i_.lp' %(sp_output['status'], i))
@@ -74,7 +77,9 @@ class SDDP(object):
                 #sp.printPostSolutionInformation()
                 self.lb = sp_output['objval']
             fp_ub_value += sp.get_stage_objective_value()
+            self.stats.updateStats(cs.FORWARD_PASS,lp_time=sp_output['lptime'], cut_update_time=sp_output['cutupdatetime'],model_update_time=sp_output['setuptime'])
         self.upper_bounds.append(fp_ub_value)
+        
         return fp_out_states
     
     def backwardpass(self, forward_out_states = None,  sample_path = None):
@@ -105,7 +110,9 @@ class SDDP(object):
                 
                 #sp.printPostSolutionInformation()
                 outputs_per_outcome.append(sp_output)
-            self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
+                self.stats.updateStats(cs.BACKWARD_PASS, lp_time=sp_output['lptime'], cut_update_time=sp_output['cutupdatetime'], model_update_time=sp_output['setuptime'])
+            cut_creation_time = self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
+            self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
             del(outputs_per_outcome)
         self.num_cuts +=1   
         
@@ -128,18 +135,20 @@ class SDDP(object):
                 list corresponds to the realizations of a different stage.
             
         '''
+        cut_creation_time = time.time()
         if stage<0:
             return
         sp_t = self.stage_problems[stage]
         sp_t1 = self.stage_problems[stage+1]
         sp_t.createStageCut(self.num_cuts, sp_t1, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path )  
+        return time.time()-cut_creation_time
         
     def printInit(self):
         print('Number of passes: %i:' %(alg_options['max_iter']))
         print('Sample paths per pass: %i:' %(alg_options['n_sample_paths']))
         print('==========================================================================================')
         print('%3s %15s %15s %15s %12s %12s %12s'
-              %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Total time'))
+              %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Wall time'))
         print('==========================================================================================')
             
     def iteration_update(self,fp_time, bp_time):
@@ -151,11 +160,11 @@ class SDDP(object):
                   %(self.pass_iteration, self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
         
     def termination(self):
+        if self.pass_iteration >= alg_options['max_iter']-1:
+            return True
         if self.pass_iteration > 0:
             if (self.ub - self.ub_hw) < self.lb  < (self.ub +self.ub_hw):
-                return True                
-        if self.pass_iteration == alg_options['max_iter']:
-            return True
+                return False                
         return False
     
     def run(self):
@@ -175,6 +184,11 @@ class SDDP(object):
                 sample_paths.append(s_path)
                 fp_outputs.append(output_fp)
             fp_time = time.time()-f_timer
+            self.stats.updateStats(cs.FORWARD_PASS, total_time = fp_time)
+            
+            '''
+            Stopping criteria
+            '''
             self.iteration_update(fp_time, bp_time)
             if self.termination():
                 termination = True
@@ -185,6 +199,52 @@ class SDDP(object):
                 s_path = sample_paths[i]
                 output_fp = fp_outputs[i]
                 self.backwardpass(forward_out_states = output_fp, sample_path=s_path)
-            self.pass_iteration+=1
             bp_time = time.time()-b_timer
+            self.stats.updateStats(cs.BACKWARD_PASS, total_time = bp_time)
+        
+            self.pass_iteration+=1
+            
+            
+        self.stats.printReport()
+
+class Stats:
+    
+    def __init__(self):
+        self.lp_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
+        self.cut_update_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
+        self.cut_gen_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
+        self.pass_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
+        self.model_update_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
+        
+        
+    def updateStats(self, passType=cs.FORWARD_PASS, lp_time = 0, cut_update_time = 0, cut_gen_time=0, model_update_time=0, total_time = 0):
+        self.lp_time[passType] += lp_time
+        self.pass_time[passType] += total_time
+        self.cut_update_time[passType] += cut_update_time
+        self.cut_gen_time[passType] += cut_gen_time
+        self.model_update_time[passType] += model_update_time
+    
+    def printReport(self):  
+        print('Time profiling')
+        print('\t%15s %12s %12s %12s %12s %12s %12s' %('Pass', 'setup', 'simplex', 'cut update' ,'cut gen', 'other','total'))
+        
+        ''' FORWARD PASS '''
+        f_mu = self.model_update_time[cs.FORWARD_PASS]
+        f_lp = self.lp_time[cs.FORWARD_PASS]
+        f_cu = self.cut_update_time[cs.FORWARD_PASS]
+        f_cg = self.cut_gen_time[cs.FORWARD_PASS]
+        f_tot = self.pass_time[cs.FORWARD_PASS]
+        f_other = f_tot - (f_mu+ f_lp+ f_cu+f_cg)
+        print('\t%15s %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f' \
+              % ('Forward', f_mu, f_lp, f_cu, f_cg, f_other, f_tot))
+        
+        ''' BACKWARD PASS '''
+        b_mu = self.model_update_time[cs.BACKWARD_PASS]
+        b_lp = self.lp_time[cs.BACKWARD_PASS]
+        b_cu = self.cut_update_time[cs.BACKWARD_PASS]
+        b_cg = self.cut_gen_time[cs.BACKWARD_PASS]
+        b_tot = self.pass_time[cs.BACKWARD_PASS]
+        b_other = b_tot - (b_mu+ b_lp+ b_cu+b_cg)
+        print('\t%15s %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f' \
+              % ('Backward', b_mu, b_lp, b_cu, b_cg, b_other, b_tot))
         

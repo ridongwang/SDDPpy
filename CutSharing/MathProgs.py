@@ -88,28 +88,40 @@ class StageProblem():
                 'out_state': Value of the state variables at the end of the sate
                         (input for the next stage).
                 'cputime': float time solving the problem
+                'lptipe': float value of the time solving the lp only
+                'cutupdatetime' float value of the time updating the cuts.
         ''' 
-        tnow = time()   
+        tnow = time()  
+        cutupdatetime = 0  
+        setuptime = 0;
         if self.stage > 0:
             #if forwardpass:
+            setuptime = time()
             assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
             for in_s_name in in_state_vals:
                 sindex = in_s_name.index('[')
                 newkey = in_s_name[:sindex]+'0'+in_s_name[sindex:]
                 self.model.getVarByName(newkey).lb = in_state_vals[in_s_name]
                 self.model.getVarByName(newkey).ub = in_state_vals[in_s_name]
-                
-            self.update_cut_pool(random_container, random_realization)
-                
+            
             assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected"
             for rr in random_realization:
                 self.model.getVarByName(rr).lb = random_realization[rr]
                 self.model.getVarByName(rr).ub = random_realization[rr]   
             self.model.update()
+            setuptime = time()  - setuptime 
             
-        output = {}
+            cutupdatetime = time()   
+            self.update_cut_pool(random_container, random_realization)
+            cutupdatetime = time()  - cutupdatetime  
+            
         
+        #Solve LP
+        lp_time = time()
         self.model.optimize()
+        lp_time = time() - lp_time
+        
+        output = {}
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
         if status ==  SP_OPTIMAL:
@@ -118,7 +130,11 @@ class StageProblem():
             if forwardpass == True:
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
+        
         output['cputime'] = time() - tnow
+        output['lptime'] = lp_time
+        output['cutupdatetime'] = cutupdatetime
+        output['setuptime']  = setuptime
         
         return output
     

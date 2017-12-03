@@ -2,6 +2,12 @@ from gurobipy import *
 import numpy as np
 
 
+'''
+Type of passes
+'''
+FORWARD_PASS = 1
+BACKWARD_PASS = 2
+
 
 
 '''
@@ -34,9 +40,9 @@ def gurobiStatusCodeToStr( intstatus ):
 
 def alg_options():
     options = {}
-    options['max_iter'] = 100
+    options['max_iter'] = 10
     options['outputlevel']  = 2
-    options['n_sample_paths'] = 20
+    options['n_sample_paths'] = 30
     return options
 
 
