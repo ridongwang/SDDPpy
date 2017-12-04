@@ -108,7 +108,7 @@ class StageProblem():
             for rr in random_realization:
                 self.model.getVarByName(rr).lb = random_realization[rr]
                 self.model.getVarByName(rr).ub = random_realization[rr]   
-            self.model.update()
+            #self.model.update()
             setuptime = time()  - setuptime 
             
             cutupdatetime = time()   
@@ -121,6 +121,7 @@ class StageProblem():
         self.model.optimize()
         lp_time = time() - lp_time
         
+        data_mgt_time = time()
         output = {}
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
@@ -131,10 +132,13 @@ class StageProblem():
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
         
-        output['cputime'] = time() - tnow
+        
         output['lptime'] = lp_time
         output['cutupdatetime'] = cutupdatetime
         output['setuptime']  = setuptime
+        data_mgt_time = time() - data_mgt_time
+        output['datamanagement'] = data_mgt_time
+        output['cputime'] = time() - tnow
         
         return output
     
@@ -183,7 +187,7 @@ class StageProblem():
             for cut in self.cut_pool:
                 cut.adjust_intercept( omega_stage_abs_order )
             
-            self.model.update
+            #self.model.update
             
             
             

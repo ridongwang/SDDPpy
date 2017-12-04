@@ -42,7 +42,7 @@ def alg_options():
     options = {}
     options['max_iter'] = 10
     options['outputlevel']  = 2
-    options['n_sample_paths'] = 30
+    options['n_sample_paths'] = 5
     return options
 
 

@@ -77,7 +77,10 @@ class SDDP(object):
                 #sp.printPostSolutionInformation()
                 self.lb = sp_output['objval']
             fp_ub_value += sp.get_stage_objective_value()
-            self.stats.updateStats(cs.FORWARD_PASS,lp_time=sp_output['lptime'], cut_update_time=sp_output['cutupdatetime'],model_update_time=sp_output['setuptime'])
+            self.stats.updateStats(cs.FORWARD_PASS, lp_time=sp_output['lptime'], 
+                                                         cut_update_time=sp_output['cutupdatetime'],
+                                                         model_update_time=sp_output['setuptime'],
+                                                         data_out_time= sp_output['datamanagement'])
         self.upper_bounds.append(fp_ub_value)
         
         return fp_out_states
@@ -110,10 +113,14 @@ class SDDP(object):
                 
                 #sp.printPostSolutionInformation()
                 outputs_per_outcome.append(sp_output)
-                self.stats.updateStats(cs.BACKWARD_PASS, lp_time=sp_output['lptime'], cut_update_time=sp_output['cutupdatetime'], model_update_time=sp_output['setuptime'])
+                self.stats.updateStats(cs.BACKWARD_PASS, lp_time=sp_output['lptime'], 
+                                                         cut_update_time=sp_output['cutupdatetime'],
+                                                         model_update_time=sp_output['setuptime'],
+                                                         data_out_time= sp_output['datamanagement'])
+                
             cut_creation_time = self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
-            del(outputs_per_outcome)
+            #del(outputs_per_outcome)
         self.num_cuts +=1   
         
         
@@ -215,36 +222,50 @@ class Stats:
         self.cut_gen_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
         self.pass_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
         self.model_update_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
+        self.lp_counter = {cs.FORWARD_PASS:0, cs.BACKWARD_PASS:0}
+        self.data_out = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
         
         
-    def updateStats(self, passType=cs.FORWARD_PASS, lp_time = 0, cut_update_time = 0, cut_gen_time=0, model_update_time=0, total_time = 0):
+    def updateStats(self, passType=cs.FORWARD_PASS,
+                     lp_time = 0.0, 
+                     cut_update_time = 0.0, 
+                     cut_gen_time=0.0, 
+                     model_update_time=0.0, 
+                     data_out_time = 0.0,
+                     total_time = 0.0):
         self.lp_time[passType] += lp_time
         self.pass_time[passType] += total_time
         self.cut_update_time[passType] += cut_update_time
         self.cut_gen_time[passType] += cut_gen_time
         self.model_update_time[passType] += model_update_time
+        self.data_out[passType] += data_out_time
+        if lp_time > cs.ZERO_TOL:
+            self.lp_counter[passType] += 1
     
     def printReport(self):  
         print('Time profiling')
-        print('\t%15s %12s %12s %12s %12s %12s %12s' %('Pass', 'setup', 'simplex', 'cut update' ,'cut gen', 'other','total'))
+        print('%15s %12s %12s %12s %12s %12s %12s %12s %12s' %('Pass', '# LPs', 'setup', 'simplex', 'output', 'cut update' ,'cut gen', 'other','total'))
         
         ''' FORWARD PASS '''
         f_mu = self.model_update_time[cs.FORWARD_PASS]
         f_lp = self.lp_time[cs.FORWARD_PASS]
         f_cu = self.cut_update_time[cs.FORWARD_PASS]
         f_cg = self.cut_gen_time[cs.FORWARD_PASS]
+        f_do = self.data_out[cs.FORWARD_PASS]
         f_tot = self.pass_time[cs.FORWARD_PASS]
-        f_other = f_tot - (f_mu+ f_lp+ f_cu+f_cg)
-        print('\t%15s %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f' \
-              % ('Forward', f_mu, f_lp, f_cu, f_cg, f_other, f_tot))
+        f_other = f_tot - (f_mu+ f_lp+ f_cu+f_cg + f_do)
+        f_lp_count = self.lp_counter[cs.FORWARD_PASS]
+        print('%15s %12i %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f' \
+              % ('Forward', f_lp_count, f_mu, f_lp, f_do, f_cu, f_cg, f_other, f_tot))
         
         ''' BACKWARD PASS '''
         b_mu = self.model_update_time[cs.BACKWARD_PASS]
         b_lp = self.lp_time[cs.BACKWARD_PASS]
         b_cu = self.cut_update_time[cs.BACKWARD_PASS]
         b_cg = self.cut_gen_time[cs.BACKWARD_PASS]
+        b_do = self.data_out[cs.BACKWARD_PASS]
         b_tot = self.pass_time[cs.BACKWARD_PASS]
-        b_other = b_tot - (b_mu+ b_lp+ b_cu+b_cg)
-        print('\t%15s %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f' \
-              % ('Backward', b_mu, b_lp, b_cu, b_cg, b_other, b_tot))
-        
+        b_other = b_tot - (b_mu + b_lp + b_cu + b_cg + b_do)
+        b_lp_count = self.lp_counter[cs.BACKWARD_PASS]
+        print('%15s %12i %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f' \
+              % ('Backward',b_lp_count, b_mu, b_lp, b_do, b_cu, b_cg, b_other, b_tot))

@@ -146,7 +146,6 @@ def model_builder(stage):
 if __name__ == '__main__':
     algo = SDDP(T, model_builder, random_builder)
     algo.run()
-    print(algo)
 
     
     
