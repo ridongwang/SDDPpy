@@ -118,6 +118,7 @@ class StageProblem():
         
         #Solve LP
         lp_time = time()
+        self.model.reset()
         self.model.optimize()
         lp_time = time() - lp_time
         
