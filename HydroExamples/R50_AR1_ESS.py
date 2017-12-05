@@ -30,7 +30,7 @@ with open('../TimeSeries/AR1Matrix%i.csv' %(m), 'r') as f:
             x[j] = float(val)  
             Rmatrix[-1]['inflow[%i]' %(j)] = x[j]
 RHSnoise = [] 
-with open('../TimeSeries/RHSnice%i.csv' %(m), 'r') as f:
+with open('../TimeSeries/RHSnoise%i.csv' %(m), 'r') as f:
     reader = csv.reader(f)
     RHSnoise = list(reader)
     RHSnoise.pop(0)
@@ -42,6 +42,7 @@ with open('../TimeSeries/RHSnice%i.csv' %(m), 'r') as f:
 valley_chain = [
         Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
         ]
+
 nr = len(valley_chain) #Number of reservoirs
 
 
