@@ -12,13 +12,14 @@ from gurobipy import *
 import numpy as np
 from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_depedency
 from CutSharing.SDPP_Alg import SDDP
-import networkx
+from HydroExamples import Reservoir, Turbine
+
 
 T = 100
-
+m = 50
 AR1Matrix = [] 
 Rmatrix = []
-with open('../TimeSeries/AR1Matrix.csv', 'r') as f:
+with open('../TimeSeries/AR1Matrix%i.csv' %(m), 'r') as f:
     reader = csv.reader(f)
     AR1Matrix = list(reader)
     AR1Matrix.pop(0)
@@ -26,30 +27,23 @@ with open('../TimeSeries/AR1Matrix.csv', 'r') as f:
         x.pop(0)
         Rmatrix.append({})  
         for (j,val) in enumerate(x):
-            Rmatrix[-1]['inflow[%i]' %(j)] = float(val)  
-
-
-
-
-class Turbine():
-    def __init__(self, flowknots, powerknots):
-        self.flowknots = flowknots
-        self.powerknots = powerknots
-class Reservoir():
-    def __init__(self, minlevel, maxlevel, initial, turbine, s_cost, inflows):
-        self.min = minlevel
-        self.max = maxlevel
-        self.initial = initial
-        self.turbine = turbine
-        self.spill_cost = s_cost
-        self.inflows = inflows 
-        
-
+            x[j] = float(val)  
+            Rmatrix[-1]['inflow[%i]' %(j)] = x[j]
+RHSnoise = [] 
+with open('../TimeSeries/RHSnoise%i.csv' %(m), 'r') as f:
+    reader = csv.reader(f)
+    RHSnoise = list(reader)
+    RHSnoise.pop(0)
+    for (i,x) in enumerate(RHSnoise):
+        x.pop(0) 
+        for (j,val) in enumerate(x):
+            x[j] = float(val)
+            
 valley_chain = [
-        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, [-12.626063, -3.704914,  5.216234]),
-        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, [10.734489, 22.298040, 33.861590]),
-        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, [-11.599395 , 5.652446,22.904287]),
-        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, [-8.867397 , 8.238426, 25.344249])]
+        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
+        ]
+
+
 nr = len(valley_chain) #Number of reservoirs
 
 
