@@ -3,7 +3,6 @@ Created on Nov 18, 2017
 
 @author: dduque
 '''
-from CutSharing.HydroExample import valley_chain
 
 '''
 Instance data
