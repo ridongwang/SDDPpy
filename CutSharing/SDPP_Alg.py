@@ -174,7 +174,7 @@ class SDDP(object):
                 return False                
         return False
     
-    def run(self):
+    def run(self, sample_paths = None):
         self.printInit()
         fp_time = 0
         bp_time = 0
