@@ -49,7 +49,7 @@ class SDDP(object):
             sp = StageProblem(i,model_builder, i==T-1)
             self.stage_problems.append(sp)
 
-    def forwardpass(self, sample_path):
+    def forwardpass(self, sample_path , simulation = False):
         '''
         Runs a forward pass given a sample path
         '''
@@ -74,8 +74,9 @@ class SDDP(object):
                 sp.model.write("model.ilp")
                 raise not_optimal_sp('A stage %i problem was not optimal' %(i))
             fp_out_states.append(sp_output['out_state'])
-            if i == 0:
-                #sp.printPostSolutionInformation()
+            if simulation and alg_options['outputlevel']>=3:
+                    sp.print_stage_res_summary()
+            if i == 0:       
                 self.lb = sp_output['objval']
             fp_ub_value += sp.get_stage_objective_value()
             self.stats.updateStats(cs.FORWARD_PASS, lp_time=sp_output['lptime'], 
@@ -152,6 +153,7 @@ class SDDP(object):
         return time.time()-cut_creation_time
         
     def printInit(self):
+        print('T: %i' %(len(self.stage_problems)))
         print('Number of passes: %i:' %(alg_options['max_iter']))
         print('Sample paths per pass: %i:' %(alg_options['n_sample_paths']))
         print('==========================================================================================')
@@ -159,14 +161,18 @@ class SDDP(object):
               %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Wall time'))
         print('==========================================================================================')
             
-    def iteration_update(self,fp_time, bp_time):
+    def iteration_update(self,fp_time, bp_time, force_print = False):
         self.ub = np.mean(self.upper_bounds)
         self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(alg_options['n_sample_paths'])
-        if alg_options['outputlevel']>=2:
+        if (alg_options['outputlevel']>=2 and self.pass_iteration % alg_options['lines_freq'] == 0 and force_print==False):
             elapsed_time = time.time() - self.ini_time
             print('%3i %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
                   %(self.pass_iteration, self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
-        
+        if  force_print:
+            elapsed_time = time.time() - self.ini_time
+            print('==========================================================================================')
+            print('%3s %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
+                  %("Sim" , self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
     def termination(self):
         if self.pass_iteration >= alg_options['max_iter']-1:
             return True
@@ -222,7 +228,20 @@ class SDDP(object):
             
         self.stats.printReport()
         return(lbs)
-
+    
+    
+    def simulate_policy(self, n_samples):
+        self.upper_bounds = []
+        for i in range(0,n_samples):
+            s_path =  self.random_container.getSamplePath()
+            if alg_options['outputlevel']>=3:
+                print('Simulation %i:' %(i))
+                print(s_path)
+            
+            output_fp = self.forwardpass(sample_path = s_path, simulation=True)
+            
+        self.iteration_update(0, 0, force_print = True)
+        
 class Stats:
     
     def __init__(self):

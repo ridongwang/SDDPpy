@@ -147,6 +147,13 @@ class StageProblem():
         for c in self.model.getConstrs():
             print(c.ConstrName, self.model.getRow(c), c.Sense, c.RHS)
     
+    def print_stage_res_summary(self):
+        strout = ''
+        for v in self.model.getVars():
+            if 'reservoir_level' in v.varname:
+                strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
+        print(strout)
+        
     def printPostSolutionInformation(self):
         print('------------------------------------')
         print('Model in stage %i: obj>> %f' %(self.stage, self.model.ObjVal))

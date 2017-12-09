@@ -12,9 +12,11 @@ from gurobipy import *
 import numpy as np
 from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_depedency
 from CutSharing.SDPP_Alg import SDDP
+from HydroExamples import *
 from HydroExamples import Reservoir, Turbine
 
-T = 100
+
+T = 52
 m = 50
 AR1Matrix = [] 
 Rmatrix = []
@@ -39,7 +41,7 @@ with open('../TimeSeries/RHSnoise%i.csv' %(m), 'r') as f:
             x[j] = float(val)
             
 valley_chain = [
-        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
+        Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
         ]
 
 nr = len(valley_chain) #Number of reservoirs
@@ -127,7 +129,7 @@ def model_builder(stage):
     for (i,r) in enumerate(valley_chain):
         m.addConstr(quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots)))<= 1, 'dispatchCtr[%i]' %(i))
     #Objective
-    objfun = -prices[stage]*generation + quicksum(r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain))
+    objfun = -prices[stage]*generation + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain))
     m.setObjective(objfun, GRB.MINIMIZE)
     m.update()
 
@@ -136,6 +138,7 @@ def model_builder(stage):
 if __name__ == '__main__':
     algo = SDDP(T, model_builder, random_builder)
     algo.run()
+    algo.simulate_policy(1000)
 
     
     
