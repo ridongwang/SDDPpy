@@ -59,6 +59,28 @@ class RandomContainer:
         for sv in self.stage_vectors:
             sv.preproces_randomness() 
     
+    
+    def enumerate_scenarios(self,):
+        all_scenarios = []
+        self.recursive_enum(all_scenarios, 0, [])
+        return all_scenarios
+        
+        
+    
+    def recursive_enum(self, all_scenarios, stage, past):
+        sv = self.stage_vectors[stage]
+        for outcome in sv.outcomes:
+            past.append(outcome)
+            if stage < len(self.stage_vectors)-1:
+                self.recursive_enum(all_scenarios, stage + 1, past)
+            else:
+                all_scenarios.append(copy.deepcopy(past))
+            past.pop()
+            
+            
+            
+        
+    
     #Aux methods to make the container iterable
     def __iter__(self):
         return (x for x in self.stage_vectors)

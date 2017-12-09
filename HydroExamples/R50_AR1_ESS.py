@@ -14,7 +14,6 @@ from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_d
 from CutSharing.SDPP_Alg import SDDP
 from HydroExamples import Reservoir, Turbine
 
-
 T = 100
 m = 50
 AR1Matrix = [] 

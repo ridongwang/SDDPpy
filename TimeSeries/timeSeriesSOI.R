@@ -36,7 +36,7 @@ for(i in 1:m){
     rhsnoice[i,j] <- Marima5$Constant[i] + fit[[i]]$estimate[1] + sds[j]*fit[[i]]$estimate[2]
   }
 }
-write.csv(rhsnoice,file = "./RHSnoice50.csv")
+write.csv(rhsnoice,file = "./RHSnoise50.csv")
 
 mm  = -Marima5$ar.estimates[,,2]
 write.csv(mm,file = "./AR1Matrix50.csv")

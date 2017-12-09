@@ -7,6 +7,7 @@ from CutSharing.MathProgs import StageProblem,not_optimal_sp
 import CutSharing as cs
 import numpy as np
 import time
+from astropy import samp
 
 alg_options = cs.alg_options()
 
@@ -31,7 +32,7 @@ class SDDP(object):
         self.upper_bounds = [] 
         self.pass_iteration = 0
         self.num_cuts = 0
-        self.ini_time = time.time()
+        
         
     def createStageProblems(self, T, model_builder):
         '''
@@ -174,7 +175,9 @@ class SDDP(object):
                 return False                
         return False
     
-    def run(self, sample_paths = None):
+    def run(self, pre_sample_paths = None):
+        lbs = []
+        self.ini_time = time.time()
         self.printInit()
         fp_time = 0
         bp_time = 0
@@ -186,7 +189,11 @@ class SDDP(object):
             fp_outputs = [] 
             self.upper_bounds = [] #rest upper bounds
             for i in range(0,alg_options['n_sample_paths']):
-                s_path = self.random_container.getSamplePath()
+                s_path = None
+                if pre_sample_paths == None:
+                    s_path = self.random_container.getSamplePath()
+                else:
+                    s_path = pre_sample_paths.pop()
                 output_fp = self.forwardpass(sample_path = s_path)
                 sample_paths.append(s_path)
                 fp_outputs.append(output_fp)
@@ -196,6 +203,7 @@ class SDDP(object):
             '''
             Stopping criteria
             '''
+            lbs.append(self.lb)
             self.iteration_update(fp_time, bp_time)
             if self.termination():
                 termination = True
@@ -213,6 +221,7 @@ class SDDP(object):
             
             
         self.stats.printReport()
+        return(lbs)
 
 class Stats:
     
