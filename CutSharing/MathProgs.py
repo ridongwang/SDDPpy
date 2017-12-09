@@ -37,10 +37,11 @@ class StageProblem():
         self.out_state = [x for x in out_states]
         self.rhs_vars = [x for x in rhs_vars]
         self.model = model
+        
         self.cut_pool = CutPool(stage)
         
         self.model.params.OutputFlag = 0
-        
+        self.model.params.Threads = 8
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
