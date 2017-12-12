@@ -87,7 +87,7 @@ class SDDP(object):
         
         return fp_out_states
     
-    def backwardpass(self, forward_out_states = None,  sample_path = None):
+    def backwardpass(self, forward_out_states = None,  sample_path = None, ev = False):
         '''
         Runs a backward pass given a sample path and the forward pass decision
         associated to the sample path.
@@ -98,6 +98,8 @@ class SDDP(object):
             are stored as a dictionary where the key is the variable name.
             
             sample_path (list of outcomes): List of the sample path being solved
+            
+            ev (bool): If expected value policy is being computed (Default is False).
         '''
         T = len(self.stage_problems)
         
@@ -105,7 +107,7 @@ class SDDP(object):
             outputs_per_outcome = []
             sp = self.stage_problems[t]
             stage_rnd_vector = self.random_container[t]
-            omega_t = stage_rnd_vector.getOutcomes(sample_path)
+            omega_t = stage_rnd_vector.getOutcomes(sample_path, ev)
             for outcome in omega_t:
                 sp_output = sp.solve(in_state_vals=forward_out_states[t-1], 
                                      random_realization=outcome, 
@@ -181,7 +183,7 @@ class SDDP(object):
                 return False                
         return False
     
-    def run(self, pre_sample_paths = None):
+    def run(self, pre_sample_paths = None, ev = False):
         lbs = []
         self.ini_time = time.time()
         self.printInit()
@@ -197,7 +199,7 @@ class SDDP(object):
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = None
                 if pre_sample_paths == None:
-                    s_path = self.random_container.getSamplePath()
+                    s_path = self.random_container.getSamplePath( ev = ev)
                 else:
                     s_path = pre_sample_paths.pop()
                 output_fp = self.forwardpass(sample_path = s_path)
@@ -219,7 +221,7 @@ class SDDP(object):
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = sample_paths[i]
                 output_fp = fp_outputs[i]
-                self.backwardpass(forward_out_states = output_fp, sample_path=s_path)
+                self.backwardpass(forward_out_states = output_fp, sample_path=s_path, ev=ev)
             bp_time = time.time()-b_timer
             self.stats.updateStats(cs.BACKWARD_PASS, total_time = bp_time)
         

@@ -42,8 +42,9 @@ with open('../TimeSeries/RHSnoise%i.csv' %(m), 'r') as f:
             
 valley_chain = [
         Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
+      #  Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, [np.mean(x)]) for x in RHSnoise
         ]
-
+          
 nr = len(valley_chain) #Number of reservoirs
 
 
@@ -137,7 +138,7 @@ def model_builder(stage):
 
 if __name__ == '__main__':
     algo = SDDP(T, model_builder, random_builder)
-    algo.run()
+    algo.run(ev = True)
     algo.simulate_policy(1000)
 
     

@@ -41,23 +41,37 @@ class RandomContainer:
         '''
         self.stage_vectors.append(stageRndVector)
 
-    def getSamplePath(self):
+    def getSamplePath(self, ev = False):
         '''
         Generates a sample path. This is, a list of dictionaries
         where each dictionary corresponds to a different stage and 
         each dictionary has the realized value for each random element
         with the key being the name of the random element and the value
         if a float with the numeric value of the realization.
+        
+        Args:
+            ev (bool): If the sample path is deterministic for expected value 
+                analysis (Default value is false).
+        
+        Return:
+            partial_sample_path (list of dic): a sample path including all stages.
         '''
         partial_sample_path = []
-        for srv in self.stage_vectors:
-            stage_sample = srv.getSample(partial_sample_path) 
-            partial_sample_path.append(stage_sample)
+        if ev == True:
+            partial_sample_path = [srv.get_ev_vector(partial_sample_path) for srv in self.stage_vectors]
+        else:
+            for srv in self.stage_vectors:
+                stage_sample = srv.getSample(partial_sample_path) 
+                partial_sample_path.append(stage_sample)
         return partial_sample_path
     
+   
+        
+        
     def preprocess_randomness(self):
         for sv in self.stage_vectors:
             sv.preproces_randomness() 
+    
     
     
     def enumerate_scenarios(self,):
@@ -104,6 +118,7 @@ class StageRandomVector:
         self.elements = {}
         self.vector_order = {}
         self.outcomes = []
+        self.ev_outcomes = []
         self.outcomes_dim = 0
         self._first_element_added = False
         self.p = None
@@ -113,7 +128,8 @@ class StageRandomVector:
         if self._first_element_added == False:
             self.outcomes_dim = len(ele_outcomes)
             for e in ele_outcomes:
-                self.outcomes.append({})   
+                self.outcomes.append({})
+                self.ev_outcomes.append({})   
             self._first_element_added = True
             if ele_prob==None:
                 self.p = np.array([1/len(ele_outcomes) for x in ele_outcomes])
@@ -124,8 +140,10 @@ class StageRandomVector:
         
         self.vector_order[ele_name] = len(self.elements)#Defines order as it gets built. 
         self.elements[ele_name] = RandomElement(self.stage, ele_name , ele_outcomes)
+        e_mean = np.mean(ele_outcomes)
         for (i,e) in enumerate(ele_outcomes):
             self.outcomes[i][ele_name] = e
+            self.ev_outcomes[i][ele_name] = e_mean
         return self.elements[ele_name]
     
     def modifyOutcomesProbabilities(self, newp):
@@ -150,10 +168,17 @@ class StageRandomVector:
                         e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
         return stage_sample
     
-    def getOutcomes(self, sample_path):
+    def get_ev_vector(self,partial_sample_path):
+        return {e.name: e.comput_element_ev(e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
+    
+    def getOutcomes(self, sample_path, ev):
         if self.is_independent:
+            if ev ==True:
+                return self.ev_outcomes
             return self.outcomes
         else:
+            if ev ==True:
+                raise 'Expected value mode not implemented for dependent case.'
             outcomes_copy = copy.deepcopy(self.outcomes)
             for e in self.elements.values():
                 e_dependencies = e.get_depedencies_realization(sample_path)
@@ -250,7 +275,14 @@ class RandomElement:
             assert isinstance(new_outcomes, np.ndarray) and len(self.outcomes) == len(new_outcomes), \
                     "Dependency function returned outcomes that don't match the necessary dimensions (%i)" %(len(new_outcomes))
             return new_outcomes
-     
+    
+    def comput_element_ev(self, depedencies_realizations):
+        if self.dependencyFunction == None:
+            return np.mean(self.outcomes)
+        else:
+            new_outcomes = self.dependencyFunction(self,depedencies_realizations)
+            return np.mean(new_outcomes)
+         
     def get_depedencies_realization(self, partial_sample_path):  
         '''
         Gets the necessary values for the element dependencies
