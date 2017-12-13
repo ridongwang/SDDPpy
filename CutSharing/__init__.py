@@ -40,9 +40,9 @@ def gurobiStatusCodeToStr( intstatus ):
 
 def alg_options():
     options = {}
-    options['max_iter'] = 5000
+    options['max_iter'] = 1000
     options['outputlevel']  = 2
-    options['lines_freq']  = 200
+    options['lines_freq']  = 100
     options['n_sample_paths'] = 1
     return options
 

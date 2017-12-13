@@ -45,7 +45,7 @@ class StageProblem():
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
-            self.oracle = self.model.addVar(lb=-1E5, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+            self.oracle = self.model.addVar(lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             self.model.setObjective(self.cx + self.oracle)
             self.model.update()
         

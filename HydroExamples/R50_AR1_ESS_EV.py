@@ -16,7 +16,7 @@ from HydroExamples import *
 from HydroExamples import Reservoir, Turbine
 print(__file__)
 
-T = 20
+T = 12
 m = 50
 AR1Matrix = [] 
 Rmatrix = []
@@ -48,7 +48,7 @@ valley_chain = [
 nr = len(valley_chain) #Number of reservoirs
 
 
-prices = [np.minimum(x,5) for x in range(0,T)]
+prices = [1+round(np.sin(0.8*x),2) for x in range(0,T)]
 
 def random_builder():
     rc = RandomContainer()

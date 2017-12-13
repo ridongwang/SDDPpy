@@ -41,7 +41,7 @@ with open('../TimeSeries/RHSnoise%i.csv' %(m), 'r') as f:
             x[j] = float(val)
             
 valley_chain = [
-        Reservoir(0, 500, 200, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
+        Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
         ]
 
 
