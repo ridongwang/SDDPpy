@@ -7,7 +7,6 @@ from CutSharing.MathProgs import StageProblem,not_optimal_sp
 import CutSharing as cs
 import numpy as np
 import time
-from astropy import samp
 
 alg_options = cs.alg_options()
 
@@ -233,6 +232,7 @@ class SDDP(object):
     
     
     def simulate_policy(self, n_samples):
+        np.random.seed(1111)
         self.upper_bounds = []
         for i in range(0,n_samples):
             s_path =  self.random_container.getSamplePath()
