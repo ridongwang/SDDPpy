@@ -7,6 +7,7 @@ from CutSharing.MathProgs import StageProblem,not_optimal_sp
 import CutSharing as cs
 import numpy as np
 import time
+import inspect
 
 alg_options = cs.alg_options()
 
@@ -15,7 +16,7 @@ class SDDP(object):
     classdocs
     '''
 
-    def __init__(self, T, model_builder, random_builder):
+    def __init__(self, T, model_builder, random_builder, ):
         '''
         Constructor
         '''
@@ -31,7 +32,7 @@ class SDDP(object):
         self.upper_bounds = [] 
         self.pass_iteration = 0
         self.num_cuts = 0
-        
+
         
     def createStageProblems(self, T, model_builder):
         '''
@@ -81,7 +82,9 @@ class SDDP(object):
             self.stats.updateStats(cs.FORWARD_PASS, lp_time=sp_output['lptime'], 
                                                          cut_update_time=sp_output['cutupdatetime'],
                                                          model_update_time=sp_output['setuptime'],
-                                                         data_out_time= sp_output['datamanagement'])
+                                                         data_out_time= sp_output['datamanagement'],
+                                                         num_lp_ctrs=sp.model.num_constrs,
+                                                         iteration=self.pass_iteration)
         self.upper_bounds.append(fp_ub_value)
         
         return fp_out_states
@@ -119,7 +122,9 @@ class SDDP(object):
                 self.stats.updateStats(cs.BACKWARD_PASS, lp_time=sp_output['lptime'], 
                                                          cut_update_time=sp_output['cutupdatetime'],
                                                          model_update_time=sp_output['setuptime'],
-                                                         data_out_time= sp_output['datamanagement'])
+                                                         data_out_time= sp_output['datamanagement'],
+                                                         num_lp_ctrs=sp.model.num_constrs,
+                                                         iteration=self.pass_iteration)
                 
             cut_creation_time = self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
@@ -254,7 +259,7 @@ class Stats:
         self.model_update_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
         self.lp_counter = {cs.FORWARD_PASS:0, cs.BACKWARD_PASS:0}
         self.data_out = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
-        
+        self.lp_times = []
         
     def updateStats(self, passType=cs.FORWARD_PASS,
                      lp_time = 0.0, 
@@ -262,7 +267,9 @@ class Stats:
                      cut_gen_time=0.0, 
                      model_update_time=0.0, 
                      data_out_time = 0.0,
-                     total_time = 0.0):
+                     total_time = 0.0,
+                     num_lp_ctrs = 0,
+                     iteration = 0):
         self.lp_time[passType] += lp_time
         self.pass_time[passType] += total_time
         self.cut_update_time[passType] += cut_update_time
@@ -271,8 +278,25 @@ class Stats:
         self.data_out[passType] += data_out_time
         if lp_time > cs.ZERO_TOL:
             self.lp_counter[passType] += 1
+            self.lp_times.append( (lp_time , num_lp_ctrs , iteration) )
+    
+    
+    
+    
+    
+    
+    def print_lp_data(self):
+        import csv
+        with open('./lp_data.csv', 'w') as myfile:
+            fieldnames = ['lp_time','num_ctr' , 'pass']
+            writer = csv.DictWriter(myfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for x in self.lp_times:    
+                writer.writerow({'lp_time':"%f" %(x[0]), 'num_ctr':"%i" %(x[1]), 'pass':"%i" %(x[2])})    
+    
     
     def printReport(self):  
+        self.print_lp_data()
         print('Time profiling')
         print('%15s %12s %12s %12s %12s %12s %12s %12s %12s' %('Pass', '# LPs', 'setup', 'simplex', 'output', 'cut update' ,'cut gen', 'other','total'))
         

@@ -16,7 +16,7 @@ from HydroExamples import *
 from HydroExamples import Reservoir, Turbine
 print(__file__)
 
-T = 12
+T = 52
 m = 50
 AR1Matrix = [] 
 Rmatrix = []

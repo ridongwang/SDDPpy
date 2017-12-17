@@ -1,6 +1,9 @@
 from gurobipy import *
 import numpy as np
+import os
 
+sddp_dir_path = os.path.dirname(os.path.realpath(__file__))
+cwd = os.getcwd()
 
 '''
 Type of passes
@@ -40,9 +43,9 @@ def gurobiStatusCodeToStr( intstatus ):
 
 def alg_options():
     options = {}
-    options['max_iter'] = 1000
+    options['max_iter'] = 100
     options['outputlevel']  = 2
-    options['lines_freq']  = 100
+    options['lines_freq']  = 5
     options['n_sample_paths'] = 1
     return options
 

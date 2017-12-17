@@ -27,14 +27,16 @@ class StageProblem():
         Args:
             stage(int): Stage of the model
             model(GRBModel): Model 
-            ctrInStateMatrix (dict of real): dictionary thar stores the 
+            ctrInSƒtateMatrix (dict of real): dictionary that stores the 
             matrix multiplying the in state variables. It is computed 
             assuming is in the right hand side.
         '''
         self.stage = stage
         model, in_states, out_states, rhs_vars = model_builder(stage)
+        self.states_map = {}  
         self.in_state = [x for x in in_states]
         self.out_state = [x for x in out_states]
+        self.gen_states_map(self.in_state)
         self.rhs_vars = [x for x in rhs_vars]
         self.model = model
         
@@ -42,6 +44,7 @@ class StageProblem():
         
         self.model.params.OutputFlag = 0
         self.model.params.Threads = 4
+        
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
@@ -69,7 +72,8 @@ class StageProblem():
             assert col.size() == 1, "RHS noise is not well defined"
             self.ctrRHSvName[col.getConstr(0).ConstrName] = vname
             self.ctrsForDuals.add(col.getConstr(0).ConstrName)
-                
+        
+           
                 
      
     def solve(self, in_state_vals=None, random_realization=None, forwardpass = False, random_container=None, sample_path = None):   
@@ -164,15 +168,21 @@ class StageProblem():
             print('%20s %10.3f %10.6e %10.3f %10.3f %10.3f'   %(v.varname, v.LB, v.UB, v.obj, v.X, v.RC))
         print('------------------------------------\n')
        
-    def get_in_state_var(self, out_state):
-        '''
-        Returns the corresponding in state variable name
-        given a out state variable name of the previous
-        stage.
-        '''
-        sindex = out_state.index('[')
-        newkey = out_state[:sindex]+'0'+out_state[sindex:]
-        return newkey
+    #===========================================================================
+    # def get_in_state_var(self, out_state):
+    #     '''
+    #     Returns the corresponding in state variable name
+    #     given a out state variable name of the previous
+    #     stage.
+    #     '''
+    #     sindex = out_state.index('[')
+    #     newkey = out_state[:sindex]+'0'+out_state[sindex:]
+    #     return newkey
+    #===========================================================================
+    def gen_states_map(self, in_states):
+        for in_state in in_states:
+            sindex = in_state.index('[')
+            self.states_map[in_state] = in_state[:sindex-1]+in_state[sindex:]
         
     def get_out_state_var(self, in_state):
         '''
@@ -180,9 +190,12 @@ class StageProblem():
         given a in state variable name of the next
         stage.
         '''
-        sindex = in_state.index('[')
-        newkey = in_state[:sindex-1]+in_state[sindex:]
-        return newkey
+        return self.states_map[in_state]
+        #=======================================================================
+        # sindex = in_state.index('[')
+        # newkey = in_state[:sindex-1]+in_state[sindex:]
+        # return newkey
+        #=======================================================================
 
     
     def update_cut_pool(self, random_container, current_outcome):
@@ -194,9 +207,6 @@ class StageProblem():
             
             for cut in self.cut_pool:
                 cut.adjust_intercept( omega_stage_abs_order )
-            
-            #self.model.update
-            
             
             
     def createStageCut(self, cut_id, sp_next, rnd_vector_next, outputs_next, sample_path_forward_states , sample_path):
