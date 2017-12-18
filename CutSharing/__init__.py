@@ -5,6 +5,12 @@ import os
 sddp_dir_path = os.path.dirname(os.path.realpath(__file__))
 cwd = os.getcwd()
 
+
+'''
+Logging settings
+'''
+
+
 '''
 Type of passes
 '''
@@ -28,7 +34,16 @@ ZERO_TOL = 1E-8
 SDDP_OPT_TOL = 1E-3
 
 
-
+'''
+Algorithm options
+'''
+options = {}
+options['max_iter'] = 10
+options['sim_iter'] = 1000
+options['outputlevel']  = 2
+options['lines_freq']  = 1
+options['n_sample_paths'] = 1
+options['grb_threads'] = 1
 
 def gurobiStatusCodeToStr( intstatus ):
     if intstatus == 1:
@@ -42,11 +57,6 @@ def gurobiStatusCodeToStr( intstatus ):
 
 
 def alg_options():
-    options = {}
-    options['max_iter'] = 100
-    options['outputlevel']  = 2
-    options['lines_freq']  = 5
-    options['n_sample_paths'] = 1
     return options
 
 

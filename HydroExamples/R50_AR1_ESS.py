@@ -3,20 +3,25 @@ Created on Nov 18, 2017
 
 @author: dduque
 '''
-
 '''
 Instance data
 '''
+
 import csv
+
 from gurobipy import *
-import numpy as np
-from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_depedency
+
+import CutSharing
+from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
 from CutSharing.SDPP_Alg import SDDP
 from HydroExamples import *
 from HydroExamples import Reservoir, Turbine
-print(__file__)
+from Utils.argv_parser import *
+import numpy as np
 
-T = 52
+
+
+T = 100
 m = 50
 AR1Matrix = [] 
 Rmatrix = []
@@ -136,9 +141,23 @@ def model_builder(stage):
     return m, in_state, out_state, rhs_vars
 
 if __name__ == '__main__':
+    argv = sys.argv
+    positional_args,kwargs = parse_args(argv[1:])
+    if 'R' in kwargs:
+        R = kwargs['R']
+    if 'T' in kwargs:
+        T = kwargs['T']
+    if 'max_iter' in kwargs:
+        CutSharing.options['max_iter'] = kwargs['max_iter']
+        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+    if 'sim_iter' in kwargs:
+        CutSharing.options['sim_iter'] = kwargs['sim_iter']
+    
+
+    instance_name = "Hydro_R%i_AR1_T%i_I%i_ESS" % (R, T, CutSharing.options['max_iter'])
     algo = SDDP(T, model_builder, random_builder)
-    algo.run()
-    algo.simulate_policy(1000)
+    algo.run( instance_name=instance_name)
+    algo.simulate_policy(CutSharing.options['sim_iter'])
 
     
     

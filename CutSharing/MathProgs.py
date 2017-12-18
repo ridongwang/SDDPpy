@@ -43,8 +43,7 @@ class StageProblem():
         self.cut_pool = CutPool(stage)
         
         self.model.params.OutputFlag = 0
-        self.model.params.Threads = 4
-        
+        self.model.params.Threads = CutSharing.options['grb_threads']
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
