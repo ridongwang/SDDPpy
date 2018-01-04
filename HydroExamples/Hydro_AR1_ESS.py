@@ -115,7 +115,7 @@ def model_builder(stage):
     return m, in_state, out_state, rhs_vars
 
 if __name__ == '__main__':
-    sddp_log.addHandler(logging.FileHandler("HydroAR1_ESS.log"))
+    sddp_log.addHandler(logging.FileHandler("HydroAR1_ESS.log", mode='w'))
     argv = sys.argv
     positional_args,kwargs = parse_args(argv[1:])
     if 'R' in kwargs:
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     
 
     
-    for nr in [5,10,20,50,100,200,500,1000]:
+    for nr in [5,10,50,100,500,1000]:
         instance_name = "Hydro_R%i_AR1_T%i_I%i_ESS" % (nr, T, CutSharing.options['max_iter'])
         Rmatrix = hydro_instance.ar_matrices
         RHSnoise = hydro_instance.RHS_noise[0:nr]
@@ -147,5 +147,5 @@ if __name__ == '__main__':
         del(algo)
     
     
-    
+    sddp_log.addHandler(logging.FileHandler("HydroAR1_ESS.log"))
     
