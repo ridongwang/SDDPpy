@@ -9,6 +9,7 @@ from CutSharing.CutManagament import CutPool
 import CutSharing 
 from CutSharing import *
 from time import time
+import scipy.sparse as sp
 
 class StageProblem():
     '''
@@ -32,6 +33,7 @@ class StageProblem():
             assuming is in the right hand side.
         '''
         self.stage = stage
+        self.model_stats = MathProgStats()
         model, in_states, out_states, rhs_vars = model_builder(stage)
         self.states_map = {}  
         self.in_state = [x for x in in_states]
@@ -44,6 +46,7 @@ class StageProblem():
         
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
+        self.model.params.Presolve = 0
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
@@ -135,8 +138,8 @@ class StageProblem():
             if forwardpass == True:
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
-        
-        
+            self.model_stats.add_simplex_iter_entr(self.model.IterCount)
+            
         output['lptime'] = lp_time
         output['cutupdatetime'] = cutupdatetime
         output['setuptime']  = setuptime
@@ -262,7 +265,7 @@ class StageProblem():
                 rhs_c = sp_next.ctrRHSvName[cpi]
                 pi_bar_abs_order[0,srv.vector_order[rhs_c]] = pi_bar[cpi]
                 omega_stage_abs_order[srv.vector_order[rhs_c]] = sample_path[self.stage][rhs_c]
-            dep_rhs_vector = (pi_bar_abs_order + ab_D).dot(srv.autoreg_matrices[-1])
+            dep_rhs_vector = (sp.csr_matrix(pi_bar_abs_order + ab_D)).dot(srv.autoreg_matrices[-1]).toarray() #TODO: generalize for mor lags!!
             dep_rhs = dep_rhs_vector.dot(omega_stage_abs_order).squeeze()
             ind_rhs = cut_intercept - dep_rhs
             new_cut = Cut(self, cut_gradiend_coeff, cut_intercept, cut_id, 
@@ -286,3 +289,31 @@ class StageProblem():
     
     def __repr__(self):
         return "SP%i: #cuts:%i" %(self.stage,len(self.cut_pool.pool))
+
+class MathProgStats:
+    '''
+    An object to keep track of some stats of the coresponding math program.
+    
+    Stats tracked:
+        Mean number of iterations in simplex.
+        Std of iteration in simplex.
+    
+    '''
+    def __init__(self):
+        self._simplex_iter_sum = 0.0
+        self._simplex_iter_sumSq = 0.0
+        self._simplex_iter_entries = 0
+    
+    def add_simplex_iter_entr(self, x):
+        self._simplex_iter_entries+=1
+        self._simplex_iter_sum += x
+        self._simplex_iter_sumSq += (x**2)
+    
+    def get_mean(self):
+        return self._simplex_iter_sum/self._simplex_iter_entries
+    
+    def get_sd(self):
+        n =self._simplex_iter_entries
+        numerator = self._simplex_iter_sumSq - (self._simplex_iter_sum**2)/n
+        return np.sqrt(numerator/(n-1))
+        
