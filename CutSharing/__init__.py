@@ -1,10 +1,16 @@
 from gurobipy import *
 import numpy as np
 import os
+import logging
+
 
 sddp_dir_path = os.path.dirname(os.path.realpath(__file__))
 cwd = os.getcwd()
 
+
+logger = logging.getLogger('SDDP')
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 '''
 Logging settings

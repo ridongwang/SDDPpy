@@ -1,3 +1,6 @@
+'''
+Objects for Hydro scheduling examples
+'''
 class Turbine():
     def __init__(self, flowknots, powerknots):
         self.flowknots = flowknots
@@ -15,6 +18,5 @@ class Reservoir():
 import os 
 hydro_path = os.path.dirname(os.path.realpath(__file__))
 
-print(hydro_path)
 
 

@@ -5,6 +5,7 @@ Created on Nov 19, 2017
 '''
 import copy
 import numpy as np
+import scipy.sparse as sp
 np.random.seed(0)
 
 #NOT USED FOR THE MOMENT
@@ -197,14 +198,15 @@ class StageRandomVector:
             abs_order_e = self.vector_order[e.name]
             if e.has_dependencies():
                 if created == False:
-                    R_matrices = [np.zeros((vec_dim,vec_dim)) for de in e.dependencies]
+                    R_matrices = [sp.coo_matrix((vec_dim,vec_dim), dtype=np.float64) for de in e.dependencies]
                     created = True
                 
                 for (i, d_stage) in enumerate(e.dependencies):
-                    assert len(self.elements)==len(e.dependencies[d_stage])
+                    #assert len(self.elements)==len(e.dependencies[d_stage])
                     for dep_e in e.dependencies[d_stage]:
                         abs_order_d = self.vector_order[dep_e]
-                        R_matrices[i][abs_order_e,abs_order_d] = e.dependencies[d_stage][dep_e]
+                        #R_matrices[i][abs_order_e,abs_order_d] = e.dependencies[d_stage][dep_e]
+                        R_matrices[i] =  R_matrices[i] + sp.coo_matrix(([e.dependencies[d_stage][dep_e]] , ([abs_order_e],[abs_order_d])), shape=(vec_dim,vec_dim ))
                  
                 
                 
