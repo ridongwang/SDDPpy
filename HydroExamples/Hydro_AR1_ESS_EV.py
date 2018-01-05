@@ -1,54 +1,31 @@
 '''
-Created on Nov 18, 2017
+Created on Jan 5, 2018
 
 @author: dduque
 '''
-
-'''
-Instance data
-'''
 import csv
-from gurobipy import *
+import CutSharing
+import logging
 import numpy as np
-from CutSharing.RandomnessHandler import RandomContainer,StageRandomVector,AR1_depedency
+from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
 from CutSharing.SDPP_Alg import SDDP
+from CutSharing import logger as sddp_log
+
+from Utils.argv_parser import sys,parse_args
+from gurobipy import Model, GRB, quicksum
+from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from HydroExamples import *
-from HydroExamples import Reservoir, Turbine
-print(__file__)
-
-T = 12
-m = 50
-AR1Matrix = [] 
-Rmatrix = []
-with open('../TimeSeries/AR1Matrix%i.csv' %(m), 'r') as f:
-    reader = csv.reader(f)
-    AR1Matrix = list(reader)
-    AR1Matrix.pop(0)
-    for (i,x) in enumerate(AR1Matrix):
-        x.pop(0)
-        Rmatrix.append({})  
-        for (j,val) in enumerate(x):
-            x[j] = float(val)  
-            Rmatrix[-1]['inflow[%i]' %(j)] = x[j]
-RHSnoise = [] 
-with open('../TimeSeries/RHSnoise%i.csv' %(m), 'r') as f:
-    reader = csv.reader(f)
-    RHSnoise = list(reader)
-    RHSnoise.pop(0)
-    for (i,x) in enumerate(RHSnoise):
-        x.pop(0) 
-        for (j,val) in enumerate(x):
-            x[j] = float(val)
-            
-valley_chain = [
-        Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
-      #  Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, [np.mean(x)]) for x in RHSnoise
-        ]
-          
-nr = len(valley_chain) #Number of reservoirs
-
-
-prices = [1+round(np.sin(0.8*x),2) for x in range(0,T)]
+'''
+Global variables to store instance data
+'''
+hydro_instance = read_instance()
+T = None
+nr = None
+Rmatrix = None
+RHSnoise = None
+initial_inflow = None 
+valley_chain = None
+prices = None
 
 def random_builder():
     rc = RandomContainer()
@@ -101,8 +78,8 @@ def model_builder(stage):
         for v in inflow0:
             inflow0[v].lb = 0
             inflow0[v].ub = 0
-            inflow[v].lb = 0
-            inflow[v].ub = 0
+            inflow[v].lb = initial_inflow[v]
+            inflow[v].ub = initial_inflow[v]
             
     m.update()
             
@@ -114,7 +91,8 @@ def model_builder(stage):
     
     #Constraints
     #AR1 model as a constraint
-    m.addConstrs((inflow[i] - sum(AR1Matrix[i][j]*inflow0[j]  for j in range(0,len(valley_chain))) == innovations[i]    for i in range(0,len(valley_chain)) ), 'AR1')
+    R_t = Rmatrix[stage] #For lag 1 only!
+    m.addConstrs((inflow[i] - sum(R_t[1][i][j]*inflow0[j]  for j in range(0,len(valley_chain)) if j in R_t[1][i]) == innovations[i]    for i in range(0,len(valley_chain)) ), 'AR1')
     #Balance constraints
     m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + inflow[0] - outflow[0] - spill[0] + pour[0], 'balance[0]')
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1]     for i in range(1,nr)), 'balance')
@@ -137,11 +115,37 @@ def model_builder(stage):
     return m, in_state, out_state, rhs_vars
 
 if __name__ == '__main__':
-    algo = SDDP(T, model_builder, random_builder)
-    algo.run(ev = True)
-    algo.simulate_policy(1000)
+    sddp_log.addHandler(logging.FileHandler("HydroAR1_ESS_EV.log", mode='w'))
+    argv = sys.argv
+    positional_args,kwargs = parse_args(argv[1:])
+    if 'R' in kwargs:
+        nr = kwargs['R']
+    if 'T' in kwargs:
+        T = kwargs['T']
+    if 'max_iter' in kwargs:
+        CutSharing.options['max_iter'] = kwargs['max_iter']
+        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+    if 'sim_iter' in kwargs:
+        CutSharing.options['sim_iter'] = kwargs['sim_iter']
+    
 
     
+    for nr in [50]:#,10,50,100,500,1000]:
+        instance_name = "Hydro_R%i_AR1_T%i_I%i_ESS_EV" % (nr, T, CutSharing.options['max_iter'])
+        Rmatrix = hydro_instance.ar_matrices
+        RHSnoise = hydro_instance.RHS_noise[0:nr]
+        initial_inflow = hydro_instance.inital_inflows[0:nr]
+        valley_chain = [
+                Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
+                ]
+        prices = [1+round(np.sin(0.8*x),2) for x in range(0,T)]
+        
+        
+        algo = SDDP(T, model_builder, random_builder)
+        algo.run( instance_name=instance_name, ev= True)
+        algo.simulate_policy(CutSharing.options['sim_iter'])
+        del(algo)
     
     
+    sddp_log.addHandler(logging.FileHandler("HydroAR1_ESS.log"))
     

@@ -130,7 +130,7 @@ if __name__ == '__main__':
     
 
     
-    for nr in [5,10,50,100,500,1000]:
+    for nr in [50]:#,10,50,100,500,1000]:
         instance_name = "Hydro_R%i_AR1_T%i_I%i_ESS" % (nr, T, CutSharing.options['max_iter'])
         Rmatrix = hydro_instance.ar_matrices
         RHSnoise = hydro_instance.RHS_noise[0:nr]

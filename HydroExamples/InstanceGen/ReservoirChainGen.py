@@ -30,7 +30,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                 for j in range(up_stream_dep+1):
                     if i-j>=0:
                         if (t<12):
-                            R_matrices[t][l][i][i-j]=np.random.uniform(-0.01/(up_stream_dep+1),2/(up_stream_dep+1))
+                            R_matrices[t][l][i][i-j]=np.random.uniform(0.0/(up_stream_dep+1),1.8/(up_stream_dep+1))
                         else:
                             R_matrices[t][l][i][i-j]=R_matrices[t-12][l][i][i-j]
     
@@ -42,13 +42,18 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
         RHS_noise[i] = np.random.normal(mu_i,1,num_outcomes)
         
     if simulate:
-        res_ref  =2
+        num_reps = 50
+        res_ref  = 10
+        np.random.seed(res_ref)
         mu_ref = np.random.uniform(1,2)
-        for replica in range(15):
-            plot_data = [10]
+        mean_res_ref = np.zeros((T+1))
+        for replica in range(num_reps):
+            plot_data = [inflow_t0[res_ref]]
             inflows = [plot_data[-1]]*num_reservoirs
             for t in range(T):
                 innovation  = np.random.normal(mu_ref,1)
+                #innovation  = np.random.triangular(-1, mu_ref, 4)
+                
                 new_inflows = [0]*num_reservoirs
                 for i in range(num_reservoirs):
                     for j in range(num_reservoirs):
@@ -56,7 +61,11 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                             new_inflows[i]+=R_matrices[t][1][i][j]*inflows[j]+innovation
                 inflows = list(new_inflows)                                         
                 plot_data.append(inflows[res_ref])
-            plt.plot(plot_data)
+            mean_res_ref = mean_res_ref + np.array(plot_data)
+            plt.plot(plot_data, alpha = 0.5)
+        mean_res_ref = mean_res_ref/num_reps
+        plt.plot(mean_res_ref, linewidth=2, color='black',linestyle='--')
+        
         plt.show()
     instance = HydroRndInstance(R_matrices, inflow_t0, RHS_noise)
     return instance
@@ -67,7 +76,7 @@ class HydroRndInstance():
         self.inital_inflows = initial_inflows
         self.RHS_noise = RHS_noise
         
-def read_instance(file_name = 'hydro_rnd_instance_R1000_UD1_T120_LAG1_OUT30.pkl'):
+def read_instance(file_name = 'hydro_rnd_instance_R1000_UD1_T120_LAG1_OUT30_V2.pkl'):
     '''
         Read instance from file and returns a HydroRndInstance object.
     '''
@@ -78,8 +87,10 @@ def read_instance(file_name = 'hydro_rnd_instance_R1000_UD1_T120_LAG1_OUT30.pkl'
        
 
 if __name__ == '__main__':
-    file_name_path = hydro_path+'/data/hydro_rnd_instance_R1000_UD1_T120_LAG1_OUT30.pkl'
-    with open(file_name_path, 'wb') as output:
-        instance = gen_instance(num_reservoirs=1000, up_stream_dep=1, T=120, lag = 1, num_outcomes=30,  simulate= False)   
-        pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
-
+    #===========================================================================
+    # file_name_path = hydro_path+'/data/hydro_rnd_instance_R1000_UD1_T120_LAG1_OUT30_V2.pkl'
+    # with open(file_name_path, 'wb') as output:
+    #     instance = gen_instance(num_reservoirs=1000, up_stream_dep=1, T=120, lag = 1, num_outcomes=30,  simulate= False)   
+    #     pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
+    #===========================================================================
+    instance = gen_instance(num_reservoirs=100, up_stream_dep=1, T=56, lag = 1, num_outcomes=30,  simulate= True)   
