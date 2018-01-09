@@ -49,27 +49,27 @@ v1 = (mm%*%v0) + matrix(rhsnoice[,3],4,1)
 v1 = (mm%*%v0) + Marima5$Constant
 v1 = (mm%*%v1) + matrix(rhsnoice[,2],4,1)
 
-#TODO: mirar si puedo hace los wasserstein 
-f1 <- MASS::fitdistr(Marima5$residuals[i,2:103], densfun = "normal")
-set.seed(27)
-x <- pp(matrix(runif(500),250,2))
-y <- pp(matrix(runif(500),250,2))
-wasserstein(x,y,p=1)
-wasserstein(x,y,p=2)
+####################
+# Processing LP data
+###################
+library(ggplot2)
+library(plotly)
+setwd("~/Projects/SDDPOutputFiles")
+
+temp = list.files(pattern="*.csv")
+mdf = data.frame(matrix(ncol = 4, nrow = 0))
+names(mdf)<- c("pass", "num_ctr", "lp_time", 'Algo')
+for (i in 1:length(temp)) mdf<-rbind(mdf, read.csv(temp[i]))
+
+
+model <- lm(mdf$lp_time~ poly(mdf$num_ctr,1))
+summary(model)
+
+plot(fitted(model),residuals(model))
 
 
 
-arsol <- ar(inflows[,2:5], method = "burg")
-x=ts(inflows) #this makes sure R knows that x is a time series
-x = x[,2:5]
-plot(x, type="b") #time series plot of x with points marked as “o”
-install.packages("astsa")
-library(astsa) # See note 1 below
-lag1.plot(x,1) # Plots x versus lag 1 of x.
-acf(x, xlim=c(1,500)) # Plots the ACF of x for lags 1 to 19
-xlag1=lag(x,-1) # Creates a lag 1 of x variable. See note 2
-y=cbind(x,xlag1) # See note 3 below
-ar1fit=lm(y[,1:4]~y[,5:8])#Does regression, stores results object named ar1fit
-summary(ar1fit) # This lists the regression results
-plot(ar1fit$fit,ar1fit$residuals) #plot of residuals versus fits
-acf(ar1fit$residuals, xlim=c(1,18)) # ACF of the residuals for lags 1 to 18
+
+gg=ggplot(model,aes(x=,y=price,color=color))
+ggplotly(gg)
+
