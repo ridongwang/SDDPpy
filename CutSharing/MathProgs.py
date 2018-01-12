@@ -10,6 +10,7 @@ import CutSharing
 from CutSharing import *
 from time import time
 import scipy.sparse as sp
+from CutSharing.RiskMeasures import Expectation
 
 class StageProblem():
     '''
@@ -21,7 +22,7 @@ class StageProblem():
     '''
 
 
-    def __init__(self, stage, model_builder, last_stage=False):
+    def __init__(self, stage, model_builder, last_stage=False, risk_measure = Expectation() ):
         '''
         Constructor
         
@@ -35,25 +36,26 @@ class StageProblem():
         self.stage = stage
         self.model_stats = MathProgStats()
         model, in_states, out_states, rhs_vars = model_builder(stage)
+        
         self.states_map = {}  
         self.in_state = [x for x in in_states]
         self.out_state = [x for x in out_states]
         self.gen_states_map(self.in_state)
         self.rhs_vars = [x for x in rhs_vars]
-        self.model = model
         
+        self.model = model
+        self.risk_measure = risk_measure
         self.cut_pool = CutPool(stage)
         
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
-        #self.model.params.Presolve = 1
+        
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
             self.oracle = self.model.addVar(lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             self.model.setObjective(self.cx + self.oracle)
             self.model.update()
-        
         
         #Construct dictionaries of (constraints,variables) key where duals are needed
         self.ctrsForDuals = set()
@@ -240,15 +242,24 @@ class StageProblem():
         soo = outputs_next
         spfs = sample_path_forward_states
         
-        for ctr in sp_next.ctrsForDuals:
-            pi_bar[ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
-            
-        cut_gradiend_coeff = {vo:0 for vo in self.out_state}
-        for (c,vi) in sp_next.ctrInStateMatrix:
-            vo = sp_next.get_out_state_var(vi)
-            cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
+        #=======================================================================
+        # for ctr in sp_next.ctrsForDuals:
+        #     pi_bar[ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
+        #     
+        # cut_gradiend_coeff = {vo:0 for vo in self.out_state}
+        # for (c,vi) in sp_next.ctrInStateMatrix:
+        #     vo = sp_next.get_out_state_var(vi)
+        #     cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
+        #=======================================================================
         
-        cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in self.out_state) 
+        pi_bar, cut_gradiend_coeff = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs)
+        
+        #=======================================================================
+        # cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in self.out_state) 
+        #=======================================================================
+        
+        cut_intercept = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs)
+        
         
         stagewise_ind  = srv.is_independent
         

@@ -8,6 +8,7 @@ import CutSharing as cs
 import numpy as np
 import time
 import logging
+from CutSharing.RiskMeasures import *
 sddp_log = cs.logger
 
 alg_options = cs.alg_options()
@@ -17,13 +18,13 @@ class SDDP(object):
     classdocs
     '''
 
-    def __init__(self, T, model_builder, random_builder):
+    def __init__(self, T, model_builder, random_builder, risk_measure = Expectation, **risk_measure_params):
         '''
         Constructor
         '''
         self.stats = Stats()
         self.stage_problems = []
-        self.createStageProblems(T, model_builder)
+        self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
         self.random_container = random_builder()
         
         self.random_container.preprocess_randomness()
@@ -35,7 +36,7 @@ class SDDP(object):
         self.num_cuts = 0
 
         
-    def createStageProblems(self, T, model_builder):
+    def createStageProblems(self, T, model_builder, risk_measure, **risk_measure_params):
         '''
         Creates all subproblems given a builder.
         Args:
@@ -47,7 +48,8 @@ class SDDP(object):
                 represent the next state.
         '''
         for i in range(T):
-            sp = StageProblem(i,model_builder, i==T-1)
+            sp_risk_measure = risk_measure(**risk_measure_params)
+            sp = StageProblem(i,model_builder, i==T-1, risk_measure= sp_risk_measure)
             self.stage_problems.append(sp)
 
     def forwardpass(self, sample_path , simulation = False):
