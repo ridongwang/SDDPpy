@@ -15,6 +15,7 @@ from Utils.argv_parser import sys,parse_args
 from gurobipy import Model, GRB, quicksum
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from HydroExamples import *
+from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver
 '''
 Global variables to store instance data
 '''
@@ -149,11 +150,11 @@ if __name__ == '__main__':
     if 'lag' in kwargs:
         lag = kwargs['lag']
     
-    for lag  in [1,2,3,4,5,6]:
+    for lag  in [6]:
         sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
         hydro_instance = read_instance(lag = lag)
         
-        for nr in [200]:#,10,50,100,500,1000]:
+        for nr in [10]:#,10,50,100,500,1000]:
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise = hydro_instance.RHS_noise[0:nr]
@@ -162,7 +163,9 @@ if __name__ == '__main__':
                     Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
                     ]
             prices = [1+round(np.sin(0.8*x),2) for x in range(0,T)]
-            algo = SDDP(T, model_builder, random_builder)
+            algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust,dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([1.0/30]*30), 'DUS_radius':4/30.0})
+            #algo = SDDP(T, model_builder, random_builder)
+            
             algo.run( instance_name=instance_name)
             algo.simulate_policy(CutSharing.options['sim_iter'])
             del(algo)
