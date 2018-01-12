@@ -46,7 +46,7 @@ class StageProblem():
         
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
-        self.model.params.Presolve = 0
+        #self.model.params.Presolve = 1
         #Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage ==False:
@@ -71,9 +71,12 @@ class StageProblem():
         for vname in self.rhs_vars:
             var = self.model.getVarByName(vname)
             col =  self.model.getCol(var)
-            assert col.size() == 1, "RHS noise is not well defined"
-            self.ctrRHSvName[col.getConstr(0).ConstrName] = vname
-            self.ctrsForDuals.add(col.getConstr(0).ConstrName)
+            #assert col.size() == 1, "RHS noise is not well defined"
+            for c_index in range(col.size()):
+                ctr = col.getConstr(c_index)
+                assert ctr.ConstrName not in self.ctrRHSvName, "Duplicated RHS noise variable in the a single constraint."
+                self.ctrRHSvName[ctr.ConstrName] = vname
+                self.ctrsForDuals.add(ctr.ConstrName)
         
            
                 
@@ -106,10 +109,10 @@ class StageProblem():
             setuptime = time()
             assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
             for in_s_name in in_state_vals:
-                sindex = in_s_name.index('[')
-                newkey = in_s_name[:sindex]+'0'+in_s_name[sindex:]
-                self.model.getVarByName(newkey).lb = in_state_vals[in_s_name]
-                self.model.getVarByName(newkey).ub = in_state_vals[in_s_name]
+                #sindex = in_s_name.index('[')
+                #newkey = in_s_name[:sindex]+'0'+in_s_name[sindex:]
+                self.model.getVarByName(self.states_map[in_s_name]).lb = in_state_vals[in_s_name]
+                self.model.getVarByName(self.states_map[in_s_name]).ub = in_state_vals[in_s_name]
             
             assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected"
             for rr in random_realization:
@@ -156,7 +159,7 @@ class StageProblem():
     def print_stage_res_summary(self):
         strout = ''
         for v in self.model.getVars():
-            if 'reservoir_level' in v.varname:
+            if 'generation' in v.varname or 'inflow[1' in v.varname or 'reservoir_level[1' in v.varname:
                 strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
         print(strout)
         
@@ -185,6 +188,7 @@ class StageProblem():
         for in_state in in_states:
             sindex = in_state.index('[')
             self.states_map[in_state] = in_state[:sindex-1]+in_state[sindex:]
+            self.states_map[in_state[:sindex-1]+in_state[sindex:]] = in_state
         
     def get_out_state_var(self, in_state):
         '''
