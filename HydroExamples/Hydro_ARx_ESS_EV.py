@@ -149,12 +149,12 @@ if __name__ == '__main__':
     if 'lag' in kwargs:
         lag = kwargs['lag']
     
-    for lag  in [1,2,3,4,5,6]:
-        sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
+    for lag  in [6]:
+        sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS_EV.log" %(lag), mode='w'))
         hydro_instance = read_instance(lag = lag)
         
-        for nr in [200]:#,10,50,100,500,1000]:
-            instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
+        for nr in [100]:#,10,50,100,500,1000]:
+            instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS_EV" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise = hydro_instance.RHS_noise[0:nr]
             initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
@@ -162,10 +162,12 @@ if __name__ == '__main__':
                     Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
                     ]
             prices = [1+round(np.sin(0.8*x),2) for x in range(0,T)]
+            import matplotlib.pyplot as plt
+            plt.plot(prices)
+            plt.draw()
             algo = SDDP(T, model_builder, random_builder)
-            algo.run( instance_name=instance_name)
+            algo.run( instance_name=instance_name, ev=True)
             algo.simulate_policy(CutSharing.options['sim_iter'])
             del(algo)
-            
-    #sddp_log.addHandler(logging.FileHandler("HydroAR1_ESS.log"))
+            plt.show()
     

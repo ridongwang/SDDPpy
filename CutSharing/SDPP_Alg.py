@@ -66,7 +66,7 @@ class SDDP(object):
             
             
             
-            assert sp_output['status'] == cs.SP_OPTIMAL, sp_output['status']
+            #assert sp_output['status'] == cs.SP_OPTIMAL, "Problem at stage %i is %s" %(i,sp_output['status'] )
             if sp_output['status'] != cs.SP_OPTIMAL:
                 for ss in sample_path: print(ss);
                 print('GRB STATUS %i' %(sp.model.status))
@@ -87,7 +87,8 @@ class SDDP(object):
                                                          num_lp_ctrs=sp.model.num_constrs,
                                                          iteration=self.pass_iteration)
         self.upper_bounds.append(fp_ub_value)
-        
+        if simulation and alg_options['outputlevel']>=3:
+            print('---------------------------')
         return fp_out_states
     
     def backwardpass(self, forward_out_states = None,  sample_path = None, ev = False):
@@ -250,6 +251,8 @@ class SDDP(object):
             output_fp = self.forwardpass(sample_path = s_path, simulation=True)
             
         self.iteration_update(0, 0, force_print = True)
+
+
         
 class Stats:
     

@@ -110,9 +110,20 @@ class RandomContainer:
     
 class StageRandomVector:
     '''
-    A class to represent the randomnes of a stage
+    A class to represent the randomness of a stage
     Attributes:
         stage (int): Number of the corresponding stage.
+        elements (dict (str,RandomElement)): Dictionary storing each random
+            element of the vector by its name as a key.
+        vector order (dict (str,int)): dictionary to map the names with a fixed
+            order of the elements in the vector.
+        outcomes (list of dict): a list of possible outcomes of the random vector.
+            Each element of the list is a dictionary containing the numerical values
+            for all the random elements of the vector. In the interstage dependent case,
+            this values are the independent part only.  
+        p (ndarray): vector with the probabilities of each outcome. This vector is modifiable
+            depending on the risk measure.
+        is_indipendent (bool): flag to distinguish between independent and dependent cases. 
     '''
     def __init__(self, stage):
         self.stage = stage
@@ -121,9 +132,9 @@ class StageRandomVector:
         self.outcomes = []
         self.ev_outcomes = []
         self.outcomes_dim = 0
-        self._first_element_added = False
         self.p = None
         self.is_independent = True 
+        self._first_element_added = False
       
     def addRandomElememnt(self, ele_name, ele_outcomes , ele_prob=None):
         if self._first_element_added == False:
