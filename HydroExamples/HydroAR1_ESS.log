@@ -1,72 +1,8 @@
-Hydro_R10_AR1_T50_I100_ESS
+Hydro_R200_AR1_T50_I100_ESS
 T: 50
 Number of passes: 100:
 Sample paths per pass: 1:
 ==========================================================================================
 Pass              LB             UB^           UB_hw       F time       B time    Wall time
 ==========================================================================================
-  0    -1.00001e+08    -2.21940e+03     0.00000e+00         0.04         0.00         0.04
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
-DRO inner problem not implemented!
- 10    -3.05930e+04    -2.84223e+04     0.00000e+00         0.02         0.52         4.86
- 20    -2.83822e+04    -2.88914e+04     0.00000e+00         0.02         0.48         9.86
- 30    -2.82273e+04    -2.95299e+04     0.00000e+00         0.02         0.50        15.07
- 40    -2.82079e+04    -2.85633e+04     0.00000e+00         0.03         0.54        20.61
- 50    -2.81619e+04    -2.92682e+04     0.00000e+00         0.03         0.55        26.52
- 60    -2.81438e+04    -2.90732e+04     0.00000e+00         0.03         0.60        32.62
- 70    -2.81415e+04    -2.88771e+04     0.00000e+00         0.03         0.65        39.07
- 80    -2.81389e+04    -2.90243e+04     0.00000e+00         0.03         0.64        45.79
- 90    -2.81345e+04    -2.89597e+04     0.00000e+00         0.04         0.67        52.82
-Time profiling
-           Pass        # LPs        setup      simplex       output   cut update      cut gen        other        total
-        Forward         5000         0.70         0.62         1.09         0.01         0.00         0.47         2.88
-       Backward       145530        19.15         6.34        20.19         0.23         9.12         1.50        56.53
-==========================================================================================
-Sim100    -2.81324e+04    -2.91174e+04     3.50344e+00         0.00         0.00        63.30
+  0    -1.00014e+08    -4.41132e+05     0.00000e+00         0.44         0.00         0.45
