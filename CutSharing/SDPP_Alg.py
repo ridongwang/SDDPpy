@@ -174,7 +174,7 @@ class SDDP(object):
         
     def iteration_update(self,fp_time, bp_time, force_print = False):
         self.ub = np.mean(self.upper_bounds)
-        self.ub_hw = 2*np.std(self.upper_bounds)/len(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
         if (alg_options['outputlevel']>=2 and self.pass_iteration % alg_options['lines_freq'] == 0 and force_print==False):
             elapsed_time = time.time() - self.ini_time
             sddp_log.info('%3i %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 

@@ -12,19 +12,19 @@ sddp_log = cs.logger
 
 class AbstracRiskMeasure(ABC):
     '''
-    classdocs
-    -Define what a risk measure should have
-    -Relate this to the random handler clasess. 
-    
+    Abstract representation of what a risk measure should do in SDD
     '''
-    
     
     @abstractmethod
     def __init__(self):
         '''
-        Constructor
+        
+        Attr:
+            _current_cut_gradient (dict): local copy of the current
+                cut gradient (used again when computing the.
         '''
-        self._static_dist = False
+        
+        
         self._current_cut_gradient = None
     
     @abstractmethod
@@ -32,6 +32,9 @@ class AbstracRiskMeasure(ABC):
         raise('Method not implemented in abstract class')
     @abstractmethod
     def compute_cut_intercept(self):
+        raise('Method not implemented in abstract class')
+    @abstractmethod
+    def update_cut_intercept(self):
         raise('Method not implemented in abstract class')
     
 
@@ -42,8 +45,16 @@ class Expectation(AbstracRiskMeasure):
         
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
         '''
+        Computes expected dual variables for the single cut version
+        and then the gradient.
+        
         Args:
-            
+            sp (StageProblem): current subproblem where the cut will be added.
+            sp_nex (StageProblem): subproblem for the next stage.
+            srv (StageRandomVector): Random vector of the next stage
+            soo (List of dict): A list of outputs of all the subproblems descendants.
+            spfs (dict (str-float)): Values for the states of the current stage computed 
+                in the forward pass.
         '''
         pi_bar = {}
         for ctr in sp_next.ctrsForDuals:
@@ -62,8 +73,9 @@ class Expectation(AbstracRiskMeasure):
         cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in sp.out_state) 
         return cut_intercept
 
-
-
+    
+    def update_cut_intercept(self):
+        pass
 
 
 
@@ -108,7 +120,8 @@ class DistRobust(AbstracRiskMeasure):
         cut_intercept = sum(p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in sp.out_state) 
         return cut_intercept
         
-        
+    def update_cut_intercept(self):
+        pass  
         
 class DistRobusInnerSolver(ABC):
     @abstractmethod
@@ -151,7 +164,7 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         
         if self._one_time_warning:
             self._one_time_warning = False
-            sddp_log.warning('DRO inner problem not implemented!')
+            #sddp_log.warning('DRO inner problem not implemented!')
         assert len(outcomes_objs) == len(self.nominal_p)
         new_p = np.array([vars[i].X for i in range(len(vars))])
         return new_p

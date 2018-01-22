@@ -47,12 +47,12 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
     RHS_noise = np.zeros(shape=(num_reservoirs,num_outcomes))
     mu_s = np.random.uniform(0,10,num_reservoirs)
     for i in range(num_reservoirs):
-        RHS_noise[i] = np.sort(np.random.normal(mu_s[i],1,num_outcomes))
+        RHS_noise[i] = np.sort(np.random.normal(mu_s[i],mu_s[i],num_outcomes))
         
     if simulate:
         plt.figure(1)
         num_reps = 30
-        res_ref  = [0,10,80,150]
+        res_ref  = [0,10,80,99]
         np.random.seed(res_ref)
         mean_res_ref = {rr:np.zeros((T+1)) for rr in res_ref}
         for replica in range(num_reps):
@@ -107,11 +107,9 @@ def read_instance(file_name = 'hydro_rnd_instance_R1000_UD1_T120_LAG1_OUT30_V2.p
        
 
 if __name__ == '__main__':
-    #===========================================================================
-    # for lag in range(1,7):
-    #     file_name_path = hydro_path+'/data/hydro_rnd_instance_R1000_UD1_T120_LAG%i_OUT30_AR.pkl' %(lag)
-    #     with open(file_name_path, 'wb') as output:
-    #         instance = gen_instance(num_reservoirs=1000, up_stream_dep=1, T=120, lag = lag, num_outcomes=30,  simulate= False)   
-    #         pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
-    #===========================================================================
-    instance = gen_instance(num_reservoirs=1000, up_stream_dep=1, T=24, lag =2, num_outcomes=30,  simulate= True)   
+    for lag in range(1,7):
+        file_name_path = hydro_path+'/data/hydro_rnd_instance_R1000_UD1_T120_LAG%i_OUT30_AR.pkl' %(lag)
+        with open(file_name_path, 'wb') as output:
+            instance = gen_instance(num_reservoirs=200, up_stream_dep=1, T=120, lag = lag, num_outcomes=30,  simulate= False)   
+            pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
+    instance = gen_instance(num_reservoirs=200, up_stream_dep=1, T=24, lag =2, num_outcomes=30,  simulate= True)   
