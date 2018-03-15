@@ -2,6 +2,7 @@
 Objects for Hydro scheduling examples
 '''
 import os 
+import sys
 hydro_path = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -17,9 +18,4 @@ class Reservoir():
         self.turbine = turbine
         self.spill_cost = s_cost
         self.inflows = inflows 
-
-
-
-
-
 

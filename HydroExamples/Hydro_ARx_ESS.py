@@ -12,10 +12,10 @@ from CutSharing.SDPP_Alg import SDDP
 from CutSharing import logger as sddp_log
 
 from Utils.argv_parser import sys,parse_args
-from gurobipy import Model, GRB, quicksum
+from gurobipy import *
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from HydroExamples import *
-from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver
+from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality
 '''
 Global variables to store instance data
 '''
@@ -46,8 +46,9 @@ def model_builder(stage):
     '''
     Builds a particular instance of a multistage problem
     '''
+    import gurobipy as gb
     m = Model('Hydrovalley')
-
+    
     '''
     State variables
         - Reservoir level
@@ -150,11 +151,11 @@ if __name__ == '__main__':
     if 'lag' in kwargs:
         lag = kwargs['lag']
     
-    for lag  in [1,2,6]:
+    for lag  in [1]:
         sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
         hydro_instance = read_instance(lag = lag)
         
-        for nr in [200]:#,10,50,100,500,1000]:
+        for nr in [2]:#,10,50,100,500,1000]:
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise = hydro_instance.RHS_noise[0:nr]
@@ -163,9 +164,13 @@ if __name__ == '__main__':
                     Reservoir(0, 200, 20, Turbine([50, 60, 70], [55, 65, 70]), 1000, x) for x in RHSnoise
                     ]
             prices = [1+round(np.sin(0.8*x),2) for x in range(0,T)]
-            #algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust,dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([1.0/30]*30), 'DUS_radius':4/30.0})
-            algo = SDDP(T, model_builder, random_builder)
+            #algo = SDDP(T, model_builder, random_builder)
+            algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([1.0/30]*30), 'DUS_radius':0/30.0, 'set_type':DistRobustDuality.L2_NORM})
+            algo.run( instance_name=instance_name)
+            algo.simulate_policy(CutSharing.options['sim_iter'])
+            del(algo)
             
+            algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustDuality,dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([1.0/30]*30), 'DUS_radius':0/30.0, 'set_type':DistRobustDuality.L2_NORM})
             algo.run( instance_name=instance_name)
             algo.simulate_policy(CutSharing.options['sim_iter'])
             del(algo)

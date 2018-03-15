@@ -31,7 +31,7 @@ class Cut():
     '''
     Structure for a cut
     '''
-    def __init__(self,sp, var_coeffs, intercept, cut_id , stagewise_ind = True, ind_rhs = None, dep_rhs_vector = None):
+    def __init__(self,sp, var_coeffs, intercept, cut_id , stagewise_ind = True, ind_rhs = None, dep_rhs_vector = None, outcome = 0):
         '''
         Args:
             var_coeffs (dict of reals): coefficient of each variable involved in the cut where variable name is the key.
@@ -40,9 +40,9 @@ class Cut():
         '''
         m = sp.model
         stage = sp.stage
-        self.name = 'cut[%i,%i]' %(stage,cut_id)
+        self.name = 'cut[%i,%i,%i]' %(stage,cut_id,outcome)
         self.lhs = quicksum(-var_coeffs[vn]*m.getVarByName(vn) for vn in var_coeffs) 
-        self.lhs.add(sp.oracle)
+        self.lhs.add(sp.oracle[outcome])
         self.recomputable_rhs = (stagewise_ind==False)
         self.rhs = intercept
         self.ind_rhs = ind_rhs

@@ -24,8 +24,9 @@ class SDDP(object):
         '''
         self.stats = Stats()
         self.stage_problems = []
-        self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
         self.random_container = random_builder()
+        self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
+        
         
         self.random_container.preprocess_randomness()
         
@@ -49,7 +50,8 @@ class SDDP(object):
         '''
         for i in range(T):
             sp_risk_measure = risk_measure(**risk_measure_params)
-            sp = StageProblem(i,model_builder, i==T-1, risk_measure= sp_risk_measure)
+            n_outcomes = self.random_container[i+1].outcomes_dim if i<T-1 else 0
+            sp = StageProblem(i,model_builder, i==T-1, risk_measure= sp_risk_measure, multicut = alg_options['multicut'], num_outcomes=n_outcomes)
             self.stage_problems.append(sp)
 
     def forwardpass(self, sample_path , simulation = False):
@@ -69,7 +71,7 @@ class SDDP(object):
             
             
             #assert sp_output['status'] == cs.SP_OPTIMAL, "Problem at stage %i is %s" %(i,sp_output['status'] )
-            if sp_output['status'] != cs.SP_OPTIMAL:
+            if sp_output['status'] not in [cs.SP_OPTIMAL, cs.SP_UNKNOWN]:
                 for ss in sample_path: print(ss);
                 print('GRB STATUS %i' %(sp.model.status))
                 sp.model.write('%s%i_.lp' %(sp_output['status'], i))
@@ -167,6 +169,7 @@ class SDDP(object):
         sddp_log.info('T: %i' %(len(self.stage_problems)))
         sddp_log.info('Number of passes: %i:' %(alg_options['max_iter']))
         sddp_log.info('Sample paths per pass: %i:' %(alg_options['n_sample_paths']))
+        sddp_log.info('Multicut: %s' %(str(alg_options['multicut'])))
         sddp_log.info('==========================================================================================')
         sddp_log.info('%3s %15s %15s %15s %12s %12s %12s'
               %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Wall time'))
