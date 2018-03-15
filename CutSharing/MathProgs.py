@@ -3,7 +3,7 @@ Created on Nov 17, 2017
 
 @author: dduque
 '''
-from gurobipy import *
+from gurobipy import GRB, Model
 from CutSharing.CutManagament import Cut
 from CutSharing.CutManagament import CutPool
 import CutSharing 
@@ -22,18 +22,20 @@ class StageProblem():
     '''
 
 
-    def __init__(self, stage, model_builder, last_stage=False, risk_measure = Expectation() ):
+    def __init__(self, stage, model_builder, last_stage=False, risk_measure = Expectation(), multicut = False, num_outcomes=0 ):
         '''
         Constructor
         
         Args:
             stage(int): Stage of the model
-            model(GRBModel): Model 
-            ctrInSƒtateMatrix (dict of real): dictionary that stores the 
-            matrix multiplying the in state variables. It is computed 
-            assuming is in the right hand side.
+            model_builder(func): A function that build the stage model (GRBModel)
+            last_stage (bool): Boolean flag indicating if this stage problem is the last one.
+            risk_measure (AbstractRiskMeasure): A risk measure object to form the cuts.
+            multicut (bool): Boolean flag indicating weather to use multicut or single cut.
+            num_outcomes (int): Number of outcomes in the next stage.
         '''
         self.stage = stage
+        self._last_stage = last_stage 
         self.model_stats = MathProgStats()
         model, in_states, out_states, rhs_vars = model_builder(stage)
         
@@ -46,16 +48,27 @@ class StageProblem():
         self.model = model
         self.risk_measure = risk_measure
         self.cut_pool = CutPool(stage)
+        self.multicut = multicut
         
+        # Optimizer parameters
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
+        self.model.params.Method = 2
         
-        #Add oracle var and include it in the objective
+        
+        # Add oracle var and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
-        if last_stage ==False:
-            self.oracle = self.model.addVar(lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
-            self.model.setObjective(self.cx + self.oracle)
-            self.model.update()
+        if last_stage == False:
+            if multicut == False: #Gen single cut variable
+                self.oracle = self.model.addVars(1,lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+            else:
+                if num_outcomes == 0:
+                    raise 'Multicut algorithm requires to define the number of outcomes in advance.'
+                self.oracle = self.model.addVars(num_outcomes, lb=-1E5, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+            
+            risk_measure.modify_stage_problem(self, self.model, num_outcomes)
+              
+                
         
         #Construct dictionaries of (constraints,variables) key where duals are needed
         self.ctrsForDuals = set()
@@ -137,9 +150,15 @@ class StageProblem():
         output = {}
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
-        if status ==  SP_OPTIMAL:
+        if status ==  SP_OPTIMAL or status == SP_UNKNOWN:
             output['objval'] = self.model.objVal
-            output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+            try:
+                output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+            except:
+                print('No duals')
+                self.model.params.Outputflag = 1
+                self.model.optimize()
+                self.model.write('subprob%i.mps' % self.stage)
             if forwardpass == True:
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
@@ -252,21 +271,24 @@ class StageProblem():
         #     cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
         #=======================================================================
         
-        pi_bar, cut_gradiend_coeff = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs)
+        pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs)
         
         #=======================================================================
         # cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in self.out_state) 
         #=======================================================================
         
-        cut_intercept = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs)
+        cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs)
         
         
         stagewise_ind  = srv.is_independent
         
         new_cut = None
         if stagewise_ind:
-            new_cut = Cut(self, cut_gradiend_coeff,cut_intercept, cut_id)
+            for (i,grad) in enumerate(cut_gradiend_coeffs):
+                new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
         else:
+            if self.multicut == True:
+                raise "Multicut is not yet implemented for the dependen case"
             #ctrRHSvName
             alpha_bar = {}  #Expected duals of the cuts
             ab_D = np.zeros((1, len(pi_bar))) #Computation alpha_bar_{t+1}*D_{t+1}
@@ -282,8 +304,8 @@ class StageProblem():
                 omega_stage_abs_order[srv.vector_order[rhs_c]] = sample_path[self.stage][rhs_c]
             dep_rhs_vector = (sp.csr_matrix(pi_bar_abs_order + ab_D)).dot(srv.autoreg_matrices[-1]).toarray() #TODO: generalize for mor lags!!
             dep_rhs = dep_rhs_vector.dot(omega_stage_abs_order).squeeze()
-            ind_rhs = cut_intercept - dep_rhs
-            new_cut = Cut(self, cut_gradiend_coeff, cut_intercept, cut_id, 
+            ind_rhs = cut_intercepts - dep_rhs
+            new_cut = Cut(self, cut_gradiend_coeffs, cut_intercepts, cut_id, 
                           stagewise_ind=False,
                           ind_rhs=ind_rhs,
                           dep_rhs_vector=dep_rhs_vector)
