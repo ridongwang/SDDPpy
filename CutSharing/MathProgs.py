@@ -53,7 +53,8 @@ class StageProblem():
         # Optimizer parameters
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
-        self.model.params.Method = 2
+        #self.model.params.Method = 2
+        #self.model.params.FeasibilityTol = 1E-9
         
         
         # Add oracle var and include it in the objective
@@ -161,6 +162,7 @@ class StageProblem():
                 self.model.write('subprob%i.mps' % self.stage)
             if forwardpass == True:
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
+                output['risk_measure_info'] = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-10)
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             

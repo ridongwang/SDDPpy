@@ -40,6 +40,10 @@ class AbstracRiskMeasure(ABC):
     @abstractmethod
     def modify_stage_problem(self, *args):
         raise('Method not implemented in abstract class')
+    
+    @abstractmethod
+    def forward_pass_updates(self, *args, **kwargs):
+        pass
 
 class Expectation(AbstracRiskMeasure):
     
@@ -114,15 +118,22 @@ class Expectation(AbstracRiskMeasure):
         pass
     def modify_stage_problem(self, sp,  model, n_outcomes):
         model.setObjective(sp.cx + sp.oracle.sum())
-            
+    def forward_pass_updates(self, *args, **kwargs):
+        pass    
 
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
     L2_NORM = 'L2_norm'
-    def __init__(self,dro_solver, dro_solver_params):
+    def __init__(self, dro_solver, dro_solver_params):
         super().__init__()
+        self.cutting_planes_approx =  dro_solver_params['cutting_planes']
         self._dro_params = dro_solver_params
+        
+        if self.cutting_planes_approx == True:
+            self.cuts_handler = None 
+            self.cut_index = 0
+        
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
         '''
         Computes expected dual variables for the single cut version
@@ -145,7 +156,7 @@ class DistRobustDuality(AbstracRiskMeasure):
         cut_gradiend_coeff = None
         
         if multicut == False: #single cut
-            raise 'Risk measure does not suppor single cut'
+            raise 'Risk measure does not support single cut'
         else:           #Multicut
             pi_bar = [{} for _ in srv.outcomes]
             cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
@@ -188,7 +199,9 @@ class DistRobustDuality(AbstracRiskMeasure):
         risk measure as dual variables of the inner problem.
         
         Args:
-            sp (StageProblem): Stage problem to modify
+            sp (StageProblem): Stage problem to modify.
+            model (GRBModel): Model object associate to the stage.
+            n_outcomes(int): Number of outcomes for the following stage.
             
         '''
         assert sp.multicut, 'This risk measure implementation is only compatible with multicut setting.'
@@ -196,29 +209,152 @@ class DistRobustDuality(AbstracRiskMeasure):
         if sp._last_stage:
             return
         
-        r = self._dro_params['DUS_radius']
-        q = self._dro_params['nominal_p']
+        
         set_type = self._dro_params['set_type']
-        lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
-        gamma_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='gamma[%i]' %(t))
-        nu_var =  model.addVars(n_outcomes,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
-        model.update()
-        #Update objective function
-        new_objective = sp.cx  + lambda_var + r*gamma_var - quicksum(q[i]*nu_var[i] for i in range(n_outcomes))
-        model.setObjective(new_objective, GRB.MINIMIZE)
-        model.addConstrs( (lambda_var - nu_var[i] - sp.oracle[i]>= 0 for i in range(n_outcomes)), 'dro_dual_ctr')
-        if set_type == DistRobustDuality.L2_NORM:
-            model.params.QCPDual = 1
-            model.params.BarQCPConvTol = 1E-8
-            model.addConstr( quicksum(nu_var[i]*nu_var[i] for i in range(n_outcomes)) <= gamma_var*gamma_var    , 'norm_dro_ctr')
-        elif set_type == DistRobustDuality.L1_NORM:
-            model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
-            model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+        if set_type in [DistRobustDuality.L1_NORM, DistRobustDuality.L2_NORM]:
+            r = self._dro_params['DUS_radius']
+            q = self._dro_params['nominal_p']
         
-        model.update()
+            lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+            gamma_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='gamma[%i]' %(t))
+            nu_var =  model.addVars(n_outcomes,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
+            model.update()
+            #Update objective function
+            new_objective = sp.cx  + lambda_var + r*gamma_var - quicksum(q[i]*nu_var[i] for i in range(n_outcomes))
+            model.setObjective(new_objective, GRB.MINIMIZE)
+            model.addConstrs( (lambda_var - nu_var[i] - sp.oracle[i]>= 0 for i in range(n_outcomes)), 'dro_dual_ctr')
+            if self.cutting_planes_approx == False:
+                    
+                if set_type == DistRobustDuality.L2_NORM:
+                    model.params.QCPDual = 1
+                    model.params.BarQCPConvTol = 1E-8
+                    model.addConstr( quicksum(nu_var[i]*nu_var[i] for i in range(n_outcomes)) <= gamma_var*gamma_var    , 'norm_dro_ctr')
+                elif set_type == DistRobustDuality.L1_NORM:
+                    model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+                    model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+            else: #Using cutting planes
+                #Add max norm to bound
+                model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+                model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+                
+                if set_type == DistRobustDuality.L2_NORM:
+                    def g(x,order):
+                        n = len(x)
+                        gamma = x[-1]
+                        if order == 0:
+                            g_val = np.sqrt(sum(x[i]**2 for i in range(n-1))) - gamma
+                            return g_val
+                        elif order == 1:
+                            norm_v = np.sqrt(sum(x[i]**2 for i in range(n-1)))
+                            g_grad = [x[i]/norm_v for i in range(n)]
+                            g_grad[-1] = -1
+                            return g_grad
+                        else:
+                            raise 'Order of the function is either 0 or 1.'
+                    var_names = [nu_var[v].VarName for v in nu_var]
+                    var_names.append(gamma_var.VarName)
+                    self.cuts_handler = DRO_CuttingPlanes([g] , var_names)
+                    print(sp)    
+                elif set_type == DistRobustDuality.L1_NORM:
+                    self.cutting_planes_approx = False # There is nothing to approximate
+                
+            model.update()
+        else:
+            raise 'Set different from L1 and L2 norm are not supported'
+            
+    def forward_pass_updates(self, sp , **kwargs):
+        '''
+        Runs updates associated to the risk measure during the forward pass
+        and after the model is optimized.
+        '''
+        
+        tol = kwargs['fea_tol']
+        if self.cutting_planes_approx == True and sp._last_stage == False:
+            cph = self.cuts_handler
+            var_vals = [sp.model.getVarByName(vn).X  for vn in cph.dual_set_var] 
+            
+            fea, ctr, vio = cph.check_dro_feasibility(var_vals, tol)
+            if fea == False:
+                model_vars = [sp.model.getVarByName(vn)  for vn in cph.dual_set_var] 
+                cut_lhs = cph.refine_set(var_vals, model_vars,  ctr, vio)
+                #print(sp.stage, '__>' , vio, cut_lhs)
+                sp.model.addConstr(cut_lhs, GRB.LESS_EQUAL, 0, 'cut_dro_%i' %(self.cut_index))
+                self.cut_index =  self.cut_index + 1
+                return vio
+        return 0
+
+class DRO_CuttingPlanes():
+    '''
+    Implements helper function to do an outer approximation of the 
+    of the uncertainty set in the DRO setting. In particular, it approximates 
+    the dual a given uncertainty set
+    
+    Attrs:
+        dual_dro_set (list of func): A list of functions that define the dual uncertatny set.    
+            Each function has the signature:
+                def g(vars_values, order):
+                    vars_values: a point to evalute the function
+                    order:  0 return the function evaluation
+                            1 returns a subgradient in the same format as the input
+            The set is assumed to be g_i(x,0) <= 0 \forall i
+        dual_set_var (collection of str): A list of place holders for the variables that define the set
+    '''
+    
+    def __init__(self, dual_dro_set , dual_dro_var):
+        self.dual_dro_set = dual_dro_set
+        self.dual_set_var = dual_dro_var
         
         
+    def check_dro_feasibility(self, var_values, tolerance):
+        '''
+        Check feasibility of the set
+        Args:
+            var_values (collection of floats): Current value of the variables.
+            tolerance (float): Feasibility tolerance.
+        Return:
+            status (bool): True is current point is feasible, False o.w.
+            most_violated (int): index of the most volated inequality
+            max_violation (float): violation of the constraint (value of the function)
+        '''
+        assert tolerance >=0, 'Feasibility tolerance must be positive.'
+        assert type(var_values) == type(self.dual_set_var), 'Invalid format of the variables'
+        most_violated = None
+        max_violation = tolerance
+        for (i,f) in enumerate(self.dual_dro_set):
+            f_val = f(var_values, 0)
+            if f_val>max_violation:
+                max_violation = f_val
+                most_violated = i
         
+        if most_violated!=None:
+            return False, most_violated, max_violation
+        else:
+            return True, None, 0
+    
+    def refine_set(self,var_values, vars,  g_func, g_val):
+        '''
+        Generate a valid inequality that refines the set
+        Args:
+            var_values (collection of floats): Current value of the variables.
+            vars (collection of GRBVar): Variables of the model.
+            g_func (func): Function associated to the most violated inequality.
+            g_val (float): current value of the function
+        Return:
+            cut (LinExpr): A linear expression of the cut. 
+        '''
+        
+        sub_gradient = self.dual_dro_set[g_func](var_values, 1)
+        
+        cut_intercept = 0 #  For 2 norm the intercept is zero! g_val - quicksum(sub_gradient[i]*var_values[i] for i in range(len(vars)))
+        cut_lhs = quicksum(sub_gradient[i]*vars[i] for i in range(len(vars))) + cut_intercept
+        return cut_lhs
+        
+
+
+
+
+
+
 '''
 Distributionaly robust classes
 '''
@@ -327,8 +463,8 @@ class DistRobust(AbstracRiskMeasure):
     def modify_stage_problem(self,  sp,  model, n_outcomes):
         model.setObjective(sp.cx + sp.oracle.sum())
 
-
-
+    def forward_pass_updates(self, *args, **kwargs):
+        pass    
 
 
 class DistRobusInnerSolver(ABC):
@@ -351,6 +487,7 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
     def build_model(self, q, DUS_radius, set_type):
         m = Model('DRO_solver')
         m.params.OutputFlag = 0 
+        #m.params.FeasibilityTol = 1E-9
         p = m.addVars(len(q) , lb = 0, ub = 1, obj=1, vtype=GRB.CONTINUOUS, name='p')
         m.update()
         m.addConstr(p.sum(), GRB.EQUAL, 1, 'prob')
