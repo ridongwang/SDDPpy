@@ -49,8 +49,8 @@ options['sim_iter'] = 1000
 options['outputlevel']  = 2
 options['lines_freq']  = 1
 options['n_sample_paths'] = 1
-options['grb_threads'] = 1
-options['multicut'] = True
+options['grb_threads'] = 4
+options['multicut'] = False
 
 
 def gurobiStatusCodeToStr( intstatus ):
