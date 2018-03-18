@@ -390,6 +390,7 @@ class DistRobust(AbstracRiskMeasure):
         '''
         zs = np.array([soo[i]['objval'] for i in range(len(srv.outcomes))])
         p = self.inner_solver.compute_worst_case_distribution(zs)
+        #p = srv.p
         self._wors_case_dist = p
         #=======================================================================
         # pi_bar = {}

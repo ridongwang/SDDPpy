@@ -162,7 +162,7 @@ class StageProblem():
                 self.model.write('subprob%i.mps' % self.stage)
             if forwardpass == True:
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
-                output['risk_measure_info'] = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-10)
+                output['risk_measure_info'] = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
