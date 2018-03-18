@@ -71,13 +71,15 @@ class SDDP(object):
             
             
             #assert sp_output['status'] == cs.SP_OPTIMAL, "Problem at stage %i is %s" %(i,sp_output['status'] )
-            if sp_output['status'] not in [cs.SP_OPTIMAL, cs.SP_UNKNOWN]:
+            if sp_output['status'] != cs.SP_OPTIMAL:
                 for ss in sample_path: print(ss);
                 print('GRB STATUS %i' %(sp.model.status))
                 sp.model.write('%s%i_.lp' %(sp_output['status'], i))
                 sp.model.computeIIS()
                 sp.model.write("model.ilp")
                 raise not_optimal_sp('A stage %i problem was not optimal' %(i))
+            
+            sp_output['risk_measure_info'] 
             fp_out_states.append(sp_output['out_state'])
             if simulation and alg_options['outputlevel']>=3:
                     sp.print_stage_res_summary()
@@ -175,17 +177,16 @@ class SDDP(object):
               %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Wall time'))
         sddp_log.info('==========================================================================================')
         
-    def iteration_update(self,fp_time, bp_time, force_print = False):
+    def iteration_update(self,fp_time, bp_time, force_print = False, additional_msg = '' ):
         self.ub = np.mean(self.upper_bounds)
         self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
         if (alg_options['outputlevel']>=2 and self.pass_iteration % alg_options['lines_freq'] == 0 and force_print==False):
             elapsed_time = time.time() - self.ini_time
-            sddp_log.info('%3i %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
-                  %(self.pass_iteration, self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
+            sddp_log.info('%4i %15.5e %12.2f %15s' %(self.pass_iteration, self.lb, elapsed_time, additional_msg))
         if  force_print:
             elapsed_time = time.time() - self.ini_time
             sddp_log.info('==========================================================================================')
-            sddp_log.info('%3s %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
+            sddp_log.info('%4s %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
                   %("Sim%i" %(alg_options['sim_iter']) , self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
     def termination(self):
         if self.pass_iteration >= alg_options['max_iter']-1:
