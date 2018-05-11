@@ -22,17 +22,17 @@ class StageProblem():
     '''
 
 
-    def __init__(self, stage, model_builder, last_stage=False, risk_measure = Expectation(), multicut = False, num_outcomes=0 ):
+    def __init__(self, stage, model_builder, next_stage_rnd_vector, last_stage=False, risk_measure = Expectation(), multicut = False):
         '''
         Constructor
         
         Args:
             stage(int): Stage of the model
             model_builder(func): A function that build the stage model (GRBModel)
+            next_stage_rnd_vector (StageRandomVector): Random vector that characterizes realizations in the next stage.
             last_stage (bool): Boolean flag indicating if this stage problem is the last one.
             risk_measure (AbstractRiskMeasure): A risk measure object to form the cuts.
             multicut (bool): Boolean flag indicating weather to use multicut or single cut.
-            num_outcomes (int): Number of outcomes in the next stage.
         '''
         self.stage = stage
         self._last_stage = last_stage 
@@ -57,17 +57,18 @@ class StageProblem():
         #self.model.params.FeasibilityTol = 1E-9
         
         
-        # Add oracle var and include it in the objective
+        # Add oracle var(s) and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage == False:
+            num_outcomes = next_stage_rnd_vector.outcomes_dim 
             if multicut == False: #Gen single cut variable
                 self.oracle = self.model.addVars(1,lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
-                self.oracle = self.model.addVars(num_outcomes, lb=-1E5, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(num_outcomes, lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             
-            risk_measure.modify_stage_problem(self, self.model, num_outcomes)
+            risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
               
                 
         
@@ -97,7 +98,7 @@ class StageProblem():
            
                 
      
-    def solve(self, in_state_vals=None, random_realization=None, forwardpass = False, random_container=None, sample_path = None):   
+    def solve(self, in_state_vals=None, random_realization=None, forwardpass = False, random_container=None, sample_path = None, num_cuts = 0):   
         '''
         Solves a stage problem given the state variables of the previous stage
         Args:
@@ -161,8 +162,15 @@ class StageProblem():
                 self.model.optimize()
                 self.model.write('subprob%i.mps' % self.stage)
             if forwardpass == True:
+                resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
+                output['risk_measure_info'] = violation
+                if resolve == True and self.stage<=0 and num_cuts > 50:
+                    #print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
+                    return self.solve(in_state_vals, random_realization, forwardpass, random_container, sample_path, num_cuts)
+                #if resolve == True and self.stage<=3:
+                #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
-                output['risk_measure_info'] = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
+                
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
@@ -315,7 +323,7 @@ class StageProblem():
     
     def get_stage_objective_value(self):
         '''
-        returns the stage cost value
+        Returns the stage cost value
         '''
         try:
             return self.cx.getValue()
@@ -327,7 +335,7 @@ class StageProblem():
             
     
     def __repr__(self):
-        return "SP%i: #cuts:%i" %(self.stage,len(self.cut_pool.pool))
+        return "SP(%i): #cuts:%i" %(self.stage,len(self.cut_pool.pool))
 
 class MathProgStats:
     '''

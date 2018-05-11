@@ -3,12 +3,18 @@ Created on Nov 17, 2017
 
 @author: dduque
 '''
-from CutSharing.MathProgs import StageProblem,not_optimal_sp
-import CutSharing as cs
-import numpy as np
-import time
 import logging
+import time
+
+import CutSharing as cs
+from CutSharing.MathProgs import StageProblem, not_optimal_sp
+
+from CutSharing.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen
+
 from CutSharing.RiskMeasures import *
+from OutputAnalysis.SimulationAnalysis import SimResult
+
+
 sddp_log = cs.logger
 
 alg_options = cs.alg_options()
@@ -27,14 +33,16 @@ class SDDP(object):
         self.random_container = random_builder()
         self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
         
-        
-        self.random_container.preprocess_randomness()
+        self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params}
         
         self.lb = None
         self.ub = float('inf')
         self.upper_bounds = [] 
         self.pass_iteration = 0
         self.num_cuts = 0
+        
+        #Attribute to keep track of the maximum violation when using cutting planes. 
+        self.cutting_plane_max_vio = None
 
         
     def createStageProblems(self, T, model_builder, risk_measure, **risk_measure_params):
@@ -50,8 +58,8 @@ class SDDP(object):
         '''
         for i in range(T):
             sp_risk_measure = risk_measure(**risk_measure_params)
-            n_outcomes = self.random_container[i+1].outcomes_dim if i<T-1 else 0
-            sp = StageProblem(i,model_builder, i==T-1, risk_measure= sp_risk_measure, multicut = alg_options['multicut'], num_outcomes=n_outcomes)
+            next_stage_rnd_vector = self.random_container[i+1] if i<T-1 else None
+            sp = StageProblem(i,model_builder, next_stage_rnd_vector,  i==T-1, risk_measure= sp_risk_measure, multicut = alg_options['multicut'])
             self.stage_problems.append(sp)
 
     def forwardpass(self, sample_path , simulation = False):
@@ -66,7 +74,8 @@ class SDDP(object):
                                  random_realization= sample_path[i], 
                                  forwardpass = True, 
                                  random_container=self.random_container, 
-                                 sample_path = sample_path)
+                                 sample_path = sample_path,
+                                 num_cuts = self.num_cuts)
             
             
             
@@ -79,8 +88,12 @@ class SDDP(object):
                 sp.model.write("model.ilp")
                 raise not_optimal_sp('A stage %i problem was not optimal' %(i))
             
-            sp_output['risk_measure_info'] 
+            
             fp_out_states.append(sp_output['out_state'])
+            
+            '''
+            IO and stats updates
+            '''
             if simulation and alg_options['outputlevel']>=3:
                     sp.print_stage_res_summary()
             if i == 0:       
@@ -92,6 +105,9 @@ class SDDP(object):
                                                          data_out_time= sp_output['datamanagement'],
                                                          num_lp_ctrs=sp.model.num_constrs,
                                                          iteration=self.pass_iteration)
+            if sp_output['risk_measure_info']!=None and i==0:
+                self.cutting_plane_max_vio =  sp_output['risk_measure_info']
+                
         self.upper_bounds.append(fp_ub_value)
         if simulation and alg_options['outputlevel']>=3:
             print('---------------------------')
@@ -172,31 +188,40 @@ class SDDP(object):
         sddp_log.info('Number of passes: %i:' %(alg_options['max_iter']))
         sddp_log.info('Sample paths per pass: %i:' %(alg_options['n_sample_paths']))
         sddp_log.info('Multicut: %s' %(str(alg_options['multicut'])))
-        sddp_log.info('==========================================================================================')
-        sddp_log.info('%3s %15s %15s %15s %12s %12s %12s'
-              %('Pass', 'LB', 'UB^','UB_hw', 'F time', 'B time', 'Wall time'))
-        sddp_log.info('==========================================================================================')
         
-    def iteration_update(self,fp_time, bp_time, force_print = False, additional_msg = '' ):
-        self.ub = np.mean(self.upper_bounds)
-        self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
-        if (alg_options['outputlevel']>=2 and self.pass_iteration % alg_options['lines_freq'] == 0 and force_print==False):
+        if alg_options['outputlevel']>=2:
+            sddp_log.info('==============================================================================================')
+            sddp_log.info('%4s %15s %15s %15s %12s %15s'
+                  %('Pass', 'LB', 'iUB', 'iHW', 'Wall time', 'Other'))
+            sddp_log.info('==============================================================================================')
+        
+    
+    def iteration_update(self,fp_time, bp_time, force_print = False, last_iter = False):
+        if (alg_options['outputlevel']>=2 and (self.pass_iteration % alg_options['lines_freq'] == 0 or last_iter==True) and  force_print==False):
             elapsed_time = time.time() - self.ini_time
-            sddp_log.info('%4i %15.5e %12.2f %15s' %(self.pass_iteration, self.lb, elapsed_time, additional_msg))
+            additional_msg = '' 
+            if self.cutting_plane_max_vio !=None:
+                additional_msg = '%15.5e' %(self.cutting_plane_max_vio)
+            sddp_log.info('%4i %15.5e %15.5e %15.5e %15.2f %15s' %(self.pass_iteration, self.lb, self.ub, self.ub_hw, elapsed_time, additional_msg))
         if  force_print:
+            sddp_log.info('==============================================================================================')
+            sddp_log.info('%4s %15s %15s %15s %12s %12s %12s'
+                          %('Pass', 'LB', 'iUB','iHW', 'F time', 'B time', 'Wall time'))
             elapsed_time = time.time() - self.ini_time
-            sddp_log.info('==========================================================================================')
             sddp_log.info('%4s %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
-                  %("Sim%i" %(alg_options['sim_iter']) , self.lb, self.ub, self.ub_hw,fp_time, bp_time, elapsed_time))
+                  %("Sim%i" %(alg_options['sim_iter']) , self.lb, self.ub, self.ub_hw, fp_time, bp_time, elapsed_time))
+            sddp_log.info('==============================================================================================')
+        
     def termination(self):
-        if self.pass_iteration >= alg_options['max_iter']-1:
+        if self.pass_iteration >= alg_options['max_iter']:
             return True
         if self.pass_iteration > 0:
-            if (self.ub - self.ub_hw) < self.lb  < (self.ub +self.ub_hw):
-                return False                
+            if self.lb > self.ub + self.ub_hw:
+                return True             
         return False
     
     def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default'):
+        reset_all_rnd_gen()
         lbs = []
         self.ini_time = time.time()
         self.init_out(instance_name)
@@ -208,13 +233,17 @@ class SDDP(object):
             f_timer = time.time()
             sample_paths = []
             fp_outputs = [] 
-            self.upper_bounds = [] #rest upper bounds
+            
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = None
                 if pre_sample_paths == None:
-                    s_path = self.random_container.getSamplePath(ev = ev)
+                    s_path = self.random_container.getSamplePath(alg_rnd_gen, ev = ev)
                 else:
                     s_path = pre_sample_paths.pop()
+                #===============================================================
+                # if self.pass_iteration==2:
+                #     print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
+                #===============================================================
                 output_fp = self.forwardpass(sample_path = s_path)
                 sample_paths.append(s_path)
                 fp_outputs.append(output_fp)
@@ -222,12 +251,19 @@ class SDDP(object):
             self.stats.updateStats(cs.FORWARD_PASS, total_time = fp_time)
             
             '''
+            Compute statistical upper bounds
+            '''
+            if self.pass_iteration % 20 == 0:
+                self.compute_statistical_bound(alg_options['in_sample_ub'])
+        
+            
+            '''
             Stopping criteria
             '''
             lbs.append(self.lb)
-            self.iteration_update(fp_time, bp_time)
-            if self.termination():
-                termination = True
+            termination =  self.termination()
+            self.iteration_update(fp_time, bp_time, last_iter = termination)
+            if termination:
                 break
             
             b_timer = time.time()
@@ -241,23 +277,45 @@ class SDDP(object):
             self.pass_iteration+=1
             
             
-        self.stats.print_report(instance_name, self.stage_problems)
+        #self.stats.print_report(instance_name, self.stage_problems)
         return(lbs)
     
     
-    def simulate_policy(self, n_samples):
+    def simulate_policy(self, n_samples, out_of_sample_random_container):
         np.random.seed(1111)
         self.upper_bounds = []
         for i in range(0,n_samples):
-            s_path =  self.random_container.getSamplePath()
+            s_path =  out_of_sample_random_container.getSamplePath(out_sample_gen)
+            #===================================================================
+            # if i<=2:
+            #         print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
+            #===================================================================
             if alg_options['outputlevel']>=3:
                 sddp_log.debug('Simulation %i:' %(i))
                 sddp_log.debug(s_path)
             
             output_fp = self.forwardpass(sample_path = s_path, simulation=True)
+        self.ub = np.mean(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/len(self.upper_bounds)
+        sr = SimResult(self.instance, self.upper_bounds.copy())
+        if alg_options['outputlevel']>=1:
+            self.iteration_update(0, 0, force_print = True)
+        return sr
+    
+    def compute_statistical_bound(self, n_samples):
+        self.upper_bounds = []  # rest bound
+        for i in range(0,n_samples):
+            s_path =  self.random_container.getSamplePath(in_sample_gen)
+            if alg_options['outputlevel']>=3:
+                sddp_log.debug('Simulation %i:' %(i))
+                sddp_log.debug(s_path)
+            output_fp = self.forwardpass(sample_path = s_path, simulation=True)
+        
+        self.ub = np.mean(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/len(self.upper_bounds)
             
-        self.iteration_update(0, 0, force_print = True)
 
+        
 
         
 class Stats:

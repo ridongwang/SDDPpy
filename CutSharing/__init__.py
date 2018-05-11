@@ -51,6 +51,7 @@ options['lines_freq']  = 1
 options['n_sample_paths'] = 1
 options['grb_threads'] = 4
 options['multicut'] = True
+options['in_sample_ub'] = 100
 
 
 def gurobiStatusCodeToStr( intstatus ):
