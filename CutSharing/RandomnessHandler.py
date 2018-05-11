@@ -6,7 +6,6 @@ Created on Nov 19, 2017
 import copy
 import numpy as np
 import scipy.sparse as sp
-np.random.seed(0)
 
 #NOT USED FOR THE MOMENT
 class SamplePath():
@@ -42,7 +41,7 @@ class RandomContainer:
         '''
         self.stage_vectors.append(stageRndVector)
 
-    def getSamplePath(self, ev = False):
+    def getSamplePath(self,rnd_stream, ev = False):
         '''
         Generates a sample path. This is, a list of dictionaries
         where each dictionary corresponds to a different stage and 
@@ -62,7 +61,7 @@ class RandomContainer:
             partial_sample_path = [srv.get_ev_vector(partial_sample_path) for srv in self.stage_vectors]
         else:
             for srv in self.stage_vectors:
-                stage_sample = srv.getSample(partial_sample_path) 
+                stage_sample = srv.getSample(partial_sample_path,rnd_stream) 
                 partial_sample_path.append(stage_sample)
         return partial_sample_path
     
@@ -162,20 +161,20 @@ class StageRandomVector:
         assert len(newp)==len(self.outcomes)
         self.p = np.array(newp)
     
-    def getSample(self, partial_sample_path):
+    def getSample(self, partial_sample_path, rnd_gen):
         '''
         Generates a sample for the associate stage random vector. 
         It receives the partial sample path in case the random vector
         is stagewise dependent.
         Attributes:
             partial_sample_path (list of dict): A list of the realizations
-                of the previous stages. The dictonary has the same form as
+                of the previous stages. The dictionary has the same form as
                 the method output.
         Return:
             satage_sample (dict of (str-float)): A dictionary containing the
                 realized value of each random element.
         '''
-        lucky_outcome = np.random.choice([i for i in range(0,self.outcomes_dim)], p = self.p)
+        lucky_outcome = rnd_gen.choice([i for i in range(0,self.outcomes_dim)], p = self.p)
         stage_sample = {e.name:
                         e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
         return stage_sample
@@ -200,7 +199,20 @@ class StageRandomVector:
                     
             return outcomes_copy
     
-    
+    def get_sorted_outcome(self, outcome_index):
+        '''
+        Retrieve a specific outcome and returned as a
+        vector according the the vector_order mapping.
+        Args:
+            outcome_index (int): index of the outcome of interest
+        Return:
+            xi (ndarray): outcome in vector form
+        '''
+        xi = np.zeros(len(self.elements))
+        for ele in self.vector_order:
+            xi[self.vector_order[ele]] = self.outcomes[outcome_index][ele]
+        return xi
+        
     def preproces_randomness(self):
         vec_dim = len(self.elements)
         R_matrices = [] #Auto reg matrices
@@ -330,7 +342,6 @@ class RandomElement:
         '''
         generalized_outcomes = self.compute_outcomes(dependencies)
         return generalized_outcomes[p]
-        #return np.random.choice(generalized_outcomes, p=p)
     
 def AR1_depedency(rnd_ele , realizations):
     assert type(realizations) == dict, 'Realizations are not in the expected form.'

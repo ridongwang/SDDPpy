@@ -43,7 +43,9 @@ class AbstracRiskMeasure(ABC):
     
     @abstractmethod
     def forward_pass_updates(self, *args, **kwargs):
-        pass
+        'Default is False for sub resolve and 0 for constraint violations'
+        return False, 0 
+    
 
 class Expectation(AbstracRiskMeasure):
     
@@ -119,8 +121,132 @@ class Expectation(AbstracRiskMeasure):
     def modify_stage_problem(self, sp,  model, n_outcomes):
         model.setObjective(sp.cx + sp.oracle.sum())
     def forward_pass_updates(self, *args, **kwargs):
-        pass    
+        'Default is False for sub resolve and 0 for constraint violations'
+        return False, 0 
 
+class DistRobustWasserstein(AbstracRiskMeasure):
+    '''
+    Distributional uncertainty set defined by the Wasserstein metric
+    '''
+    def __init__(self, norm = 1, radius = 1, primal_dus = 'ALL', data_random_container = None):
+        super().__init__()
+        self.norm = norm
+        self.radius = radius
+        self.primal_dus = primal_dus
+        if self.primal_dus  != 'ALL':
+            assert isinstance(self.primal_dus, int) , 'Primal_DUS parameters should specify an integer'+ \
+            'value to determine the number of constraints to be added in the primal representation of the DUS'
+        self.data_random_container = data_random_container
+    
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
+        '''
+        Computes expected dual variables for the single cut version
+        and then the gradient.
+        
+        Args:
+            sp (StageProblem): current subproblem where the cut will be added.
+            sp_nex (StageProblem): subproblem for the next stage.
+            srv (StageRandomVector): Random vector of the next stage
+            soo (List of dict): A list of outputs of all the subproblems descendants.
+            spfs (dict (str-float)): Values for the states of the current stage computed 
+                in the forward pass.
+        Return 
+            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
+                the list contains just one element.
+            cut_gradiend_coeff(list[dict]):
+        '''
+        multicut = sp.multicut
+        pi_bar = None
+        cut_gradiend_coeff = None
+        
+        if multicut == False: #single cut
+            raise 'Risk measure does not support single cut'
+        else:           #Multicut
+            pi_bar = [{} for _ in srv.outcomes]
+            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
+            for ctr in sp_next.ctrsForDuals:
+                for (i,o) in enumerate(srv.outcomes):
+                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
+            
+            for (c,vi) in sp_next.ctrInStateMatrix:
+                vo = sp_next.get_out_state_var(vi)
+                for (i,o) in enumerate(srv.outcomes):
+                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
+            
+        self._current_cut_gradient = cut_gradiend_coeff
+        return pi_bar, cut_gradiend_coeff
+    
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+        '''
+        Computes cut intercept(s) 
+        
+        Args: (as in cut gradient method)
+        Returns:
+            cut_intercepts (list of int): List of intercep(s) of the cut(s).
+        '''
+        cut_gradiend_coeff = self._current_cut_gradient
+        cut_intercepts = None
+        if sp.multicut == False:
+            cut_intercepts = [sum(soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+        else:
+            cut_intercepts = [0  for _ in srv.outcomes]
+            for (i,o) in enumerate(srv.outcomes):
+                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
+        return cut_intercepts
+    
+    def update_cut_intercept(self):
+        pass            
+    
+    def modify_stage_problem(self, sp,  model, next_stage_rnd_vector):
+        '''
+        Modify the stage problem model to incorporate the DRO
+        risk measure as dual variables of the inner problem.
+        
+        Args:
+            sp (StageProblem): Stage problem to modify.
+            model (GRBModel): Model object associate to the stage.
+            next_stage_rnd_vector(StageRandomVector): random vector for the following stage.
+            
+        '''
+        assert sp.multicut, 'This risk measure implementation is only compatible with multicut setting.'
+        t = sp.stage
+        if sp._last_stage:
+            return
+        
+        nsrv_org = next_stage_rnd_vector #Origin points in the support for the transport problem
+        if self.data_random_container !=None:
+            nsrv_org = self.data_random_container[t+1]
+    
+        nsrv_des = next_stage_rnd_vector  #Destination points in the support for the transport problem
+        
+       
+        n_outcomes_org  = nsrv_org.outcomes_dim
+        n_outcomes_des  = nsrv_des.outcomes_dim
+        
+        #print(n_outcomes_org , '   ---   ' ,n_outcomes_des)
+        #lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+        gamma_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='gamma[%i]' %(t))
+        nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
+        model.update()
+        #Update objective function
+        new_objective = sp.cx  + self.radius*gamma_var + quicksum(nsrv_org.p[i]*nu_var[i] for i in range(n_outcomes_org))
+        model.setObjective(new_objective, GRB.MINIMIZE)
+        
+        #Add extra constraints associated to the primal representation of the uncertainty set
+        for i in range(n_outcomes_org):
+            #WARNING: This implementation assumes that the distance between outcomes is a valid metric
+            xi_i = nsrv_org.get_sorted_outcome(i)
+            for j in range(n_outcomes_des):
+                xi_j = nsrv_des.get_sorted_outcome(j)
+                d_ij = np.linalg.norm(xi_i-xi_j, self.norm)
+                model.addConstr( (d_ij*gamma_var + nu_var[i] - sp.oracle[j]>= 0), 'dro_dual_ctr[%i%i]'%(i,j))
+            model.update()
+        
+        
+    
+    def forward_pass_updates(self, *args, **kwargs):
+        'Default is False for sub resolve and 0 for constraint violations'
+        return False, 0 
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
@@ -193,7 +319,7 @@ class DistRobustDuality(AbstracRiskMeasure):
     def update_cut_intercept(self):
         pass
     
-    def modify_stage_problem(self, sp,  model, n_outcomes):
+    def modify_stage_problem(self, sp,  model, next_stage_rnd_vector):
         '''
         Modify the stage problem model to incorporate the DRO
         risk measure as dual variables of the inner problem.
@@ -209,7 +335,7 @@ class DistRobustDuality(AbstracRiskMeasure):
         if sp._last_stage:
             return
         
-        
+        n_outcomes  = next_stage_rnd_vector.outcomes_dim
         set_type = self._dro_params['set_type']
         if set_type in [DistRobustDuality.L1_NORM, DistRobustDuality.L2_NORM]:
             r = self._dro_params['DUS_radius']
@@ -253,8 +379,7 @@ class DistRobustDuality(AbstracRiskMeasure):
                             raise 'Order of the function is either 0 or 1.'
                     var_names = [nu_var[v].VarName for v in nu_var]
                     var_names.append(gamma_var.VarName)
-                    self.cuts_handler = DRO_CuttingPlanes([g] , var_names)
-                    print(sp)    
+                    self.cuts_handler = DRO_CuttingPlanes([g] , var_names)   
                 elif set_type == DistRobustDuality.L1_NORM:
                     self.cutting_planes_approx = False # There is nothing to approximate
                 
@@ -266,6 +391,11 @@ class DistRobustDuality(AbstracRiskMeasure):
         '''
         Runs updates associated to the risk measure during the forward pass
         and after the model is optimized.
+        
+        Return:
+            Tuple with the following information:
+                A boolean flag indicating if the subproblem needs to be re-solved
+                A numeric value for the constraint violation
         '''
         
         tol = kwargs['fea_tol']
@@ -280,8 +410,13 @@ class DistRobustDuality(AbstracRiskMeasure):
                 #print(sp.stage, '__>' , vio, cut_lhs)
                 sp.model.addConstr(cut_lhs, GRB.LESS_EQUAL, 0, 'cut_dro_%i' %(self.cut_index))
                 self.cut_index =  self.cut_index + 1
-                return vio
-        return 0
+                resolve = False
+                if vio >tol:
+                    resolve =  True
+                return resolve, vio
+            return False, vio
+        return False, 0
+            
 
 class DRO_CuttingPlanes():
     '''
@@ -461,11 +596,12 @@ class DistRobust(AbstracRiskMeasure):
         
     def update_cut_intercept(self):
         pass  
-    def modify_stage_problem(self,  sp,  model, n_outcomes):
+    def modify_stage_problem(self,  sp,  model, next_stage_rnd_vector):
         model.setObjective(sp.cx + sp.oracle.sum())
 
     def forward_pass_updates(self, *args, **kwargs):
-        pass    
+        'Default is False for sub resolve and 0 for constraint violations'
+        return False, 0   
 
 
 class DistRobusInnerSolver(ABC):
@@ -477,6 +613,41 @@ class DistRobusInnerSolver(ABC):
     def compute_worst_case_distribution(self):
         pass
 
+class InnerDROSolverX2(DistRobusInnerSolver):
+    def __init__(self, nominal_p, DUS_radius, set_type):
+        self.nominal_p = nominal_p
+        self.uncertanty_radius = DUS_radius
+    
+    def compute_worst_case_distribution(self, outcomes_objs):
+        '''
+        Implements Philpott et al 2017 algorithm to compute the worst case probability distribution. 
+        '''
+        m = len(outcomes_objs)
+    
+        r = self.uncertanty_radius
+        sorted_inidices = sorted(range(m), key=lambda k: outcomes_objs[k])
+        for k in range(0, m-1):
+            p = np.zeros(m)
+            z_bar = sum(outcomes_objs[sorted_inidices[i]] for i in range(k,m))/(m-k)
+            s = np.sqrt(sum(outcomes_objs[sorted_inidices[i]]**2 - z_bar**2 for i in range(k,m))/(m-k))
+            
+            broke = False
+            for i in range(k,m):
+                normalized = (outcomes_objs[sorted_inidices[i]] - z_bar)/s
+                if np.isnan(normalized):
+                    broke = True
+                    break
+                p[sorted_inidices[i]] = (1/(m-k)) + np.sqrt((r**2)*(m-k) - k/m)*normalized/(m-k)
+            if p[sorted_inidices[k]]>=0 and broke==False:
+                assert np.abs(sum(p)-1)<=cs.ZERO_TOL, 'Sum of scenario probs exceeds 1.'
+                return p
+
+                
+        p = np.zeros(m)
+        p[sorted_inidices[-1]] = 1
+        return p
+    
+    
 class PhilpottInnerDROSolver(DistRobusInnerSolver):
     def __init__(self, nominal_p, DUS_radius, set_type):
         self.nominal_p = nominal_p
@@ -484,6 +655,7 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         self._one_time_warning = True
         
         self.model, self.p_var = self.build_model(nominal_p, DUS_radius, set_type)
+    
     
     def build_model(self, q, DUS_radius, set_type):
         m = Model('DRO_solver')
@@ -502,6 +674,9 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         m.setObjective(m.getObjective(), GRB.MAXIMIZE)
         m.update()
         return m, p
+    
+    
+    
     def compute_worst_case_distribution(self, outcomes_objs):
         '''
         Compute the worst cas probability distribution for a particular stage
