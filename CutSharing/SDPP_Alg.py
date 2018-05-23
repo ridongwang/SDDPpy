@@ -23,6 +23,7 @@ class SDDP(object):
     '''
     classdocs
     '''
+    
 
     def __init__(self, T, model_builder, random_builder, risk_measure = Expectation, **risk_measure_params):
         '''
@@ -34,6 +35,7 @@ class SDDP(object):
         self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
         
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params}
+        
         
         self.lb = None
         self.ub = float('inf')
@@ -62,10 +64,14 @@ class SDDP(object):
             sp = StageProblem(i,model_builder, next_stage_rnd_vector,  i==T-1, risk_measure= sp_risk_measure, multicut = alg_options['multicut'])
             self.stage_problems.append(sp)
 
-    def forwardpass(self, sample_path , simulation = False):
+    def forwardpass(self, sample_path, simulation = False):
         '''
-        Runs a forward pass given a sample path
+        Runs a forward pass given a sample path. If no sample pass is given,
+        a dynamic version of the forward pass method is invoked. 
         '''
+        if sample_path==None or len(sample_path)==0: #No sample path was given
+            return self.dynamic_forwardpass(sample_path, simulation)
+            
         fp_out_states = []
         fp_ub_value = 0
         for (i,sp) in enumerate(self.stage_problems):
@@ -77,17 +83,8 @@ class SDDP(object):
                                  sample_path = sample_path,
                                  num_cuts = self.num_cuts)
             
-            
-            
-            #assert sp_output['status'] == cs.SP_OPTIMAL, "Problem at stage %i is %s" %(i,sp_output['status'] )
             if sp_output['status'] != cs.SP_OPTIMAL:
-                for ss in sample_path: print(ss);
-                print('GRB STATUS %i' %(sp.model.status))
-                sp.model.write('%s%i_.lp' %(sp_output['status'], i))
-                sp.model.computeIIS()
-                sp.model.write("model.ilp")
-                raise not_optimal_sp('A stage %i problem was not optimal' %(i))
-            
+                self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
             
             fp_out_states.append(sp_output['out_state'])
             
@@ -112,7 +109,51 @@ class SDDP(object):
         if simulation and alg_options['outputlevel']>=3:
             print('---------------------------')
         return fp_out_states
+
+    def dynamic_forwardpass(self, sample_path, simulation = False):
+        '''
+        Runs a forward pass given a sample path
+        '''
+        fp_out_states = []
+        fp_ub_value = 0
+        for (i,sp) in enumerate(self.stage_problems):
+            in_state = fp_out_states[-1] if i>0 else  None
+            self.random_container.getStageSample(i, sample_path, alg_rnd_gen)
+            sp_output = sp.solve(in_state_vals = in_state, 
+                                 random_realization= sample_path[i], 
+                                 forwardpass = True, 
+                                 random_container=self.random_container, 
+                                 sample_path = sample_path,
+                                 num_cuts = self.num_cuts)
+            
+            if sp_output['status'] != cs.SP_OPTIMAL:
+                self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
+            
+            fp_out_states.append(sp_output['out_state'])
+            sp.risk_measure.forward_prob_update(i,self.random_container)   
+            '''
+            IO and stats updates
+            '''
+            if simulation and alg_options['outputlevel']>=3:
+                    sp.print_stage_res_summary()
+            if i == 0:       
+                self.lb = sp_output['objval']
+            fp_ub_value += sp.get_stage_objective_value()
+            self.stats.updateStats(cs.FORWARD_PASS, lp_time=sp_output['lptime'], 
+                                                         cut_update_time=sp_output['cutupdatetime'],
+                                                         model_update_time=sp_output['setuptime'],
+                                                         data_out_time= sp_output['datamanagement'],
+                                                         num_lp_ctrs=sp.model.num_constrs,
+                                                         iteration=self.pass_iteration)
+            if sp_output['risk_measure_info']!=None and i==0:
+                self.cutting_plane_max_vio =  sp_output['risk_measure_info']
+                
+        self.upper_bounds.append(fp_ub_value)
+        if simulation and alg_options['outputlevel']>=3:
+            print('---------------------------')
+        return fp_out_states
     
+        
     def backwardpass(self, forward_out_states = None,  sample_path = None, ev = False):
         '''
         Runs a backward pass given a sample path and the forward pass decision
@@ -216,11 +257,11 @@ class SDDP(object):
         if self.pass_iteration >= alg_options['max_iter']:
             return True
         if self.pass_iteration > 0:
-            if self.lb > self.ub + self.ub_hw:
+            if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:
                 return True             
         return False
     
-    def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default'):
+    def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default', dynamic_sampling = False):
         reset_all_rnd_gen()
         lbs = []
         self.ini_time = time.time()
@@ -236,14 +277,13 @@ class SDDP(object):
             
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = None
-                if pre_sample_paths == None:
+                if pre_sample_paths == None and dynamic_sampling == False:
                     s_path = self.random_container.getSamplePath(alg_rnd_gen, ev = ev)
-                else:
+                elif pre_sample_paths != None:
                     s_path = pre_sample_paths.pop()
-                #===============================================================
-                # if self.pass_iteration==2:
-                #     print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
-                #===============================================================
+                else:
+                    s_path = list()
+                
                 output_fp = self.forwardpass(sample_path = s_path)
                 sample_paths.append(s_path)
                 fp_outputs.append(output_fp)
@@ -253,7 +293,7 @@ class SDDP(object):
             '''
             Compute statistical upper bounds
             '''
-            if self.pass_iteration % 20 == 0:
+            if self.pass_iteration % 10 == 0:
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
         
             
@@ -296,13 +336,13 @@ class SDDP(object):
             
             output_fp = self.forwardpass(sample_path = s_path, simulation=True)
         self.ub = np.mean(self.upper_bounds)
-        self.ub_hw = 2*np.std(self.upper_bounds)/len(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
         sr = SimResult(self.instance, self.upper_bounds.copy())
         if alg_options['outputlevel']>=1:
             self.iteration_update(0, 0, force_print = True)
         return sr
     
-    def compute_statistical_bound(self, n_samples):
+    def compute_statistical_bound1(self, n_samples):
         self.upper_bounds = []  # rest bound
         for i in range(0,n_samples):
             s_path =  self.random_container.getSamplePath(in_sample_gen)
@@ -312,11 +352,51 @@ class SDDP(object):
             output_fp = self.forwardpass(sample_path = s_path, simulation=True)
         
         self.ub = np.mean(self.upper_bounds)
-        self.ub_hw = 2*np.std(self.upper_bounds)/len(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
             
-
+    def compute_statistical_bound(self, n_samples):
+        #=======================================================================
+        # if True:
+        #     self.ub = 1
+        #     self.ub_hw = 1
+        #     return
+        #=======================================================================
+        self.upper_bounds = []  # rest bound
+        for k in range(0,n_samples):
+            fp_out_states = []
+            fp_ub_value = 0
+            sample_path = [] #partial sample path
+            for (t,sp) in enumerate(self.stage_problems):
+                self.random_container.getStageSample(t, sample_path, in_sample_gen)
+                in_state = fp_out_states[-1] if t>0 else  None
+                sp_output = sp.solve(in_state_vals = in_state, 
+                                     random_realization= sample_path[t], 
+                                     forwardpass = True, 
+                                     random_container=self.random_container, 
+                                     sample_path = sample_path,
+                                     num_cuts = self.num_cuts)
+                if sp_output['status'] != cs.SP_OPTIMAL:
+                    self.debrief_infeasible_sub(sample_path, t,sp_output,sp)
+                
+                fp_out_states.append(sp_output['out_state'])
+                fp_ub_value += sp.get_stage_objective_value()
+                
+                sp.risk_measure.forward_prob_update(t,self.random_container)   
+            self.upper_bounds.append(fp_ub_value)     
+        self.ub = np.mean(self.upper_bounds)
+        self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
+        self.random_container.reset_to_nominal_dist()
         
-
+        
+        
+    def debrief_infeasible_sub(self, sample_path, t,sp_output,sp): 
+        for ss in sample_path: 
+            print(ss)
+            print('GRB STATUS %i' %(sp.model.status))
+            sp.model.write('%s%i_.lp' %(sp_output['status'], t))
+            sp.model.computeIIS()
+            sp.model.write("model.ilp")
+            raise not_optimal_sp('A stage %i problem was not optimal' %(t))
         
 class Stats:
     

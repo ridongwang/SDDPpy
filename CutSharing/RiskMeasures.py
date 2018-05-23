@@ -127,6 +127,15 @@ class Expectation(AbstracRiskMeasure):
 class DistRobustWasserstein(AbstracRiskMeasure):
     '''
     Distributional uncertainty set defined by the Wasserstein metric
+    Attributes:
+        norm (int): norm degree to compute the distance between two random vectors
+        radius (float): length of the uncertainty set based on Wasserstein distance
+        primal_dus (int): If different from 'ALL', especifies the number of combinations
+            to be considered for every outcome in the origin side of the transportation problem.
+        data_random_container (RandomContainer): contains the randomness coming form data. It might be
+            the same as the random container used in the algorithm when the number of data points equal
+            the number of outcomes being considered. 
+        dro_ctrs (dic of GRBCtr): dictionary storing the constraints whose dual variables are the transportation plan.  
     '''
     def __init__(self, norm = 1, radius = 1, primal_dus = 'ALL', data_random_container = None):
         super().__init__()
@@ -137,6 +146,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             assert isinstance(self.primal_dus, int) , 'Primal_DUS parameters should specify an integer'+ \
             'value to determine the number of constraints to be added in the primal representation of the DUS'
         self.data_random_container = data_random_container
+        self.dro_ctrs = {} 
     
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
         '''
@@ -239,14 +249,41 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             for j in range(n_outcomes_des):
                 xi_j = nsrv_des.get_sorted_outcome(j)
                 d_ij = np.linalg.norm(xi_i-xi_j, self.norm)
-                model.addConstr( (d_ij*gamma_var + nu_var[i] - sp.oracle[j]>= 0), 'dro_dual_ctr[%i%i]'%(i,j))
+                crt = model.addConstr( (d_ij*gamma_var + nu_var[i] - sp.oracle[j]>= 0), 'dro_dual_ctr[%i%i]'%(i,j))
+                self.dro_ctrs[(i,j)]= crt
             model.update()
         
         
     
     def forward_pass_updates(self, *args, **kwargs):
-        'Default is False for sub resolve and 0 for constraint violations'
         return False, 0 
+    
+    def forward_prob_update (self, t, rnd_container ):
+        '''Updates the probability distribution for the descendants of the current stage.
+        The update sets the probability use to sample new outcomes to the worst case prob
+        distribution for the particular sample path being explored.
+        Args:
+            t (int): current stage (just solved in forward pass)
+            rnd_container (RandomContainer): object that contains all the randomness in the problem.
+            
+        This method modifies the probabilities of the random vector for stage t+1.
+        '''
+        if t  == len(rnd_container.stage_vectors)-1:
+            #Last stage needs no update
+            return 
+        desc_rnd_vec = rnd_container[t+1] #Descendent outcomes
+        p_w = np.zeros(desc_rnd_vec.outcomes_dim)
+        for (i,j) in self.dro_ctrs:
+            p_w[j]  += self.dro_ctrs[(i,j)].Pi
+        p_w = np.around(np.abs(p_w), 8)
+        p_w = p_w/p_w.sum()
+            
+        desc_rnd_vec.modifyOutcomesProbabilities(p_w)
+        #print(t, p_w)
+        
+        
+        
+    
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'

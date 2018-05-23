@@ -165,7 +165,7 @@ class StageProblem():
                 resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
                 output['risk_measure_info'] = violation
                 if resolve == True and self.stage<=0 and num_cuts > 50:
-                    #print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
+                    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
                     return self.solve(in_state_vals, random_realization, forwardpass, random_container, sample_path, num_cuts)
                 #if resolve == True and self.stage<=3:
                 #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))

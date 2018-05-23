@@ -188,7 +188,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [6]:#[2,3,5,10,20,30]:
+            for N_training in [60]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -229,7 +229,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 101
+                CutSharing.options['max_iter'] = 200
                 '''
                 Expected value risk measure
                 '''
@@ -246,23 +246,43 @@ if __name__ == '__main__':
                 sim_results_com = []
                 
                 '''
-                Wasserstein DUS Experiment 1
+                Wasserstein DUS Experiment 1 static sampling
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/10)
+                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/100)
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
-                for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,5]]:
-                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
-                    algo.run( instance_name=instance_name)
+                for rr in [b*(10**c) for c in [1] for b in [2]]:
                     print('Wasserstein r = %10.4e' %(rr))
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
+                    algo.run(instance_name=instance_name, dynamic_sampling=False)
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 sim_results_com.append(sim_results)
                 plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinNoise.pdf' %(instance_name))
+                
+                '''
+                Wasserstein DUS Experiment 1.5 dynamic sampling 
+                '''
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                #CutSharing.options['max_iter'] =10
+                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/100)
+                CutSharing.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                sim_results = list()
+                for rr in [b*(10**c) for c in [1] for b in [2]]:
+                    print('Wasserstein r = %10.4e' %(rr))
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
+                    algo.run(instance_name=instance_name, dynamic_sampling=True)
+                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_results.append(sim_result)
+                    del(algo)
+                sim_results_com.append(sim_results)
+                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinNoise.pdf' %(instance_name))
+                
                 
                 
                 '''
@@ -276,7 +296,7 @@ if __name__ == '__main__':
                 # CutSharing.options['multicut'] = True
                 # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
                 # sim_results = list()
-                # for rr in [b*(10**c) for c in [-4,-3,-2,-1,0,1,2,3,4,5] for b in [1]]: #-3,-2,-1,0,1,2
+                # for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,3,5,8]]:
                 #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
                 #     algo.run( instance_name=instance_name)
                 #     print('Wasserstein r = %10.4e' %(rr))
