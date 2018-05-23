@@ -65,7 +65,17 @@ class RandomContainer:
                 partial_sample_path.append(stage_sample)
         return partial_sample_path
     
-   
+    def getStageSample(self, t, partial_sample_path, rnd_stream):
+        '''
+        Generates a sample for a given stage and appends it to a partial path
+        **** Modifies the partial_sample_path given as a parameter ****
+        Args:
+            t (int): stage number to be sample.
+            partial_sample_path (list of dict): a sample path up to stage t-1.
+        '''
+        srv = self.stage_vectors[t]
+        stage_sample = srv.getSample(partial_sample_path, rnd_stream) 
+        partial_sample_path.append(stage_sample)
         
         
     def preprocess_randomness(self):
@@ -92,7 +102,9 @@ class RandomContainer:
             past.pop()
             
             
-            
+    def reset_to_nominal_dist(self):
+        for srv in self.stage_vectors:
+            srv.reset_to_nominal_dist()        
         
     
     #Aux methods to make the container iterable
@@ -132,6 +144,7 @@ class StageRandomVector:
         self.ev_outcomes = []
         self.outcomes_dim = 0
         self.p = None
+        self.p_copy = None
         self.is_independent = True 
         self._first_element_added = False
       
@@ -146,6 +159,7 @@ class StageRandomVector:
                 self.p = np.array([1/len(ele_outcomes) for x in ele_outcomes])
             else:
                 self.p = np.array(ele_prob)
+            self.p_copy = self.p.copy()
         else:
             assert len(self.outcomes)==len(ele_outcomes), "Random element with a different number of outcomes."
         
@@ -174,10 +188,13 @@ class StageRandomVector:
             satage_sample (dict of (str-float)): A dictionary containing the
                 realized value of each random element.
         '''
-        lucky_outcome = rnd_gen.choice([i for i in range(0,self.outcomes_dim)], p = self.p)
-        stage_sample = {e.name:
-                        e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
-        return stage_sample
+        try:
+            lucky_outcome = rnd_gen.choice([i for i in range(0,self.outcomes_dim)], p = self.p)
+            stage_sample = {e.name:
+                            e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
+            return stage_sample
+        except:
+            print(self.p)
     
     def get_ev_vector(self,partial_sample_path):
         return {e.name: e.comput_element_ev(e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
@@ -237,7 +254,8 @@ class StageRandomVector:
                 self.lag = e.lag
         self.autoreg_matrices = R_matrices       
                 
-        
+    def reset_to_nominal_dist(self):
+        self.p = self.p_copy.copy()
     
     def __repr__ (self):
         return 't=%i %s' %(self.stage, self.elements.keys().__repr__())
