@@ -21,10 +21,9 @@ alg_options = cs.alg_options()
 iteration_log = ''
 class SDDP(object):
     '''
-    classdocs
+    Implementation of Stochastic Dual Dynamic Programming algorithm.
     '''
     
-
     def __init__(self, T, model_builder, random_builder, risk_measure = Expectation, **risk_measure_params):
         '''
         Constructor
@@ -318,7 +317,7 @@ class SDDP(object):
             
             
         #self.stats.print_report(instance_name, self.stage_problems)
-        return(lbs)
+        return lbs
     
     
     def simulate_policy(self, n_samples, out_of_sample_random_container):
@@ -355,12 +354,18 @@ class SDDP(object):
         self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
             
     def compute_statistical_bound(self, n_samples):
-        #=======================================================================
-        # if True:
-        #     self.ub = 1
-        #     self.ub_hw = 1
-        #     return
-        #=======================================================================
+        '''
+        Computes an statistical upper bound. For DRO risk measures,
+        probabilities in the tree change for every sample path to account for
+        the worse case expectation. Both the upper bound and halfwidth are stored
+        as an attribute of the class.
+        
+        Args:
+            n_samples(int): Number of sample paths to compute the upper bound
+        
+        NOTES: For DRO risk measure, the worst case probabilities are achieved
+                asymptotically with the number of iterations of SDDP. 
+        '''
         self.upper_bounds = []  # rest bound
         for k in range(0,n_samples):
             fp_out_states = []
@@ -399,7 +404,9 @@ class SDDP(object):
             raise not_optimal_sp('A stage %i problem was not optimal' %(t))
         
 class Stats:
-    
+    '''
+    Class to keep track of performance statistics.
+    '''
     def __init__(self):
         self.lp_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
         self.cut_update_time = {cs.FORWARD_PASS:0.0, cs.BACKWARD_PASS:0.0}
@@ -428,11 +435,6 @@ class Stats:
         if lp_time > cs.ZERO_TOL:
             self.lp_counter[passType] += 1
             self.lp_times.append( (lp_time , num_lp_ctrs , iteration) )
-    
-    
-    
-    
-    
     
     def print_lp_data(self, instance_name,stage_problems):
         sddp_log.info('Simplex Iterations Stats')
