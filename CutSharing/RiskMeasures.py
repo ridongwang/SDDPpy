@@ -124,6 +124,18 @@ class Expectation(AbstracRiskMeasure):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0 
 
+def norm_fun(xi_o, xi_d, n):
+    '''
+    Computes the norm of the difference of the vectors given as parameters
+    '''
+    return np.linalg.norm(xi_o-xi_d,n)
+
+def mod_chi2(xi_o, xi_d, n):
+    if (xi_o == xi_d).all():
+        return 0;
+    else:
+        return 1;
+
 class DistRobustWasserstein(AbstracRiskMeasure):
     '''
     Distributional uncertainty set defined by the Wasserstein metric
@@ -137,11 +149,12 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             the number of outcomes being considered. 
         dro_ctrs (dic of GRBCtr): dictionary storing the constraints whose dual variables are the transportation plan.  
     '''
-    def __init__(self, norm = 1, radius = 1, primal_dus = 'ALL', data_random_container = None):
+    def __init__(self, norm = 1, radius = 1, primal_dus = 'ALL', dist_func = norm_fun, data_random_container = None):
         super().__init__()
         self.norm = norm
         self.radius = radius
         self.primal_dus = primal_dus
+        self.dist_func = dist_func
         if self.primal_dus  != 'ALL':
             assert isinstance(self.primal_dus, int) , 'Primal_DUS parameters should specify an integer'+ \
             'value to determine the number of constraints to be added in the primal representation of the DUS'
@@ -248,7 +261,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             xi_i = nsrv_org.get_sorted_outcome(i)
             for j in range(n_outcomes_des):
                 xi_j = nsrv_des.get_sorted_outcome(j)
-                d_ij = np.linalg.norm(xi_i-xi_j, self.norm)
+                d_ij = self.dist_func(xi_i,xi_j, self.norm)
                 crt = model.addConstr( (d_ij*gamma_var + nu_var[i] - sp.oracle[j]>= 0), 'dro_dual_ctr[%i%i]'%(i,j))
                 self.dro_ctrs[(i,j)]= crt
             model.update()
