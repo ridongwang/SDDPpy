@@ -6,15 +6,17 @@ Created on Nov 17, 2017
 import logging
 import time
 
+import numpy as np
 import CutSharing as cs
 from CutSharing.MathProgs import StageProblem, not_optimal_sp
 
 from CutSharing.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen
 
-from CutSharing.RiskMeasures import *
 from OutputAnalysis.SimulationAnalysis import SimResult
+from CutSharing.RandomnessHandler import ScenarioTree
+from CutSharing.RiskMeasures import Expectation
 
-
+ 
 sddp_log = cs.logger
 
 alg_options = cs.alg_options()
@@ -277,7 +279,7 @@ class SDDP(object):
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = None
                 if pre_sample_paths == None and dynamic_sampling == False:
-                    s_path = self.random_container.getSamplePath(alg_rnd_gen, ev = ev)
+                    s_path, _ = self.random_container.getSamplePath(alg_rnd_gen, ev = ev)
                 elif pre_sample_paths != None:
                     s_path = pre_sample_paths.pop()
                 else:
@@ -294,7 +296,8 @@ class SDDP(object):
             '''
             if self.pass_iteration % 10 == 0:
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
-        
+                if self.pass_iteration>0:
+                    self.compute_upper_bound_math_prog(30)
             
             '''
             Stopping criteria
@@ -324,7 +327,7 @@ class SDDP(object):
         np.random.seed(1111)
         self.upper_bounds = []
         for i in range(0,n_samples):
-            s_path =  out_of_sample_random_container.getSamplePath(out_sample_gen)
+            s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)
             #===================================================================
             # if i<=2:
             #         print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
@@ -344,7 +347,7 @@ class SDDP(object):
     def compute_statistical_bound1(self, n_samples):
         self.upper_bounds = []  # rest bound
         for i in range(0,n_samples):
-            s_path =  self.random_container.getSamplePath(in_sample_gen)
+            s_path, _ =  self.random_container.getSamplePath(in_sample_gen)
             if alg_options['outputlevel']>=3:
                 sddp_log.debug('Simulation %i:' %(i))
                 sddp_log.debug(s_path)
@@ -391,6 +394,47 @@ class SDDP(object):
         self.ub = np.mean(self.upper_bounds)
         self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
         self.random_container.reset_to_nominal_dist()
+        
+    def compute_upper_bound_math_prog(self, n_samples):
+        '''
+        Computes an upper bound assigning probabilities to sample paths' solutions.
+        First, all sample paths are realized and solved. These sample paths induce a 
+        subtree of the full scenario tree which is used to assign probabilities to each 
+        sample path. An auxiliary linear program is build to found the maximum (worst-case)
+        expectation of the realized samples, introducing constraints to enforce that the 
+        distribution at every stage is within the uncertainty set.  
+        
+        Args:
+            n_samples(int): Number of sample paths to compute the upper bound
+        '''
+        sub_tree = ScenarioTree(self.random_container)
+        for k in range(0,n_samples):
+            fp_out_states = []
+            fp_ub_value = 0
+            sample_path = [] #partial sample path
+            sample_path_outcomes = [] #partial sample path
+            for (t,sp) in enumerate(self.stage_problems):
+                _, stage_outcome=  self.random_container.getStageSample(t, sample_path, in_sample_gen)
+                sample_path_outcomes.append(stage_outcome)
+                in_state = fp_out_states[-1] if t>0 else  None
+                sp_output = sp.solve(in_state_vals = in_state, 
+                                     random_realization= sample_path[t], 
+                                     forwardpass = True, 
+                                     random_container=self.random_container, 
+                                     sample_path = sample_path,
+                                     num_cuts = self.num_cuts)
+                if sp_output['status'] != cs.SP_OPTIMAL:
+                    self.debrief_infeasible_sub(sample_path, t,sp_output,sp)
+                
+                fp_out_states.append(sp_output['out_state'])
+                fp_ub_value += sp.get_stage_objective_value()
+            
+            sub_tree.add_sample_path(k, sample_path, sample_path_outcomes, fp_ub_value)
+ 
+        ub  = sub_tree.compute_subtree_upper_bound([sp.risk_measure for sp in self.stage_problems])
+        print(ub)
+        
+        
         
         
         
