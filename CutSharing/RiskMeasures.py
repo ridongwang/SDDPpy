@@ -297,8 +297,46 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         #print(t, p_w)
         
         
-        
+    def define_scenario_tree_uncertainty_set(self, stage, outcome,  model, srv, phi):
+        '''
+        Modifies the model given as a parameter to incorporate the uncertainty set
+        for a given node in a scenario tree.
+        Args:
+            stage (int): stage of the associate scenario tree at which a constraint on 
+                its descendants is being added. 
+            model (GRBModel): gubori model for the upper bound. 
+            srv (StageRandomVector): random elements of the descendants.
+            phi (list of GRBVariables): decision variables representing the worst-case distribution
+                for the branch of the ScenarioTreeNode that invoked this method.
+        '''
+        nsrv_org = srv #Origin points in the support for the transport problem
+        if self.data_random_container !=None:
+            nsrv_org = self.data_random_container[stage+1]
     
+        nsrv_des = srv  #Destination points in the support for the transport problem
+        n_org  = nsrv_org.outcomes_dim
+        n_des  = nsrv_des.outcomes_dim
+        
+        model = Model()
+        z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z_%i_%i' % (stage, outcome))
+        model.update()
+        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org_%i_%i' % (stage, outcome))
+        model.addConstrs((z.sum('*', d)==phi[d] for d in range(n_des)), name='des_%i_%i' % (stage, outcome))
+        
+        DUS_exp = LinExpr()
+        for i in range(n_org):
+            #WARNING: This implementation assumes that the distance between outcomes is a valid metric
+            xi_i = nsrv_org.get_sorted_outcome(i)
+            for j in range(n_des):
+                xi_j = nsrv_des.get_sorted_outcome(j)
+                d_ij = self.dist_func(xi_i,xi_j, self.norm)
+                DUS_exp.addTerms(d_ij,z[i,j])
+        
+        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus_%i_%i' %(stage,outcome))
+        model.update()
+        
+        
+        
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
@@ -750,9 +788,6 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         assert len(outcomes_objs) == len(self.nominal_p)
         new_p = np.array([vars[i].X for i in range(len(vars))])
         return new_p
-        
-        
-        
         
         
         

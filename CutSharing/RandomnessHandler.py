@@ -6,6 +6,7 @@ Created on Nov 19, 2017
 import copy
 import numpy as np
 import scipy.sparse as sp
+from gurobipy import * 
 
 #NOT USED FOR THE MOMENT
 class SamplePath():
@@ -57,13 +58,16 @@ class RandomContainer:
             partial_sample_path (list of dic): a sample path including all stages.
         '''
         partial_sample_path = []
+        partial_sample_path_ids = []
         if ev == True:
             partial_sample_path = [srv.get_ev_vector(partial_sample_path) for srv in self.stage_vectors]
+            partial_sample_path_ids = [0 for _ in self.stage_vectors]
         else:
             for srv in self.stage_vectors:
-                stage_sample = srv.getSample(partial_sample_path,rnd_stream) 
+                stage_sample, stage_outcome_id = srv.getSample(partial_sample_path,rnd_stream) 
                 partial_sample_path.append(stage_sample)
-        return partial_sample_path
+                partial_sample_path_ids.append(stage_outcome_id)
+        return partial_sample_path, partial_sample_path_ids
     
     def getStageSample(self, t, partial_sample_path, rnd_stream):
         '''
@@ -72,10 +76,15 @@ class RandomContainer:
         Args:
             t (int): stage number to be sample.
             partial_sample_path (list of dict): a sample path up to stage t-1.
+        Return: 
+            satage_sample (dict of (str-float)): A dictionary containing the
+                realized value of each random element.
+            stage_outcome_id (int): id of the outcome drew in the stage 
         '''
         srv = self.stage_vectors[t]
-        stage_sample = srv.getSample(partial_sample_path, rnd_stream) 
+        stage_sample, stage_outcome_id = srv.getSample(partial_sample_path, rnd_stream) 
         partial_sample_path.append(stage_sample)
+        return stage_sample, stage_outcome_id
         
         
     def preprocess_randomness(self):
@@ -187,12 +196,13 @@ class StageRandomVector:
         Return:
             satage_sample (dict of (str-float)): A dictionary containing the
                 realized value of each random element.
+            lucky_outcome (int): id of the outcome that was realized.
         '''
         try:
             lucky_outcome = rnd_gen.choice([i for i in range(0,self.outcomes_dim)], p = self.p)
             stage_sample = {e.name:
                             e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
-            return stage_sample
+            return stage_sample, lucky_outcome
         except:
             print(self.p)
     
@@ -360,7 +370,136 @@ class RandomElement:
         '''
         generalized_outcomes = self.compute_outcomes(dependencies)
         return generalized_outcomes[p]
+
+
+class ScenarioTree:
+    '''
+    Class to represent a subtree
+    Attributes:
+        root_node (ScenarioTreeNode): root node in a scenario subtree
+    '''
     
+    def __init__(self, rnd_cont):
+        #Creates the root nod of the scenario tree
+        self.root_node = ScenarioTreeNode(0,0,None,True)
+        self.rnd_cont = rnd_cont
+        self.sample_path_costs = {}
+    def add_sample_path(self, sample_id, sample_path_outcomes, sample_path_cost):
+        '''
+        Add a sample path in the tree. The descendants of ever node in the sample path
+        are created right away regardless of whether that is a corresponding sample path or not.
+        '''
+        
+        self.sample_path_costs[sample_id] = sample_path_cost
+        node_t = self.root_node
+        for t in range(len(sample_path_outcomes)-1):
+            if len(node_t.children)==0:
+                node_t.create_descendants(self.rnd_cont.stage_vectors[t+1])
+            node_t.add_sample_path_info(sample_id)
+            
+            #update next node in the tree
+            next_outcome  = sample_path_outcomes[t+1]
+            node_t = node_t.children[next_outcome]
+        
+        
+    def compute_subtree_upper_bound(self, risk_measures):
+        '''
+        Args:
+            risk_measures (list of RiskMeasure): list with the risk measure for each stage.
+        '''
+        
+        m = Model('SubTree_UB')
+        n_paths = len(self.sample_path_costs)
+        
+        #Variables creation
+        p = m.addVars(n_paths, lb=0, ub=1, obj=self.sample_path_costs, vtype=GRB.CONTINUOUS, name='p')
+        self.root_node.create_phi_var(m)
+        m.update()
+        
+        #Constraints
+        self.root_node.create_constraints(m, p, risk_measures)
+    
+class ScenarioTreeNode:
+    '''
+    A node of a scenario tree
+    Args:
+        parent (ScenarioTreeNode): parent node in the tree
+        stage (int): Stage to which the node belongs
+        children (list of ScenarioTreeNodes): list of ScenarioTreeNodes that 
+            are descendants of this node.
+        sampled (boolean): If there is a sample path that uses these node (default is false)
+        
+        phi_var (GRBVar): Decision variable for the upper bound model.
+    '''
+    
+    def __init__(self,  stage, outcome_id, parent, sampled):
+        self.parent = parent
+        self.outcome_id = outcome_id
+        self.stage = stage
+        self.children = []
+        self.sampled = sampled
+        self.sample_path_ids = [] 
+        self.phi_var = None 
+    
+    def add_sample_path_info(self, sample_id):
+        '''
+        Updates the node status to sampled and
+        add the sample path id to the list of paths that
+        visit the node.
+        '''
+        self.sample_path_ids.append(sample_id)
+        self.sampled = True
+        
+        
+        
+    def create_descendants(self, stage_random_vector):
+        '''
+        Creates a descendant node for every outcome of the stage random 
+        vector given as parameter.
+        Args:
+            stage_random_vector (StageRandomVector): object with the random elements of the next stage
+        '''
+        for o in range(len(stage_random_vector.outcomes_dim)):
+            new_child = ScenarioTreeNode(self.stage+1, o, self, False)
+            self.children.append(new_child)
+
+    def create_phi_var(self, model):
+        '''
+        Recursively creates all the variables in the model. 
+        Creates a variable for the node and call the method for all 
+        the descendant nodes.
+        Args:
+            model (GRBModel): Upper bound model
+        '''
+        self.phi_var = model.addVar(lb=0, ub=1, obj=0, vtype=GRB.CONTINUOUS, name='phi[%i,%i]' %(self.stage,self.outcome_id))
+        
+        for node in self.children:
+            node.create_phi_var(model)
+        
+    def create_constraints(self, model, p, risk_measures, rc):
+        '''
+        Recursively creates the constraint of the upper bound model.
+        
+        Args:
+            model (GRBModel): Upper bound model
+            p (tupledic of GRBVar): variables representing the probability of each sample path
+        '''
+        t = self.stage
+        #Phi - p relation
+        model = Model('borrar')
+        model.addConstr(lhs = self.phi_var, sense=GRB.EQUAL,  rhs=quicksum(p[i] for i in self.sample_path_ids), name='PhiToP')
+        
+        #prob consistency: Sum of descendants adds up to 1
+        model.addConstr(quicksum(n.phi_var for n in self.children), sense=GRB.EQUAL,  rhs=1, name='descendant_consistency')
+        model.update()
+        #Uncertainty set
+        phis = [n.phi_var for n in self.children]
+        risk_measures[t].define_scenario_tree_uncertainty_set(self.stage,self.outcome_id,model,rc[t+1],phis)
+        
+        
+        for node in self.children:
+            node.create_constraints(model, p , risk_measures, rc)
+
 def AR1_depedency(rnd_ele , realizations):
     assert type(realizations) == dict, 'Realizations are not in the expected form.'
     assert len(realizations) == 1, "Dependency model has a lag > 1."
