@@ -123,6 +123,8 @@ class Expectation(AbstracRiskMeasure):
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0 
+    def forward_prob_update(self, *args):
+        pass
 
 def norm_fun(xi_o, xi_d, n):
     '''

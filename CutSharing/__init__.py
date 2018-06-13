@@ -44,13 +44,13 @@ SDDP_OPT_TOL = 1E-3
 Algorithm options
 '''
 options = {}
-options['max_iter'] = 10
+options['max_iter'] = 200
 options['sim_iter'] = 1000
 options['outputlevel']  = 2
 options['lines_freq']  = 1
 options['n_sample_paths'] = 1
 options['grb_threads'] = 4
-options['multicut'] = True
+options['multicut'] = False
 options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 
