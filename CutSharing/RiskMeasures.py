@@ -297,7 +297,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         #print(t, p_w)
         
         
-    def define_scenario_tree_uncertainty_set(self, stage, outcome,  model, srv, phi):
+    def define_scenario_tree_uncertainty_set(self, stage, outcome,  model, srv, phi, branch_name):
         '''
         Modifies the model given as a parameter to incorporate the uncertainty set
         for a given node in a scenario tree.
@@ -317,11 +317,10 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         n_org  = nsrv_org.outcomes_dim
         n_des  = nsrv_des.outcomes_dim
         
-        model = Model()
-        z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z_%i_%i' % (stage, outcome))
+        z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z_%i%s' % (stage, branch_name))
         model.update()
-        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org_%i_%i' % (stage, outcome))
-        model.addConstrs((z.sum('*', d)==phi[d] for d in range(n_des)), name='des_%i_%i' % (stage, outcome))
+        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org_%i%s' % (stage, branch_name))
+        model.addConstrs((z.sum('*', d)==phi[d] for d in range(n_des)), name='des_%i%s' % (stage, branch_name))
         
         DUS_exp = LinExpr()
         for i in range(n_org):
@@ -332,7 +331,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
                 d_ij = self.dist_func(xi_i,xi_j, self.norm)
                 DUS_exp.addTerms(d_ij,z[i,j])
         
-        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus_%i_%i' %(stage,outcome))
+        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus_%i%s' %(stage,branch_name))
         model.update()
         
         
