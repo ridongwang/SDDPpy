@@ -40,6 +40,7 @@ class SDDP(object):
         
         self.lb = None
         self.ub = float('inf')
+        self.ub_hw = 0
         self.upper_bounds = [] 
         self.pass_iteration = 0
         self.num_cuts = 0
@@ -295,9 +296,9 @@ class SDDP(object):
             Compute statistical upper bounds
             '''
             if self.pass_iteration % 10 == 0:
-                self.compute_statistical_bound(alg_options['in_sample_ub'])
-                if self.pass_iteration>0:
-                    self.compute_upper_bound_math_prog(30)
+                #self.compute_statistical_bound(alg_options['in_sample_ub'])
+                if self.pass_iteration>3:
+                    self.compute_upper_bound_math_prog(alg_options['in_sample_ub'])
             
             '''
             Stopping criteria
@@ -407,6 +408,7 @@ class SDDP(object):
         Args:
             n_samples(int): Number of sample paths to compute the upper bound
         '''
+        self.random_container.reset_to_nominal_dist()
         sub_tree = ScenarioTree(self.random_container)
         for k in range(0,n_samples):
             fp_out_states = []
@@ -428,11 +430,13 @@ class SDDP(object):
                 
                 fp_out_states.append(sp_output['out_state'])
                 fp_ub_value += sp.get_stage_objective_value()
+                sp.risk_measure.forward_prob_update(t,self.random_container)  
             
-            sub_tree.add_sample_path(k, sample_path, sample_path_outcomes, fp_ub_value)
- 
+            sub_tree.add_sample_path(k, sample_path_outcomes, fp_ub_value)
+            
         ub  = sub_tree.compute_subtree_upper_bound([sp.risk_measure for sp in self.stage_problems])
-        print(ub)
+        self.random_container.reset_to_nominal_dist()
+       # print(ub)
         
         
         

@@ -183,9 +183,7 @@ class StageProblem():
         
         return output
     
-    def printModel(self):
-        for c in self.model.getConstrs():
-            print(c.ConstrName, self.model.getRow(c), c.Sense, c.RHS)
+
     
     def print_stage_res_summary(self):
         strout = ''

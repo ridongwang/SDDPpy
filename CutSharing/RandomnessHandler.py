@@ -7,6 +7,7 @@ import copy
 import numpy as np
 import scipy.sparse as sp
 from gurobipy import * 
+from CutSharing.SDDP_utils import print_model
 
 #NOT USED FOR THE MOMENT
 class SamplePath():
@@ -384,6 +385,8 @@ class ScenarioTree:
         self.root_node = ScenarioTreeNode(0,0,None,True)
         self.rnd_cont = rnd_cont
         self.sample_path_costs = {}
+        self.sample_path_outs = {}
+        
     def add_sample_path(self, sample_id, sample_path_outcomes, sample_path_cost):
         '''
         Add a sample path in the tree. The descendants of ever node in the sample path
@@ -391,15 +394,18 @@ class ScenarioTree:
         '''
         
         self.sample_path_costs[sample_id] = sample_path_cost
+        self.sample_path_outs[sample_id] = sample_path_outcomes
         node_t = self.root_node
-        for t in range(len(sample_path_outcomes)-1):
-            if len(node_t.children)==0:
-                node_t.create_descendants(self.rnd_cont.stage_vectors[t+1])
+        for t in range(len(sample_path_outcomes)):
             node_t.add_sample_path_info(sample_id)
-            
-            #update next node in the tree
-            next_outcome  = sample_path_outcomes[t+1]
-            node_t = node_t.children[next_outcome]
+            if t<len(sample_path_outcomes)-1:
+                if len(node_t.children)==0:
+                    node_t.create_descendants(self.rnd_cont.stage_vectors[t+1])
+                
+                
+                #update next node in the tree
+                next_outcome  = sample_path_outcomes[t+1]
+                node_t = node_t.children[next_outcome]
         
         
     def compute_subtree_upper_bound(self, risk_measures):
@@ -409,15 +415,35 @@ class ScenarioTree:
         '''
         
         m = Model('SubTree_UB')
+        #m.params.OutputFlag = 0
         n_paths = len(self.sample_path_costs)
         
         #Variables creation
         p = m.addVars(n_paths, lb=0, ub=1, obj=self.sample_path_costs, vtype=GRB.CONTINUOUS, name='p')
-        self.root_node.create_phi_var(m)
+        self.root_node.create_phi_var(m,'')
         m.update()
-        
+        m.addConstr(lhs=p.sum(), sense=GRB.EQUAL, rhs=1, name='global_prob')
         #Constraints
-        self.root_node.create_constraints(m, p, risk_measures)
+        self.root_node.create_constraints(m, p, risk_measures, self.rnd_cont,'')
+        m.ModelSense = GRB.MAXIMIZE
+        m.update()
+        #print_model(m)
+        m.optimize()
+        if m.status != GRB.OPTIMAL:
+            m.computeIIS()
+            m.write("model.ilp")
+        else:
+            print('%15.5e' %(m.Objval))
+            #===================================================================
+            # for (i,v) in enumerate(m.getVars()):
+            #     if v.VarName[0]=='p' and v.X>0 and v.VarName[0:3]!='phi':
+            #         print(v)
+            #         if v.VarName[0]=='p' and v.VarName[0:3]!='phi':
+            #             print(self.sample_path_costs[i])
+            #             print(self.sample_path_outs[i])
+            #===================================================================
+                        
+            return m.Objval
     
 class ScenarioTreeNode:
     '''
@@ -459,46 +485,56 @@ class ScenarioTreeNode:
         Args:
             stage_random_vector (StageRandomVector): object with the random elements of the next stage
         '''
-        for o in range(len(stage_random_vector.outcomes_dim)):
+        for o in range(stage_random_vector.outcomes_dim):
             new_child = ScenarioTreeNode(self.stage+1, o, self, False)
             self.children.append(new_child)
 
-    def create_phi_var(self, model):
+    def create_phi_var(self, model, branch_name):
         '''
         Recursively creates all the variables in the model. 
         Creates a variable for the node and call the method for all 
         the descendant nodes.
         Args:
             model (GRBModel): Upper bound model
+            branch_name (str): String identifier for a branch of the tree
         '''
-        self.phi_var = model.addVar(lb=0, ub=1, obj=0, vtype=GRB.CONTINUOUS, name='phi[%i,%i]' %(self.stage,self.outcome_id))
+        new_branch_name = branch_name + '_%i' %(self.outcome_id)
+        self.phi_var = model.addVar(lb=0, ub=1, obj=0, vtype=GRB.CONTINUOUS, name='phi[%i,%s]' %(self.stage,new_branch_name))
         
         for node in self.children:
-            node.create_phi_var(model)
+            node.create_phi_var(model, new_branch_name)
         
-    def create_constraints(self, model, p, risk_measures, rc):
+    def create_constraints(self, model, p, risk_measures, rc , branch_name):
         '''
         Recursively creates the constraint of the upper bound model.
         
         Args:
             model (GRBModel): Upper bound model
             p (tupledic of GRBVar): variables representing the probability of each sample path
+            risk_measures (list of AbstracRiskMeasures): Risk measure for each stage
+            rc (RandomContainer): Object with al the random information
+            branch_name (str): String identifier for a branch of the tree
         '''
         t = self.stage
+        new_branch_name = branch_name + '_%i' %(self.outcome_id)
         #Phi - p relation
-        model = Model('borrar')
-        model.addConstr(lhs = self.phi_var, sense=GRB.EQUAL,  rhs=quicksum(p[i] for i in self.sample_path_ids), name='PhiToP')
+        if self.sampled: 
+            model.addConstr(lhs = self.phi_var, sense=GRB.GREATER_EQUAL,  rhs=quicksum(p[i] for i in self.sample_path_ids), name='PhiToP_%i%s' %(t,new_branch_name))
         
-        #prob consistency: Sum of descendants adds up to 1
-        model.addConstr(quicksum(n.phi_var for n in self.children), sense=GRB.EQUAL,  rhs=1, name='descendant_consistency')
-        model.update()
-        #Uncertainty set
-        phis = [n.phi_var for n in self.children]
-        risk_measures[t].define_scenario_tree_uncertainty_set(self.stage,self.outcome_id,model,rc[t+1],phis)
-        
-        
-        for node in self.children:
-            node.create_constraints(model, p , risk_measures, rc)
+            if len(self.children)>0:
+                #prob consistency: Sum of descendants adds up to 1
+                model.addConstr(quicksum(n.phi_var for n in self.children), sense=GRB.EQUAL,  rhs=1, name='cox_%i%s' %(t,new_branch_name))
+                model.update()
+                #Uncertainty set
+                phis = [n.phi_var for n in self.children]
+                risk_measures[t].define_scenario_tree_uncertainty_set(self.stage,self.outcome_id,model,rc[t+1],phis ,new_branch_name)
+                
+                
+                for node in self.children:
+                    node.create_constraints(model, p , risk_measures, rc , new_branch_name)
+    
+    
+    
 
 def AR1_depedency(rnd_ele , realizations):
     assert type(realizations) == dict, 'Realizations are not in the expected form.'
