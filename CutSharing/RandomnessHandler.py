@@ -422,8 +422,8 @@ class ScenarioTree:
         p = m.addVars(n_paths, lb=0, ub=1, obj=self.sample_path_costs, vtype=GRB.CONTINUOUS, name='p')
         self.root_node.create_phi_var(m,'')
         m.update()
-        m.addConstr(lhs=p.sum(), sense=GRB.EQUAL, rhs=1, name='global_prob')
         #Constraints
+        #m.addConstr(lhs=p.sum(), sense=GRB.EQUAL, rhs=1, name='global_prob')
         self.root_node.create_constraints(m, p, risk_measures, self.rnd_cont,'')
         m.ModelSense = GRB.MAXIMIZE
         m.update()

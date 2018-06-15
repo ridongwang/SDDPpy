@@ -1,0 +1,48 @@
+\ Model SubTree_UB_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Maximize
+ 
+Subject To
+ cox_0_0: phi[1,_0_0] + phi[1,_0_1] = 1
+ PhiToP_1_0_0: - p[0] - p[2] - p[8] - p[12] - p[15] - p[17] - p[19] - p[25] - p[26] - p[29] + phi[1,_0_0] = 0
+ 
+ 
+ 
+ cox_1_0_0: phi[2,_0_0_0] + phi[2,_0_0_1] = 1
+ PhiToP_2_0_0_0: - p[19] - p[25] - p[26] + phi[2,_0_0_0] = 0
+ PhiToP_2_0_0_1: - p[0] - p[2] - p[8] - p[12] - p[15] - p[17] - p[29] + phi[2,_0_0_1] = 0
+ 
+ PhiToP_1_0_1: - p[1] - p[3] - p[4] - p[5] - p[6] - p[7] - p[9] - p[10]
+   - p[11] - p[13] - p[14] - p[16] - p[18] - p[20] - p[21] - p[22] - p[23]
+   - p[24] - p[27] - p[28] + phi[1,_0_1] = 0
+ cox_3_0_1_1_0: phi[4,_0_1_1_0_0] + phi[4,_0_1_1_0_1] = 1
+ PhiToP_4_0_1_1_0_0: - p[6] + phi[4,_0_1_1_0_0] = 0
+ PhiToP_4_0_1_1_0_1: - p[16] + phi[4,_0_1_1_0_1] = 0
+ cox_7_0_1_1_1_1_0_0_0: phi[8,_0_1_1_1_1_0_0_0_0]
+   + phi[8,_0_1_1_1_1_0_0_0_1] = 1
+ PhiToP_8_0_1_1_1_1_0_0_0_0: - p[9] + phi[8,_0_1_1_1_1_0_0_0_0] = 0
+ PhiToP_8_0_1_1_1_1_0_0_0_1: - p[21] + phi[8,_0_1_1_1_1_0_0_0_1] = 0
+Bounds
+ p[0] free
+ p[2] free
+ p[6] free
+ p[8] free
+ p[9] free
+ p[12] free
+ p[15] free
+ p[16] free
+ p[17] free
+ p[19] free
+ p[21] free
+ p[25] free
+ p[26] free
+ p[29] free
+ phi[1,_0_0] free
+ phi[2,_0_0_0] free
+ phi[2,_0_0_1] free
+ phi[1,_0_1] free
+ phi[4,_0_1_1_0_0] free
+ phi[4,_0_1_1_0_1] free
+ phi[8,_0_1_1_1_1_0_0_0_0] free
+ phi[8,_0_1_1_1_1_0_0_0_1] free
+End
