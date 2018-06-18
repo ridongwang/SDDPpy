@@ -8564,3 +8564,1431 @@ Iteration    Objective       Primal Inf.    Dual Inf.      Time
 Solved with dual simplex
 Solved in 0 iterations and 0.43 seconds
 Optimal objective -0.000000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Sat Jun 16 13:59:20 2018
+
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 35092 rows, 174661 columns and 654446 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+03, 2e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3282 rows and 3283 columns
+Presolve time: 0.40s
+Presolved: 31810 rows, 171378 columns, 617747 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 107
+ AA' NZ     : 5.747e+05
+ Factor NZ  : 6.644e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.758e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.39812658e+07  3.26515345e+09  3.53e+02 1.02e+05  4.29e+05     1s
+   1  -8.39210712e+06  3.69567758e+09  2.13e+02 2.33e-10  2.44e+05     1s
+   2  -6.35602028e+05  2.09756101e+09  1.62e+01 1.44e-08  2.61e+04     1s
+   3  -1.47620225e+05  6.80538253e+08  2.96e+00 6.00e-09  5.82e+03     1s
+   4  -6.44321407e+04  3.07265833e+08  7.54e-01 2.39e-09  1.96e+03     1s
+
+Barrier performed 4 iterations in 0.87 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 4857 iterations and 0.88 seconds
+Optimal objective  1.296987279e+05
+
+Gurobi 7.0.2 (mac64, Python) logging started Sat Jun 16 14:00:36 2018
+
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 35092 rows, 174661 columns and 654446 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+03, 2e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3282 rows and 3283 columns
+Presolve time: 0.38s
+Presolved: 31810 rows, 171378 columns, 617747 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 107
+ AA' NZ     : 5.747e+05
+ Factor NZ  : 6.644e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.758e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.39812658e+07  3.26515345e+09  3.53e+02 1.02e+05  4.29e+05     1s
+   1  -8.39210712e+06  3.69567758e+09  2.13e+02 2.33e-10  2.44e+05     1s
+   2  -6.35602028e+05  2.09756101e+09  1.62e+01 1.26e-08  2.61e+04     1s
+   3  -1.47620225e+05  6.80538253e+08  2.96e+00 4.95e-09  5.82e+03     1s
+   4  -6.44321407e+04  3.07265833e+08  7.54e-01 4.61e-09  1.96e+03     1s
+   5  -4.55047827e+04  1.30614910e+08  2.35e-01 2.16e-09  7.50e+02     1s
+
+Barrier performed 5 iterations in 0.89 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 4857 iterations and 0.90 seconds
+Optimal objective  1.296987279e+05
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34322 rows, 170811 columns and 640061 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+02, 1e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3199 rows and 3200 columns
+Presolve time: 0.39s
+Presolved: 31123 rows, 167611 columns, 604193 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 87
+ AA' NZ     : 6.178e+05
+ Factor NZ  : 6.962e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.011e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.30685515e+07  1.42759028e+09  3.14e+02 4.58e+04  1.72e+05     1s
+   1  -8.96755918e+06  1.57536021e+09  2.16e+02 1.02e-10  1.09e+05     1s
+   2  -6.94796586e+05  9.00980923e+08  1.69e+01 8.73e-11  1.19e+04     1s
+   3  -1.51632785e+05  2.87900389e+08  3.04e+00 5.64e-11  2.57e+03     1s
+   4  -6.58259560e+04  1.18144904e+08  7.16e-01 5.80e-11  7.73e+02     1s
+   5  -4.91752631e+04  3.54822466e+07  2.46e-01 4.83e-11  2.14e+02     1s
+   6  -4.10737426e+04  1.02562752e+07  3.62e-02 3.42e-11  5.74e+01     1s
+   7  -3.74747986e+04  2.30567770e+06  7.23e-04 2.23e-11  1.27e+01     1s
+   8  -3.08892109e+04  1.76377826e+06  3.87e-04 1.41e-11  9.72e+00     1s
+
+Barrier performed 8 iterations in 1.07 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 6098 iterations and 1.08 seconds
+Optimal objective  4.384239472e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34014 rows, 169271 columns and 634307 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+02, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3155 rows and 3156 columns
+Presolve time: 0.38s
+Presolved: 30859 rows, 166115 columns, 598793 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 69
+ AA' NZ     : 6.717e+05
+ Factor NZ  : 7.407e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.352e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.64104959e+07  1.41784048e+09  3.40e+02 4.58e+04  1.85e+05     1s
+   1  -1.00578878e+07  1.58929818e+09  2.09e+02 1.02e-10  1.11e+05     1s
+   2  -8.71495770e+05  1.11213480e+09  1.81e+01 1.02e-10  1.42e+04     1s
+
+Barrier performed 2 iterations in 0.72 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3652 iterations and 0.74 seconds
+Optimal objective  4.169698178e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34652 rows, 172461 columns and 646226 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+02, 8e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3227 rows and 3228 columns
+Presolve time: 0.39s
+Presolved: 31425 rows, 169233 columns, 610017 nonzeros
+
+Ordering time: 0.02s
+
+Barrier statistics:
+ Dense cols : 83
+ AA' NZ     : 6.425e+05
+ Factor NZ  : 7.192e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.171e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.46173898e+07  1.67235613e+09  3.07e+02 5.31e+04  1.95e+05     1s
+   1  -9.84754353e+06  1.83632303e+09  2.08e+02 1.16e-10  1.22e+05     1s
+   2  -7.85787829e+05  1.03488453e+09  1.60e+01 1.02e-10  1.32e+04     1s
+   3  -1.82831742e+05  3.43225380e+08  2.86e+00 6.37e-11  2.95e+03     1s
+   4  -7.96992012e+04  1.35246138e+08  6.99e-01 4.27e-11  8.73e+02     1s
+   5  -5.63885119e+04  5.59032948e+07  2.16e-01 4.55e-11  3.25e+02     1s
+
+Barrier performed 5 iterations in 0.92 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 4980 iterations and 0.93 seconds
+Optimal objective  4.615549792e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34520 rows, 171801 columns and 643760 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+03, 1e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3214 rows and 3215 columns
+Presolve time: 0.36s
+Presolved: 31306 rows, 168586 columns, 607691 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 79
+ AA' NZ     : 6.585e+05
+ Factor NZ  : 7.328e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.291e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.52499348e+07  1.79743753e+09  3.18e+02 5.73e+04  2.17e+05     1s
+   1  -9.98940115e+06  1.98868045e+09  2.08e+02 1.16e-10  1.32e+05     1s
+   2  -7.99268236e+05  1.12058046e+09  1.54e+01 5.31e-09  1.40e+04     1s
+   3  -2.09721854e+05  3.84826793e+08  3.26e+00 2.87e-09  3.45e+03     1s
+   4  -8.71875364e+04  1.81269982e+08  8.06e-01 1.48e-09  1.20e+03     1s
+   5  -5.83617365e+04  7.71480799e+07  2.59e-01 8.29e-10  4.54e+02     1s
+
+Barrier performed 5 iterations in 0.83 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5172 iterations and 0.84 seconds
+Optimal objective  6.183769592e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 35026 rows, 174331 columns and 653213 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+03, 9e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3271 rows and 3272 columns
+Presolve time: 0.38s
+Presolved: 31755 rows, 171059 columns, 616593 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 89
+ AA' NZ     : 6.412e+05
+ Factor NZ  : 7.211e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.196e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.40472490e+07  1.56406097e+09  2.90e+02 4.92e+04  1.71e+05     1s
+   1  -9.57898990e+06  1.69561280e+09  1.99e+02 1.02e-10  1.08e+05     1s
+   2  -7.36978841e+05  9.41511466e+08  1.50e+01 3.61e-09  1.16e+04     1s
+   3  -1.82856800e+05  3.18994768e+08  2.87e+00 1.06e-09  2.72e+03     1s
+   4  -7.79571744e+04  1.31777950e+08  6.97e-01 1.70e-09  8.40e+02     1s
+   5  -5.66434311e+04  5.21041530e+07  2.23e-01 6.98e-10  3.01e+02     1s
+   6  -4.79107358e+04  9.46694247e+06  3.19e-02 6.11e-10  5.19e+01     1s
+   7  -4.34492245e+04  2.53554238e+06  1.37e-06 5.24e-10  1.37e+01     1s
+   8  -3.44711506e+04  1.88447912e+06  6.29e-07 4.00e-10  1.02e+01     1s
+   9  -2.47194414e+04  1.57991408e+06  5.12e-07 3.57e-10  8.51e+00     1s
+
+Barrier performed 9 iterations in 1.16 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 6395 iterations and 1.18 seconds
+Optimal objective  5.156832699e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34718 rows, 172791 columns and 647459 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [8e+03, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3241 rows and 3242 columns
+Presolve time: 0.38s
+Presolved: 31477 rows, 169549 columns, 611165 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 81
+ AA' NZ     : 6.632e+05
+ Factor NZ  : 7.386e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.338e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+Barrier performed 0 iterations in 0.52 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 302 iterations and 0.53 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34608 rows, 172241 columns and 645404 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [9e+03, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3228 rows and 3229 columns
+Presolve time: 0.40s
+Presolved: 31380 rows, 169012 columns, 609231 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 100
+ AA' NZ     : 5.758e+05
+ Factor NZ  : 6.613e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.728e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.86243334e+07  1.31156576e+09  3.40e+02 4.17e+04  1.69e+05     1s
+   1  -1.43260945e+07  1.47291824e+09  2.62e+02 8.73e-11  1.20e+05     1s
+
+Barrier performed 1 iterations in 0.66 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 2196 iterations and 0.67 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34696 rows, 172681 columns and 647048 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+02, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3237 rows and 3238 columns
+Presolve time: 0.42s
+Presolved: 31459 rows, 169443 columns, 610781 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 96
+ AA' NZ     : 5.931e+05
+ Factor NZ  : 6.766e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.838e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.58357057e+07  8.34139775e+08  2.95e+02 2.64e+04  9.35e+04     1s
+
+Barrier performed 0 iterations in 0.64 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 2839 iterations and 0.66 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34894 rows, 173671 columns and 650747 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+03, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3251 rows and 3252 columns
+Presolve time: 0.40s
+Presolved: 31643 rows, 170419 columns, 614281 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 91
+ AA' NZ     : 6.243e+05
+ Factor NZ  : 7.053e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.064e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.86746046e+07  1.29891577e+09  3.47e+02 4.10e+04  1.69e+05     1s
+
+Barrier performed 0 iterations in 0.62 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 1706 iterations and 0.63 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34256 rows, 170481 columns and 638828 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [5e+03, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3185 rows and 3186 columns
+Presolve time: 0.39s
+Presolved: 31071 rows, 167295 columns, 603045 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 75
+ AA' NZ     : 6.595e+05
+ Factor NZ  : 7.315e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.273e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.74842136e+07  1.17813709e+09  3.26e+02 3.78e+04  1.47e+05     1s
+   1  -9.21659352e+06  1.31005266e+09  1.74e+02 3.86e-09  7.41e+04     1s
+
+Barrier performed 1 iterations in 0.67 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 2790 iterations and 0.68 seconds
+Optimal objective  1.019357763e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34894 rows, 173671 columns and 650747 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+03, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3251 rows and 3252 columns
+Presolve time: 0.38s
+Presolved: 31643 rows, 170419 columns, 614281 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 90
+ AA' NZ     : 6.283e+05
+ Factor NZ  : 7.088e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.094e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.80467212e+07  1.03096357e+09  3.46e+02 3.25e+04  1.34e+05     1s
+   1  -9.40294401e+06  1.16124264e+09  1.83e+02 2.74e-09  6.71e+04     1s
+   2  -8.37519839e+05  6.17689183e+08  1.55e+01 2.33e-09  7.79e+03     1s
+   3  -2.01666683e+05  2.22131897e+08  2.89e+00 1.46e-09  1.87e+03     1s
+   4  -8.72670710e+04  9.53971480e+07  6.88e-01 5.89e-10  6.03e+02     1s
+   5  -6.24114581e+04  3.25567761e+07  2.12e-01 5.75e-10  1.88e+02     1s
+   6  -5.21464149e+04  4.62443774e+06  1.62e-02 4.00e-10  2.53e+01     1s
+
+Barrier performed 6 iterations in 0.95 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5495 iterations and 0.97 seconds
+Optimal objective  6.768247107e+03
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34894 rows, 173671 columns and 650747 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [8e+03, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3255 rows and 3256 columns
+Presolve time: 0.34s
+Presolved: 31639 rows, 170415 columns, 614273 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 100
+ AA' NZ     : 5.877e+05
+ Factor NZ  : 6.737e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.819e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.82310388e+07  1.26399429e+09  3.37e+02 3.99e+04  1.60e+05     1s
+
+Barrier performed 0 iterations in 0.53 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 1924 iterations and 0.54 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34982 rows, 174111 columns and 652391 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+02, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3260 rows and 3261 columns
+Presolve time: 0.42s
+Presolved: 31722 rows, 170850 columns, 615831 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 91
+ AA' NZ     : 6.275e+05
+ Factor NZ  : 7.086e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.091e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.50598691e+07  1.16088935e+09  2.82e+02 3.65e+04  1.24e+05     1s
+   1  -8.01492572e+06  1.24820651e+09  1.52e+02 3.50e-09  6.26e+04     1s
+   2  -7.37528005e+05  6.16660831e+08  1.31e+01 3.06e-09  7.44e+03     1s
+
+Barrier performed 2 iterations in 0.73 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3507 iterations and 0.74 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34498 rows, 171691 columns and 643349 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+03, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3217 rows and 3218 columns
+Presolve time: 0.39s
+Presolved: 31281 rows, 168473 columns, 607293 nonzeros
+
+Ordering time: 0.02s
+
+Barrier statistics:
+ Dense cols : 84
+ AA' NZ     : 6.354e+05
+ Factor NZ  : 7.124e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.126e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.61008346e+07  6.95450855e+08  2.96e+02 2.22e+04  7.88e+04     1s
+
+Barrier performed 0 iterations in 0.59 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 1792 iterations and 0.60 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34630 rows, 172351 columns and 645815 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+03, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3220 rows and 3221 columns
+Presolve time: 0.40s
+Presolved: 31410 rows, 169130 columns, 609639 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 95
+ AA' NZ     : 5.890e+05
+ Factor NZ  : 6.724e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.800e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.76691640e+07  1.17828442e+09  3.34e+02 3.74e+04  1.49e+05     1s
+   1  -9.25157545e+06  1.31695795e+09  1.77e+02 3.52e-09  7.46e+04     1s
+   2  -8.44865961e+05  6.91292606e+08  1.52e+01 3.59e-09  8.77e+03     1s
+
+Barrier performed 2 iterations in 0.71 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3532 iterations and 0.73 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34960 rows, 174001 columns and 651980 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+02, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3257 rows and 3258 columns
+Presolve time: 0.39s
+Presolved: 31703 rows, 170743 columns, 615445 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 95
+ AA' NZ     : 6.071e+05
+ Factor NZ  : 6.906e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.944e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.77599528e+07  4.99601675e+08  3.35e+02 1.57e+04  6.28e+04     1s
+   1  -9.13468975e+06  5.58936441e+08  1.75e+02 1.30e-09  3.11e+04     1s
+
+Barrier performed 1 iterations in 0.64 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 2570 iterations and 0.65 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34718 rows, 172791 columns and 647459 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+04, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3235 rows and 3236 columns
+Presolve time: 0.40s
+Presolved: 31483 rows, 169555 columns, 611177 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 90
+ AA' NZ     : 6.214e+05
+ Factor NZ  : 7.017e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.041e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.78023320e+07  1.29041534e+09  3.32e+02 4.09e+04  1.62e+05     1s
+   1  -1.38325677e+07  1.44124387e+09  2.58e+02 1.02e-10  1.15e+05     1s
+   2  -9.92801450e+05  8.79326910e+08  1.80e+01 7.28e-11  1.15e+04     1s
+   3  -2.22342035e+05  2.55049517e+08  3.15e+00 4.37e-11  2.31e+03     1s
+
+Barrier performed 3 iterations in 0.79 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3891 iterations and 0.81 seconds
+Optimal objective  1.394463884e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34850 rows, 173451 columns and 649925 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+04, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3252 rows and 3253 columns
+Presolve time: 0.39s
+Presolved: 31598 rows, 170198 columns, 613495 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 91
+ AA' NZ     : 6.240e+05
+ Factor NZ  : 7.049e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.066e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.72913667e+07  1.17298857e+09  3.18e+02 3.70e+04  1.40e+05     1s
+
+Barrier performed 0 iterations in 0.59 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 1766 iterations and 0.60 seconds
+Optimal objective -0.000000000e+00
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34762 rows, 173011 columns and 648281 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [4e+02, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3234 rows and 3235 columns
+Presolve time: 0.39s
+Presolved: 31528 rows, 169776 columns, 611963 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 90
+ AA' NZ     : 6.178e+05
+ Factor NZ  : 6.983e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.002e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.74601715e+07  1.08531896e+09  3.28e+02 3.43e+04  1.34e+05     1s
+   1  -9.17772912e+06  1.20799764e+09  1.74e+02 3.02e-09  6.74e+04     1s
+   2  -8.18113761e+05  6.30232903e+08  1.46e+01 3.46e-09  7.81e+03     1s
+   3  -2.19945927e+05  2.30096182e+08  3.11e+00 1.22e-09  2.01e+03     1s
+   4  -9.13303520e+04  1.00426121e+08  7.32e-01 4.73e-10  6.45e+02     1s
+   5  -6.59279747e+04  4.37129103e+07  2.54e-01 5.46e-10  2.56e+02     1s
+   6  -5.40872091e+04  1.03437156e+07  2.81e-02 4.66e-10  5.66e+01     1s
+
+Barrier performed 6 iterations in 0.99 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5837 iterations and 1.00 seconds
+Optimal objective  9.114015859e+02
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34652 rows, 172461 columns and 646226 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+04, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [0e+00, 0e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3232 rows and 3233 columns
+Presolve time: 0.39s
+Presolved: 31420 rows, 169228 columns, 610007 nonzeros
+
+Ordering time: 0.02s
+
+Barrier statistics:
+ Dense cols : 87
+ AA' NZ     : 6.320e+05
+ Factor NZ  : 7.106e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.113e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.65112882e+07  1.27701932e+09  3.05e+02 4.06e+04  1.48e+05     1s
+   1  -1.27840188e+07  1.40117259e+09  2.37e+02 1.02e-10  1.05e+05     1s
+   2  -9.53627760e+05  8.29873665e+08  1.67e+01 8.00e-11  1.06e+04     1s
+   3  -2.20919676e+05  2.51346484e+08  3.00e+00 4.18e-11  2.24e+03     1s
+
+Barrier performed 3 iterations in 0.78 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3944 iterations and 0.80 seconds
+Optimal objective  2.658203037e+04
+
+Gurobi 7.0.2 (mac64, Python) logging started Sat Jun 16 14:09:19 2018
+
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 35093 rows, 174661 columns and 654646 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+03, 2e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3283 rows and 3283 columns
+Presolve time: 0.42s
+Presolved: 31810 rows, 171378 columns, 617747 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 107
+ AA' NZ     : 5.747e+05
+ Factor NZ  : 6.644e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.758e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -8.89831486e+06  3.26929695e+09  2.25e+02 1.03e+05  2.83e+05     1s
+   1  -1.41910020e+06  2.91565327e+09  3.67e+01 2.04e-10  5.17e+04     1s
+   2  -2.67213509e+05  9.29758100e+08  6.15e+00 1.31e-10  9.79e+03     1s
+   3  -7.27512068e+04  4.68040238e+08  1.03e+00 1.03e-10  3.08e+03     1s
+   4  -4.52061779e+04  1.86464564e+08  2.62e-01 1.25e-10  1.07e+03     1s
+   5  -3.79802039e+04  7.72183544e+07  5.24e-02 8.46e-11  4.18e+02     1s
+
+Barrier performed 5 iterations in 0.93 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5174 iterations and 0.94 seconds
+Optimal objective  1.296987279e+05
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34323 rows, 170811 columns and 640261 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+02, 1e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3200 rows and 3200 columns
+Presolve time: 0.39s
+Presolved: 31123 rows, 167611 columns, 604193 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 87
+ AA' NZ     : 6.178e+05
+ Factor NZ  : 6.962e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.011e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -8.85186220e+06  1.42821164e+09  2.13e+02 4.58e+04  1.20e+05     1s
+   1  -1.54968926e+06  1.24265478e+09  3.81e+01 8.73e-11  2.35e+04     1s
+   2  -2.67879542e+05  4.11813876e+08  6.14e+00 6.55e-11  4.41e+03     1s
+   3  -7.96607281e+04  1.93132188e+08  1.15e+00 5.23e-11  1.35e+03     1s
+   4  -4.63696189e+04  7.02544790e+07  1.66e-01 4.50e-11  4.02e+02     1s
+   5  -4.14472610e+04  2.71587803e+07  4.44e-02 4.69e-11  1.50e+02     1s
+   6  -3.67858407e+04  4.30739983e+06  2.46e-03 1.97e-11  2.36e+01     1s
+   7  -3.28562447e+04  3.71049404e+06  1.89e-03 1.71e-11  2.03e+01     1s
+   8  -2.44939339e+04  3.26299505e+06  1.18e-03 2.34e-11  1.78e+01     1s
+   9  -9.78715894e+03  1.52607288e+06  6.08e-04 2.33e-11  8.32e+00     1s
+
+Barrier performed 9 iterations in 1.14 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 6290 iterations and 1.15 seconds
+Optimal objective  4.384239472e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34015 rows, 169271 columns and 634507 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [1e+02, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3156 rows and 3156 columns
+Presolve time: 0.39s
+Presolved: 30859 rows, 166115 columns, 598793 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 69
+ AA' NZ     : 6.717e+05
+ Factor NZ  : 7.407e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.352e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.19677844e+07  1.41819791e+09  2.48e+02 4.58e+04  1.38e+05     1s
+   1  -1.92122358e+06  1.32029504e+09  4.05e+01 8.73e-11  2.53e+04     1s
+   2  -3.44858811e+05  4.38884394e+08  6.53e+00 5.82e-11  4.75e+03     1s
+
+Barrier performed 2 iterations in 0.71 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3352 iterations and 0.73 seconds
+Optimal objective  4.169698178e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34653 rows, 172461 columns and 646426 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+02, 8e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3228 rows and 3228 columns
+Presolve time: 0.39s
+Presolved: 31425 rows, 169233 columns, 610017 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 83
+ AA' NZ     : 6.425e+05
+ Factor NZ  : 7.192e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.171e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.23068310e+07  1.70123894e+09  2.59e+02 5.40e+04  1.69e+05     1s
+   1  -1.83492578e+06  1.62731394e+09  3.87e+01 1.02e-10  2.93e+04     1s
+   2  -3.48572602e+05  5.27486395e+08  6.38e+00 8.00e-11  5.55e+03     1s
+   3  -1.06678896e+05  2.79634055e+08  1.22e+00 6.41e-11  1.91e+03     1s
+   4  -5.94127259e+04  1.29585554e+08  2.62e-01 6.78e-11  7.46e+02     1s
+   5  -4.89398323e+04  4.11115606e+07  5.69e-02 6.24e-11  2.26e+02     1s
+
+Barrier performed 5 iterations in 0.90 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 4956 iterations and 0.92 seconds
+Optimal objective  4.615549792e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34521 rows, 171801 columns and 643960 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+03, 1e+05]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3215 rows and 3215 columns
+Presolve time: 0.40s
+Presolved: 31306 rows, 168586 columns, 607691 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 79
+ AA' NZ     : 6.585e+05
+ Factor NZ  : 7.328e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.291e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -9.67156642e+06  1.80332500e+09  2.00e+02 5.75e+04  1.43e+05     1s
+   1  -1.71669023e+06  1.51711606e+09  3.44e+01 1.02e-10  2.70e+04     1s
+   2  -2.83342739e+05  4.86827978e+08  4.80e+00 7.28e-11  4.74e+03     1s
+   3  -9.37360659e+04  2.31257643e+08  9.22e-01 6.37e-11  1.53e+03     1s
+   4  -5.43681638e+04  8.65961251e+07  1.97e-01 6.34e-11  4.98e+02     1s
+   5  -4.77459395e+04  3.74606778e+07  5.33e-02 3.60e-11  2.07e+02     1s
+   6  -4.40970868e+04  8.63170370e+06  1.01e-04 5.41e-11  4.67e+01     1s
+
+Barrier performed 6 iterations in 0.98 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5437 iterations and 0.99 seconds
+Optimal objective  6.183769592e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 35027 rows, 174331 columns and 653413 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+03, 9e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3272 rows and 3272 columns
+Presolve time: 0.43s
+Presolved: 31755 rows, 171059 columns, 616593 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 89
+ AA' NZ     : 6.412e+05
+ Factor NZ  : 7.211e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.196e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -8.85874100e+06  1.59432987e+09  1.83e+02 5.01e+04  1.15e+05     1s
+   1  -1.65642521e+06  1.27641986e+09  3.46e+01 1.02e-10  2.31e+04     1s
+   2  -3.05688202e+05  4.41138331e+08  5.36e+00 5.82e-11  4.39e+03     1s
+   3  -1.04250050e+05  2.03909860e+08  1.21e+00 5.78e-11  1.42e+03     1s
+   4  -5.81584668e+04  7.06210967e+07  2.69e-01 5.80e-11  4.13e+02     1s
+   5  -4.90295669e+04  2.50840388e+07  6.20e-02 4.32e-11  1.38e+02     1s
+   6  -4.46338482e+04  4.68192426e+06  2.16e-03 5.72e-11  2.51e+01     1s
+   7  -3.66678686e+04  2.86024338e+06  6.54e-04 2.08e-11  1.54e+01     1s
+   8  -2.18018756e+04  2.22305551e+06  3.88e-04 1.95e-11  1.19e+01     1s
+   9  -1.24408373e+04  1.93151559e+06  3.12e-04 1.63e-11  1.03e+01     1s
+
+Barrier performed 9 iterations in 1.20 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 6581 iterations and 1.22 seconds
+Optimal objective  5.156832699e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34719 rows, 172791 columns and 647659 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [8e+03, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3242 rows and 3242 columns
+Presolve time: 0.38s
+Presolved: 31477 rows, 169549 columns, 611165 nonzeros
+
+Ordering time: 0.02s
+
+Barrier statistics:
+ Dense cols : 81
+ AA' NZ     : 6.632e+05
+ Factor NZ  : 7.386e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.338e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.10878075e+07  2.73212173e+08  2.01e+02 8.65e+03  2.16e+04     1s
+   1  -2.01972456e+06  2.29381775e+08  3.65e+01 9.82e-10  4.23e+03     1s
+   2  -4.00093331e+05  7.96307438e+07  6.34e+00 5.82e-10  8.49e+02     1s
+
+Barrier performed 2 iterations in 0.71 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3120 iterations and 0.72 seconds
+Optimal objective -2.417287026e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34609 rows, 172241 columns and 645604 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [9e+03, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3229 rows and 3229 columns
+Presolve time: 0.39s
+Presolved: 31380 rows, 169012 columns, 609231 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 100
+ AA' NZ     : 5.758e+05
+ Factor NZ  : 6.613e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.728e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.34644430e+07  1.16165641e+09  2.46e+02 3.69e+04  1.11e+05     1s
+   1  -2.17246055e+06  1.08533122e+09  3.95e+01 7.28e-11  2.01e+04     1s
+   2  -4.12896827e+05  3.54214142e+08  6.59e+00 5.09e-11  3.82e+03     1s
+
+Barrier performed 2 iterations in 0.69 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 3048 iterations and 0.70 seconds
+Optimal objective -6.987399755e+02
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34697 rows, 172681 columns and 647248 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [3e+02, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3238 rows and 3238 columns
+Presolve time: 0.39s
+Presolved: 31459 rows, 169443 columns, 610781 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 96
+ AA' NZ     : 5.931e+05
+ Factor NZ  : 6.766e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 2.838e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.08201244e+07  8.34121991e+08  2.01e+02 2.64e+04  6.59e+04     1s
+   1  -1.86509760e+06  7.01327692e+08  3.50e+01 1.14e-09  1.25e+04     1s
+   2  -3.83550737e+05  2.44566374e+08  6.24e+00 1.82e-10  2.58e+03     1s
+   3  -1.12131423e+05  1.13010738e+08  1.10e+00 3.64e-11  7.71e+02     1s
+   4  -6.71281376e+04  3.57485423e+07  2.59e-01 1.67e-10  2.10e+02     1s
+   5  -5.64567553e+04  1.42711184e+07  5.74e-02 1.89e-10  7.89e+01     1s
+
+Barrier performed 5 iterations in 0.89 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5268 iterations and 0.90 seconds
+Optimal objective -9.783651671e+03
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34895 rows, 173671 columns and 650947 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [2e+03, 6e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3252 rows and 3252 columns
+Presolve time: 0.40s
+Presolved: 31643 rows, 170419 columns, 614281 nonzeros
+
+Ordering time: 0.01s
+
+Barrier statistics:
+ Dense cols : 91
+ AA' NZ     : 6.243e+05
+ Factor NZ  : 7.053e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.064e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.11713698e+07  1.29364434e+09  2.07e+02 4.08e+04  1.04e+05     1s
+   1  -2.02786134e+06  1.11264581e+09  3.71e+01 1.02e-10  2.04e+04     1s
+   2  -3.44718534e+05  3.62125529e+08  5.37e+00 5.46e-11  3.62e+03     1s
+   3  -1.09626983e+05  1.77320621e+08  1.01e+00 5.41e-11  1.18e+03     1s
+   4  -6.44500672e+04  6.37378064e+07  2.01e-01 3.40e-11  3.63e+02     1s
+   5  -5.59199884e+04  1.89190130e+07  4.52e-02 5.37e-11  1.03e+02     1s
+
+Barrier performed 5 iterations in 0.94 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 5356 iterations and 0.95 seconds
+Optimal objective -1.315141805e+04
+
+Warning: excessive time spent in model updates.
+Consider calling update less frequently.
+
+Optimize a model with 34257 rows, 170481 columns and 639028 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-01, 8e+01]
+  Objective range  [5e+03, 7e+04]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Concurrent LP optimizer: dual simplex and barrier
+Showing barrier log only...
+
+Presolve removed 3186 rows and 3186 columns
+Presolve time: 0.39s
+Presolved: 31071 rows, 167295 columns, 603045 nonzeros
+
+Ordering time: 0.02s
+
+Barrier statistics:
+ Dense cols : 75
+ AA' NZ     : 6.595e+05
+ Factor NZ  : 7.315e+05 (roughly 90 MBytes of memory)
+ Factor Ops : 3.273e+07 (less than 1 second per iteration)
+ Threads    : 1
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -1.31976646e+07  9.81432579e+08  2.46e+02 3.15e+04  9.44e+04     1s
+   1  -2.16987409e+06  9.15641695e+08  4.03e+01 7.28e-11  1.74e+04     1s
+   2  -3.66211312e+05  2.83929938e+08  5.89e+00 4.37e-11  2.99e+03     1s
+
+Barrier performed 2 iterations in 0.72 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with dual simplex
+Solved in 2915 iterations and 0.73 seconds
+Optimal objective  1.019357763e+04
+
+Gurobi 7.0.2 (mac64, Python) logging started Sat Jun 16 14:13:26 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Sat Jun 16 14:22:17 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 08:44:51 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 09:09:24 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 09:09:53 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 09:39:20 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 09:40:17 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 09:42:36 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 09:44:39 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:14:41 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:22:36 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:24:20 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:26:33 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:26:50 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:27:58 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:29:43 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:30:02 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jun 18 10:41:59 2018
+
