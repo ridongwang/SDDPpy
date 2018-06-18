@@ -297,8 +297,10 @@ class SDDP(object):
             '''
             if self.pass_iteration % 10 == 0:
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
-                if self.pass_iteration>3:
-                    self.compute_upper_bound_math_prog(alg_options['in_sample_ub'])
+                #===============================================================
+                # if self.pass_iteration>3:
+                #     self.compute_upper_bound_math_prog(alg_options['in_sample_ub'])
+                #===============================================================
             
             '''
             Stopping criteria

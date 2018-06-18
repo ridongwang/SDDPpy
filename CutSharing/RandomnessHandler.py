@@ -415,7 +415,7 @@ class ScenarioTree:
         '''
         
         m = Model('SubTree_UB')
-        #m.params.OutputFlag = 0
+        m.params.OutputFlag = 0
         n_paths = len(self.sample_path_costs)
         
         #Variables creation
@@ -423,7 +423,7 @@ class ScenarioTree:
         self.root_node.create_phi_var(m,'')
         m.update()
         #Constraints
-        #m.addConstr(lhs=p.sum(), sense=GRB.EQUAL, rhs=1, name='global_prob')
+        m.addConstr(lhs=p.sum(), sense=GRB.EQUAL, rhs=1, name='global_prob')
         self.root_node.create_constraints(m, p, risk_measures, self.rnd_cont,'')
         m.ModelSense = GRB.MAXIMIZE
         m.update()
@@ -434,14 +434,12 @@ class ScenarioTree:
             m.write("model.ilp")
         else:
             print('%15.5e' %(m.Objval))
-            #===================================================================
-            # for (i,v) in enumerate(m.getVars()):
-            #     if v.VarName[0]=='p' and v.X>0 and v.VarName[0:3]!='phi':
-            #         print(v)
-            #         if v.VarName[0]=='p' and v.VarName[0:3]!='phi':
-            #             print(self.sample_path_costs[i])
-            #             print(self.sample_path_outs[i])
-            #===================================================================
+            for (i,v) in enumerate(m.getVars()):
+                if v.VarName[0]=='p' and v.X>0 and v.VarName[0:3]!='phi':
+                    print(v)
+                    if v.VarName[0]=='p' and v.VarName[0:3]!='phi':
+                        print(self.sample_path_costs[i])
+                        print(self.sample_path_outs[i])
                         
             return m.Objval
     
@@ -519,12 +517,12 @@ class ScenarioTreeNode:
         new_branch_name = branch_name + '_%i' %(self.outcome_id)
         #Phi - p relation
         if self.sampled: 
-            model.addConstr(lhs = self.phi_var, sense=GRB.GREATER_EQUAL,  rhs=quicksum(p[i] for i in self.sample_path_ids), name='PhiToP_%i%s' %(t,new_branch_name))
+            model.addConstr(lhs = self.phi_var, sense=GRB.EQUAL,  rhs=quicksum(p[i] for i in self.sample_path_ids), name='PhiToP_%i%s' %(t,new_branch_name))
         
             if len(self.children)>0:
                 #prob consistency: Sum of descendants adds up to 1
-                model.addConstr(quicksum(n.phi_var for n in self.children), sense=GRB.EQUAL,  rhs=1, name='cox_%i%s' %(t,new_branch_name))
-                model.update()
+                #model.addConstr(quicksum(n.phi_var for n in self.children), sense=GRB.EQUAL,  rhs=1, name='cox_%i%s' %(t,new_branch_name))
+                #model.update()
                 #Uncertainty set
                 phis = [n.phi_var for n in self.children]
                 risk_measures[t].define_scenario_tree_uncertainty_set(self.stage,self.outcome_id,model,rc[t+1],phis ,new_branch_name)

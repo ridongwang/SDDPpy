@@ -319,7 +319,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         
         z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z_%i%s' % (stage, branch_name))
         model.update()
-        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org_%i%s' % (stage, branch_name))
+        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o]*quicksum(phi) for o in range(n_org)), name='org_%i%s' % (stage, branch_name))
         model.addConstrs((z.sum('*', d)==phi[d] for d in range(n_des)), name='des_%i%s' % (stage, branch_name))
         
         DUS_exp = LinExpr()
@@ -331,7 +331,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
                 d_ij = self.dist_func(xi_i,xi_j, self.norm)
                 DUS_exp.addTerms(d_ij,z[i,j])
         
-        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus_%i%s' %(stage,branch_name))
+        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius*quicksum(phi), name = 'dus_%i%s' %(stage,branch_name))
         model.update()
         
         
@@ -787,7 +787,3 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         assert len(outcomes_objs) == len(self.nominal_p)
         new_p = np.array([vars[i].X for i in range(len(vars))])
         return new_p
-        
-        
-        
-        
