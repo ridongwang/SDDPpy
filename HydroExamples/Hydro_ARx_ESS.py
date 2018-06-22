@@ -7,6 +7,7 @@ import csv
 import CutSharing
 import logging
 import numpy as np
+np.set_printoptions(linewidth= 200, nanstr='nen')
 from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
 from CutSharing.SDPP_Alg import SDDP
 from CutSharing import logger as sddp_log
@@ -188,7 +189,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [9,15,30,90]:#[2,3,5,10,20,30]:
+            for N_training in [9,10,15,30,45,60,90,100]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -243,7 +244,9 @@ if __name__ == '__main__':
                 #===================================================================
                 
                 sim_results_com = []
-                lbs_list = []
+                lbs_static = []
+                lbs_dynamic = []
+                r_lbs = [b*(10**c) for c in [1] for b in [1]]
                 '''
                 Wasserstein DUS Experiment 1 static sampling 
                 '''
@@ -255,38 +258,40 @@ if __name__ == '__main__':
                 # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 # sim_results = list()
                 # #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,3,5,8]]:
-                # for rr in [b*(10**c) for c in [1] for b in [1]]:
+                # for rr in r_lbs:
                 #     print('Wasserstein r = %10.4e' %(rr))
                 #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
                 #     lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
-                #     lbs_list.append(lbs)
+                #     lbs_static.append(lbs)
                 #     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                 #     sim_results.append(sim_result)
                 #     del(algo)
                 # sim_results_com.append(sim_results)
-                # plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinNoise.pdf' %(instance_name))
+                # #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinNoise.pdf' %(instance_name))
                 #===============================================================
                 
                 
                 '''
                 Mod Chi2   DUS Experiment 1 static sampling
                 '''
-                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
-                #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
-                CutSharing.options['multicut'] = True
-                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
-                sim_results = list()
-                for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,8]]:
-                    print('Chi2 r = %10.4e' %(rr))
-                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
-                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
-                    lbs_list.append(lbs)
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-                    sim_results.append(sim_result)
-                    del(algo)
-                sim_results_com.append(sim_results)
-                plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2Noise.pdf' %(instance_name), len(valley_chain[0].inflows))
+                #===============================================================
+                # valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                # #CutSharing.options['max_iter'] =10
+                # CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
+                # CutSharing.options['multicut'] = True
+                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                # sim_results = list()
+                # for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,8]]:
+                #     print('Chi2 r = %10.4e' %(rr))
+                #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
+                #     lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
+                #     lbs_list.append(lbs)
+                #     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                #     sim_results.append(sim_result)
+                #     del(algo)
+                # sim_results_com.append(sim_results)
+                # plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2Noise.pdf' %(instance_name), len(valley_chain[0].inflows))
+                #===============================================================
                 
                 
                 '''
@@ -294,22 +299,25 @@ if __name__ == '__main__':
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/100)
+                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
-                  
+                    
                 sim_results = list()
-                for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,3,5,8]]:
+                #for rr in [b*(10**c) for c in [-0,1] for b in [1]]:
+                for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                    #for rr in r_lbs:
                     print('Wasserstein r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
                     lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
-                    lbs_list.append(lbs)
+                    lbs_dynamic.append(lbs)
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 sim_results_com.append(sim_results)
-                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinNoise.pdf' %(instance_name), len(valley_chain[0].inflows))
-                #plot_lbs(lbs_list, hydro_path+'/Output/%s_lbs_wasserstein%f.pdf' %(instance_name,rr))
+                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDS.pdf' %(instance_name), len(valley_chain[0].inflows))
+                
+                #plot_lbs(lbs_static, lbs_dynamic, len(valley_chain[0].inflows), r_lbs,  hydro_path+'/Output/%s_lbs_' %(instance_name))
                  
                 
                 
@@ -317,24 +325,24 @@ if __name__ == '__main__':
                 Wasserstein DUS Experiment 2
                 Uses less data points as origin in the implicit transport problem
                 '''
-                #===============================================================
-                # valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
-                # #CutSharing.options['max_iter'] =10
-                # CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
-                # CutSharing.options['multicut'] = True
-                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
-                # sim_results = list()
-                # for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,3,5,8]]:
-                #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
-                #     algo.run( instance_name=instance_name)
-                #     print('Wasserstein r = %10.4e' %(rr))
-                #     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-                #     sim_results.append(sim_result)
-                #     del(algo)
-                # #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinE2.pdf' %(instance_name))
-                # sim_results_com.append(sim_results)
-                # plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinComp3.pdf' %(instance_name))
-                #===============================================================
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
+                #CutSharing.options['max_iter'] =10
+                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/10)
+                CutSharing.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
+                sim_results = list()
+                #for rr in [b*(10**c) for c in [-0,1] for b in [1]]:
+                for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
+                    algo.run( instance_name=instance_name, dynamic_sampling=True)
+                    print('Wasserstein r = %10.4e' %(rr))
+                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_results.append(sim_result)
+                    del(algo)
+                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDSE2.pdf' %(instance_name), N_training)
+                sim_results_com.append(sim_results)
+                plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
                 
                 
                 '''
