@@ -245,7 +245,7 @@ class SDDP(object):
             additional_msg = '' 
             if self.cutting_plane_max_vio !=None:
                 additional_msg = '%15.5e' %(self.cutting_plane_max_vio)
-            sddp_log.info('%4i %15.5e %15.5e %15.5e %15.2f %15s' %(self.pass_iteration, self.lb, self.ub, self.ub_hw, elapsed_time, additional_msg))
+            sddp_log.info('%4i %15.8e %15.8e %15.5e %15.2f %15s' %(self.pass_iteration, self.lb, self.ub, self.ub_hw, elapsed_time, additional_msg))
         if  force_print:
             sddp_log.info('==============================================================================================')
             sddp_log.info('%4s %15s %15s %15s %12s %12s %12s'
@@ -259,7 +259,7 @@ class SDDP(object):
         if self.pass_iteration >= alg_options['max_iter']:
             return True
         if self.pass_iteration > 0:
-            if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:
+            if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:  #- self.ub_hw -
                 return True             
         return False
     
@@ -295,12 +295,11 @@ class SDDP(object):
             '''
             Compute statistical upper bounds
             '''
-            if self.pass_iteration % 10 == 0:
+            if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
+                #pass
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
-                #===============================================================
-                # if self.pass_iteration>3:
-                #     self.compute_upper_bound_math_prog(alg_options['in_sample_ub'])
-                #===============================================================
+                #if self.pass_iteration>3:
+                #    self.compute_upper_bound_math_prog(2*alg_options['in_sample_ub'])
             
             '''
             Stopping criteria
@@ -327,7 +326,6 @@ class SDDP(object):
     
     
     def simulate_policy(self, n_samples, out_of_sample_random_container):
-        np.random.seed(1111)
         self.upper_bounds = []
         for i in range(0,n_samples):
             s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)

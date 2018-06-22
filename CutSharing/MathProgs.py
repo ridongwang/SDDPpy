@@ -174,6 +174,9 @@ class StageProblem():
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
+            #if self.stage == 0:
+                #self.print_theta()
+            
         output['lptime'] = lp_time
         output['cutupdatetime'] = cutupdatetime
         output['setuptime']  = setuptime
@@ -191,6 +194,12 @@ class StageProblem():
             if 'generation' in v.varname or 'inflow[1' in v.varname or 'reservoir_level[1' in v.varname:
                 strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
         print(strout)
+    
+    def print_theta(self):
+        tvals = np.array([self.oracle[v].X for v in self.oracle])
+        args_t_vals = np.argsort(tvals)
+        print(args_t_vals)
+            
         
     def printPostSolutionInformation(self):
         print('------------------------------------')

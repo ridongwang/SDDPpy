@@ -286,7 +286,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         if t  == len(rnd_container.stage_vectors)-1:
             #Last stage needs no update
             return 
-        desc_rnd_vec = rnd_container[t+1] #Descendent outcomes
+        desc_rnd_vec = rnd_container[t+1] #Descendant outcomes
         p_w = np.zeros(desc_rnd_vec.outcomes_dim)
         for (i,j) in self.dro_ctrs:
             p_w[j]  += self.dro_ctrs[(i,j)].Pi
@@ -294,7 +294,8 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         p_w = p_w/p_w.sum()
             
         desc_rnd_vec.modifyOutcomesProbabilities(p_w)
-        #print(t, p_w)
+        #if t== 2:
+            #print(t, p_w)
         
         
     def define_scenario_tree_uncertainty_set(self, stage, outcome,  model, srv, phi, branch_name):
