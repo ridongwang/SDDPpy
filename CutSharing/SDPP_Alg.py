@@ -94,7 +94,7 @@ class SDDP(object):
             IO and stats updates
             '''
             if simulation and alg_options['outputlevel']>=3:
-                    sp.print_stage_res_summary()
+                sp.print_stage_res_summary()
             if i == 0:       
                 self.lb = sp_output['objval']
             fp_ub_value += sp.get_stage_objective_value()
@@ -260,7 +260,7 @@ class SDDP(object):
             return True
         if self.pass_iteration > 0:
             if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:  #- self.ub_hw -
-                return True             
+                return False             
         return False
     
     def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default', dynamic_sampling = False):
@@ -298,7 +298,8 @@ class SDDP(object):
             if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
                 #pass
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
-                #if self.pass_iteration>3:
+                if self.pass_iteration>3:
+                    self.compute_upper_bound_opt_sim(1000)
                 #    self.compute_upper_bound_math_prog(2*alg_options['in_sample_ub'])
             
             '''
@@ -436,11 +437,72 @@ class SDDP(object):
             
         ub  = sub_tree.compute_subtree_upper_bound([sp.risk_measure for sp in self.stage_problems])
         self.random_container.reset_to_nominal_dist()
-       # print(ub)
+        # print(ub)
         
+    def compute_upper_bound_opt_sim(self, n_samples):   
+        '''
+        Computes an upper bound based on simulation optimization. 
+        '''
+        ref_state = 1
+        ref_sp = self.stage_problems[ref_state]
+        ref_rm = ref_sp.risk_measure
+        num_outcomes = self.random_container[-1].outcomes_dim #dimension of the random vector in the last stage
         
+                
+        #Getting trial points for probabilities
+        ub_max = -np.inf
+        e = np.ones(num_outcomes)
+        q = np.array([1/num_outcomes for _ in range(num_outcomes)])
+        p = q.copy()
+        d = in_sample_gen.uniform(size=num_outcomes)
+        n_trial = int(np.maximum(1, np.log(n_samples)))
+        trial_points = []
+        for k in range(n_trial):
+            proj_d = (e.dot(d)/e.dot(e))*e
+            orth_d = d-proj_d
+            assert np.abs(orth_d.dot(e))<1E-8, 'wrong projection'
+            d_range = ref_rm.orthogonal_proj_uncertainty_set(p,orth_d,self.random_container[ref_state],ref_state-1)
+            p = p + orth_d*in_sample_gen.uniform(0,d_range)
+            trial_points.append(p.copy())
+
+            #Apply solution to the random container
+            for srv in self.random_container.stage_vectors[1:]:
+                srv.p = p.copy()
+            sample_path_outcomes = []  
+            self.upper_bounds = []# rest bound
+            for i in range(0,n_samples):
+                s_path, s_path_outcomes =  self.random_container.getSamplePath(in_sample_gen)
+                self.forwardpass(sample_path = s_path, simulation=True)
+                sample_path_outcomes.append(s_path_outcomes)
         
+                #assert len(sample_path_outcomes)==len(self.upper_bounds), 'Scenario data mismatching'
+            
+            self.random_container.reset_to_nominal_dist()
+            branches = np.zeros((num_outcomes,n_samples))
+            for i in range(0,n_samples):
+                for o_t in sample_path_outcomes[0][1:]:
+                    branches[o_t,i]+=1
+            print(p)
+            # update direction
+            for o in range(0,num_outcomes):     
+                d[o] = 0
+                for w in range(n_samples):
+                    if branches[o,w]>0:
+                        branch_weight = 1
+                        for oo in range(0,num_outcomes):
+                            if o==oo:
+                                branch_weight= branch_weight*(p[oo]**(branches[o,w]-1))
+                            else:
+                                branch_weight= branch_weight*(p[oo]**(branches[o,w]))
+                            d[o]+= branches[o,w]*branch_weight*self.upper_bounds[w]
+
+            d = d/np.linalg.norm(d) # unit vector
+            ub_k = np.mean(self.upper_bounds)     
+            print(ub_k)
+            if ub_k > ub_max:
+                ub_max = ub_k
         
+        print(ub_max)
         
     def debrief_infeasible_sub(self, sample_path, t,sp_output,sp): 
         for ss in sample_path: 

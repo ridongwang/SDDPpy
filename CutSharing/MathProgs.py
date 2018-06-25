@@ -305,7 +305,7 @@ class StageProblem():
                 new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
         else:
             if self.multicut == True:
-                raise "Multicut is not yet implemented for the dependen case"
+                raise "Multicut is not yet implemented for the dependent case"
             #ctrRHSvName
             alpha_bar = {}  #Expected duals of the cuts
             ab_D = np.zeros((1, len(pi_bar))) #Computation alpha_bar_{t+1}*D_{t+1}

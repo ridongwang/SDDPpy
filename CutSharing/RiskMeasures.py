@@ -334,7 +334,48 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         
         model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius*quicksum(phi), name = 'dus_%i%s' %(stage,branch_name))
         model.update()
+    
+    def orthogonal_proj_uncertainty_set(self, p_k, d_k, srv , stage):
+        '''
+        Performs an orthogonal projection onto the uncertainty set.
+        TODO: rewrite after deciding what this is actually going to do. 
+        Args:
+            p_trial(ndarray): trial point 
+        '''
+        model = Model('DUS_hit_and_run')
+        model.params.OutputFlag = 0 
+        nsrv_org = srv #Origin points in the support for the transport problem
+        if self.data_random_container !=None:
+            nsrv_org = self.data_random_container[stage+1]
+    
+        nsrv_des = srv  #Destination points in the support for the transport problem
+        n_org  = nsrv_org.outcomes_dim
+        n_des  = nsrv_des.outcomes_dim
         
+        z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z')
+        d_range = model.addVar(lb=0, obj=1, vtype=GRB.CONTINUOUS, name='d_range')
+        model.update()
+        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org')
+        model.addConstrs((z.sum('*', d)==p_k[d]+d_range*d_k[d] for d in range(n_des)), name='des')
+        
+        DUS_exp = LinExpr()
+        for i in range(n_org):
+            xi_i = nsrv_org.get_sorted_outcome(i)
+            for j in range(n_des):
+                xi_j = nsrv_des.get_sorted_outcome(j)
+                d_ij = self.dist_func(xi_i,xi_j, self.norm)
+                DUS_exp.addTerms(d_ij,z[i,j])
+        
+        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus')
+        model.update()
+        
+        model.ModelSense = GRB.MAXIMIZE
+        model.update()
+        model.optimize()
+        if model.status == GRB.OPTIMAL:
+            return d_range.X
+        else:
+            raise 'Trial point or direction are invalid, opt problem not optimal'
         
         
 class DistRobustDuality(AbstracRiskMeasure):

@@ -304,8 +304,8 @@ if __name__ == '__main__':
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                     
                 sim_results = list()
-                #for rr in [b*(10**c) for c in [-0,1] for b in [1]]:
-                for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                for rr in [b*(10**c) for c in [0] for b in [15]]:
+                #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                     #for rr in r_lbs:
                     print('Wasserstein r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
@@ -315,7 +315,7 @@ if __name__ == '__main__':
                     sim_results.append(sim_result)
                     del(algo)
                 sim_results_com.append(sim_results)
-                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDS.pdf' %(instance_name), len(valley_chain[0].inflows))
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDS.pdf' %(instance_name), len(valley_chain[0].inflows))
                 
                 #plot_lbs(lbs_static, lbs_dynamic, len(valley_chain[0].inflows), r_lbs,  hydro_path+'/Output/%s_lbs_' %(instance_name))
                  
@@ -340,9 +340,9 @@ if __name__ == '__main__':
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
-                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDSE2.pdf' %(instance_name), N_training)
-                sim_results_com.append(sim_results)
-                plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDSE2.pdf' %(instance_name), N_training)
+                #sim_results_com.append(sim_results)
+                #plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
                 
                 
                 '''
