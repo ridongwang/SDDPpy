@@ -15,6 +15,9 @@ from CutSharing.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen,
 from OutputAnalysis.SimulationAnalysis import SimResult
 from CutSharing.RandomnessHandler import ScenarioTree
 from CutSharing.RiskMeasures import Expectation
+from CutSharing.WassersteinWorstCase import solve_worst_case_expectation
+
+
 
  
 sddp_log = cs.logger
@@ -48,6 +51,8 @@ class SDDP(object):
         #Attribute to keep track of the maximum violation when using cutting planes. 
         self.cutting_plane_max_vio = None
 
+
+        self.best_p = None #Used in the opt-simulation methodf
         
     def createStageProblems(self, T, model_builder, risk_measure, **risk_measure_params):
         '''
@@ -260,8 +265,9 @@ class SDDP(object):
             return True
         if self.pass_iteration > 0:
             if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:  #- self.ub_hw -
-                return False             
+                return True             
         return False
+    
     
     def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default', dynamic_sampling = False):
         reset_all_rnd_gen()
@@ -298,8 +304,10 @@ class SDDP(object):
             if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
                 #pass
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
-                if self.pass_iteration>3:
-                    self.compute_upper_bound_opt_sim(1000)
+                #===============================================================
+                # if self.pass_iteration>3:
+                #     self.compute_upper_bound_opt_sim_knitro(100)
+                #===============================================================
                 #    self.compute_upper_bound_math_prog(2*alg_options['in_sample_ub'])
             
             '''
@@ -502,6 +510,63 @@ class SDDP(object):
             if ub_k > ub_max:
                 ub_max = ub_k
         
+        print(ub_max)
+    
+    
+    def compute_upper_bound_opt_sim_knitro(self, n_samples):   
+        '''
+        Computes an upper bound based on simulation optimization. 
+        '''
+        ref_state = 1
+        ref_sp = self.stage_problems[ref_state]
+        ref_rm = ref_sp.risk_measure
+        num_outcomes = self.random_container[-1].outcomes_dim #dimension of the random vector in the last stage
+        
+                
+        #Getting trial points for probabilities
+        ub_max = -np.inf
+        e = np.ones(num_outcomes)
+        q = np.array([1/num_outcomes for _ in range(num_outcomes)])
+        p = q.copy()
+        try:
+            p = self.best_p.copy()
+        except:
+            pass
+        d = in_sample_gen.uniform(size=num_outcomes)
+        n_trial = int(np.maximum(1, np.log(n_samples)))
+        trial_points = []
+        for k in range(n_trial):
+            trial_points.append(p.copy())
+            #Apply solution to the random container
+            print('Simulating: ' , p)
+            for srv in self.random_container.stage_vectors[1:]:
+                srv.p = p.copy()
+            sample_path_outcomes = []  
+            self.upper_bounds = []# rest bound
+            for i in range(0,n_samples):
+                s_path, s_path_outcomes =  self.random_container.getSamplePath(in_sample_gen)
+                self.forwardpass(sample_path = s_path, simulation=True)
+                sample_path_outcomes.append(s_path_outcomes)
+            
+            #Upper bound proxy
+            ub_k = np.mean(self.upper_bounds)    
+            self.random_container.reset_to_nominal_dist()
+            branches = np.zeros((num_outcomes,n_samples))
+            for i in range(0,n_samples):
+                for o_t in sample_path_outcomes[0][1:]:
+                    branches[o_t,i]+=1
+            
+            #Solver worst case expectation and retrive new p vector
+            outcomes_org,outcomes_des,distances,r_w = ref_rm.get_dus_params(self.random_container[ref_state], ref_state - 1)
+            costs = np.array(self.upper_bounds)
+            obj, new_p, status = solve_worst_case_expectation(outcomes_org,outcomes_des,branches,costs,distances,r_w)
+            
+            print(ub_k, obj, status)
+            if ub_k > ub_max:
+                ub_max = ub_k
+                self.best_p = new_p.copy()
+                #update vector p 
+                p = new_p.copy()
         print(ub_max)
         
     def debrief_infeasible_sub(self, sample_path, t,sp_output,sp): 
