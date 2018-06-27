@@ -461,8 +461,8 @@ class SDDP(object):
             proj_d = (e.dot(d)/e.dot(e))*e
             orth_d = d-proj_d
             assert np.abs(orth_d.dot(e))<1E-8, 'wrong projection'
-            d_range = ref_rm.orthogonal_proj_uncertainty_set(p,orth_d,self.random_container[ref_state],ref_state-1)
-            p = p + orth_d*in_sample_gen.uniform(0,d_range)
+            d_range = ref_rm.orthogonal_proj_uncertainty_set(p, orth_d, self.random_container[ref_state], ref_state - 1)
+            p = p + orth_d*d_range#in_sample_gen.uniform(0,d_range)
             trial_points.append(p.copy())
 
             #Apply solution to the random container
