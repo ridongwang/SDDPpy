@@ -189,7 +189,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [9,10,15,30,45,60,90,100]:#[2,3,5,10,20,30]:
+            for N_training in [30,45,60,90,100]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -299,12 +299,12 @@ if __name__ == '__main__':
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
+                CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/100)
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                     
                 sim_results = list()
-                for rr in [b*(10**c) for c in [0] for b in [15]]:
+                for rr in [b*(10**c) for c in [0] for b in [10]]:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                     #for rr in r_lbs:
                     print('Wasserstein r = %10.4e' %(rr))

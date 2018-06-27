@@ -294,8 +294,10 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         p_w = p_w/p_w.sum()
             
         desc_rnd_vec.modifyOutcomesProbabilities(p_w)
-        #if t== 2:
-            #print(t, p_w)
+        #=======================================================================
+        # if t== 0:
+        #     print(t, p_w)
+        #=======================================================================
         
         
     def define_scenario_tree_uncertainty_set(self, stage, outcome,  model, srv, phi, branch_name):
@@ -377,6 +379,23 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         else:
             raise 'Trial point or direction are invalid, opt problem not optimal'
         
+    def get_dus_params(self,srv , stage):
+        nsrv_org = srv #Origin points in the support for the transport problem
+        if self.data_random_container !=None:
+            nsrv_org = self.data_random_container[stage+1]
+    
+        nsrv_des = srv  #Destination points in the support for the transport problem
+        n_org  = nsrv_org.outcomes_dim
+        n_des  = nsrv_des.outcomes_dim
+        
+        d_ij = np.zeros((n_org,n_des))
+        for i in range(n_org):
+            xi_i = nsrv_org.get_sorted_outcome(i)
+            for j in range(n_des):
+                xi_j = nsrv_des.get_sorted_outcome(j)
+                d_ij[i,j] = self.dist_func(xi_i,xi_j, self.norm)
+        
+        return n_org,n_des,d_ij,self.radius
         
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'

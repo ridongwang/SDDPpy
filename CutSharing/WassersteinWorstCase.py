@@ -154,7 +154,7 @@ def solve_worst_case_expectation(outcomes_org,outcomes_des,branches,costs,distan
         raise RuntimeError ("Failed to find a Knitro license.")
     
     #---- DEMONSTRATE HOW TO SET KNITRO PARAMETERS.
-    if KTR_set_int_param_by_name(kc, 'outlev', 3):
+    if KTR_set_int_param_by_name(kc, 'outlev', 0):
         raise RuntimeError ("Error setting parameter 'outlev'")
     if KTR_set_int_param_by_name(kc, "hessopt", 2):
        raise RuntimeError ("Error setting parameter 'hessopt'")
@@ -162,8 +162,13 @@ def solve_worst_case_expectation(outcomes_org,outcomes_des,branches,costs,distan
        raise RuntimeError ("Error setting parameter 'multistart'")
     if KTR_set_int_param_by_name(kc, "gradopt", 2   ):
         raise RuntimeError ("Error setting parameter gradopt")
-    if KTR_set_double_param_by_name(kc, "feastol", 1.0E-4):
+    if KTR_set_double_param_by_name(kc, "feastol", 1.0E-6):
         raise RuntimeError ("Error setting parameter 'feastol'")
+    if KTR_set_double_param_by_name(kc, "ftol", 1.0E-3):
+        raise RuntimeError ("Error setting parameter 'feastol'")
+    if KTR_set_int_param_by_name(kc, "ftol_iters", 10):
+        raise RuntimeError ("Error setting parameter 'feastol'")
+    
     
     KTR_set_int_param_by_name(kc, "derivcheck", 0)
     
@@ -259,12 +264,12 @@ def solve_worst_case_expectation(outcomes_org,outcomes_des,branches,costs,distan
     
     print
     print
-    if nStatus != 0:
+    if nStatus not in [0,-101,-102,-103]:
+        print (obj, x[0:outcomes_des], nStatus)
         raise RuntimeError ("Knitro failed to solve the problem, final status = %d" % nStatus)
     else:
         #---- AN EXAMPLE OF OBTAINING SOLUTION INFORMATION.
-        print ("Knitro successful, feasibility violation    = %e" % KTR_get_abs_feas_error (kc))
-        print ("                   KKT optimality violation = %e" % KTR_get_abs_opt_error (kc))
+        print ("Knitro>fea.viol,KKT_viol= %e %e" %(KTR_get_abs_feas_error (kc), KTR_get_abs_opt_error (kc) ) )
         print (obj, x[0:outcomes_des], nStatus)
         my_grad = [0]*n
         ret1 = KTR_get_objgrad_values(kc,my_grad )
