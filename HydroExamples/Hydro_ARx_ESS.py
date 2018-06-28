@@ -189,7 +189,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [30,45,60,90,100]:#[2,3,5,10,20,30]:
+            for N_training in [15,30,90]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -229,7 +229,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 1000
+                CutSharing.options['max_iter'] = 300
                 '''
                 Expected value risk measure
                 '''
@@ -246,7 +246,8 @@ if __name__ == '__main__':
                 sim_results_com = []
                 lbs_static = []
                 lbs_dynamic = []
-                r_lbs = [b*(10**c) for c in [1] for b in [1]]
+                lbs_list = []
+                r_lbs = [b*(10**c) for c in [0] for b in [20,100]]
                 '''
                 Wasserstein DUS Experiment 1 static sampling 
                 '''
@@ -274,24 +275,23 @@ if __name__ == '__main__':
                 '''
                 Mod Chi2   DUS Experiment 1 static sampling
                 '''
-                #===============================================================
-                # valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
-                # #CutSharing.options['max_iter'] =10
-                # CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
-                # CutSharing.options['multicut'] = True
-                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
-                # sim_results = list()
-                # for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,8]]:
-                #     print('Chi2 r = %10.4e' %(rr))
-                #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
-                #     lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
-                #     lbs_list.append(lbs)
-                #     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-                #     sim_results.append(sim_result)
-                #     del(algo)
-                # sim_results_com.append(sim_results)
-                # plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2Noise.pdf' %(instance_name), len(valley_chain[0].inflows))
-                #===============================================================
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                #CutSharing.options['max_iter'] =10
+                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+                CutSharing.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                sim_results = list()
+                for rr in []:#r_lbs:
+                #for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,8]]:
+                    print('DRO Dual Variation (via Wasserstein) r = %10.4e' %(rr))
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
+                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
+                    lbs_list.append(lbs)
+                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_results.append(sim_result)
+                    del(algo)
+                #sim_results_com.append(sim_results)
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2Noise.pdf' %(instance_name), len(valley_chain[0].inflows))
                 
                 
                 '''
@@ -299,15 +299,16 @@ if __name__ == '__main__':
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/100)
+                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
-                    
+                     
                 sim_results = list()
-                for rr in [b*(10**c) for c in [0] for b in [10]]:
+                
+                #for rr in [b*(10**c) for c in [0] for b in [10]]:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
-                    #for rr in r_lbs:
-                    print('Wasserstein r = %10.4e' %(rr))
+                for rr in r_lbs:
+                    print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
                     lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
                     lbs_dynamic.append(lbs)
@@ -316,7 +317,7 @@ if __name__ == '__main__':
                     del(algo)
                 sim_results_com.append(sim_results)
                 #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDS.pdf' %(instance_name), len(valley_chain[0].inflows))
-                
+                 
                 #plot_lbs(lbs_static, lbs_dynamic, len(valley_chain[0].inflows), r_lbs,  hydro_path+'/Output/%s_lbs_' %(instance_name))
                  
                 
@@ -331,8 +332,8 @@ if __name__ == '__main__':
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
                 sim_results = list()
-                #for rr in [b*(10**c) for c in [-0,1] for b in [1]]:
-                for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                for rr in []:
+                #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                 #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
@@ -346,25 +347,50 @@ if __name__ == '__main__':
                 
                 
                 '''
-                DRO Philpott - Modified Chi 2 DUS
+                DRO Philpott - Variation
                 '''
-                #===============================================================
-                # DUS_radius = 3*q_prob
-                # CutSharing.options['multicut'] = False
-                # #CutSharing.options['max_iter'] = 100
-                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
-                # sim_results = []
-                # # [1,5,10,50,100,250,500,750,1000,2000,5000]
-                # for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,7,9]]:
-                #     CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
-                #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':rr, 'set_type':DistRobustDuality.L2_NORM})
-                #     algo.run( instance_name=instance_name)
-                #     print('Mod Chi2 r = %10.4e' %(rr))
-                #     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-                #     sim_results.append(sim_result)
-                # del(algo)
-                # plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2.pdf' %(instance_name))
-                #===============================================================
+                CutSharing.options['max_iter'] = 3000
+                CutSharing.options['multicut'] = False
+                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                dim_p = len(valley_chain[0].inflows)
+                q_prob = 1/dim_p
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], dim_p)
+                sim_results = []
+                # [1,5,10,50,100,250,500,750,1000,2000,5000]
+                for rr in []:
+                    print('DRO Philpott - Variation - r = %10.4e' %(rr))
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':rr, 'set_type':DistRobustDuality.L1_NORM})
+                    algo.run( instance_name=instance_name)
+                    
+                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_results.append(sim_result)
+                    del(algo)
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2.pdf' %(instance_name))
+                
+                
+                
+                '''
+                DRO Dual - Variation
+                '''
+                #CutSharing.options['max_iter'] = 20
+                CutSharing.options['multicut'] = True
+                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                dim_p = len(valley_chain[0].inflows)
+                q_prob = 1/dim_p
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], dim_p)
+                sim_results = []
+                # [1,5,10,50,100,250,500,750,1000,2000,5000]
+                for rr in []:
+                    print('DRO Dual - Variation - r = %10.4e' %(rr))
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustDuality, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':rr, 'set_type':DistRobustDuality.L1_NORM, 'cutting_planes':False})
+                    algo.run( instance_name=instance_name)
+                    
+                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_results.append(sim_result)
+                    del(algo)
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2.pdf' %(instance_name))
                 
                 #===================================================================
                 # CutSharing.options['multicut'] = True

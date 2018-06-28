@@ -45,6 +45,12 @@ class AbstracRiskMeasure(ABC):
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0 
+    @abstractmethod
+    def forward_prob_update(self, *args, **kwags):
+        '''
+        Only needed for dynamic sampling
+        '''
+        return None
     
 
 class Expectation(AbstracRiskMeasure):
@@ -566,7 +572,10 @@ class DistRobustDuality(AbstracRiskMeasure):
                 return resolve, vio
             return False, vio
         return False, 0
-            
+    
+    def forward_prob_update(self, *args, **kwargs):
+        '''No probability modifications for this risk measure'''
+        pass     
 
 class DRO_CuttingPlanes():
     '''
@@ -634,7 +643,7 @@ class DRO_CuttingPlanes():
         cut_lhs = quicksum(sub_gradient[i]*vars[i] for i in range(len(vars))) + cut_intercept
         return cut_lhs
         
-
+    
 
 
 
@@ -752,7 +761,9 @@ class DistRobust(AbstracRiskMeasure):
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0   
-
+    def forward_prob_update(self, *args, **kwargs):
+        '''No probability modifications for this risk measure'''
+        pass
 
 class DistRobusInnerSolver(ABC):
     @abstractmethod
@@ -829,7 +840,7 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
     
     def compute_worst_case_distribution(self, outcomes_objs):
         '''
-        Compute the worst cas probability distribution for a particular stage
+        Compute the worst-case probability distribution for a particular stage
         given the objective function value of the descendent nodes (as many as outcomes)
         Args:
             outcomes_objs (ndarray): vector of objectives values of the next stage.
