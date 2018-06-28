@@ -150,7 +150,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
     Attributes:
         norm (int): norm degree to compute the distance between two random vectors
         radius (float): length of the uncertainty set based on Wasserstein distance
-        primal_dus (int): If different from 'ALL', especifies the number of combinations
+        primal_dus (int): If different from 'ALL', specifies the number of combinations
             to be considered for every outcome in the origin side of the transportation problem.
         data_random_container (RandomContainer): contains the randomness coming form data. It might be
             the same as the random container used in the algorithm when the number of data points equal
@@ -402,6 +402,179 @@ class DistRobustWasserstein(AbstracRiskMeasure):
                 d_ij[i,j] = self.dist_func(xi_i,xi_j, self.norm)
         
         return n_org,n_des,d_ij,self.radius
+    
+    
+class DistRobustWassersteinCont(AbstracRiskMeasure):
+    '''
+    Distributional uncertainty set defined by the Wasserstein metric with continuous support.
+    
+    This class implements the cuts derived in Estahni and Khun 
+    Attributes:
+        norm (int): norm degree to compute the distance between two random vectors
+        radius (float): length of the uncertainty set based on Wasserstein distance
+        primal_dus (int): If different from 'ALL', specifies the number of combinations
+            to be considered for every outcome in the origin side of the transportation problem.
+        data_random_container (RandomContainer): contains the randomness coming form data. It might be
+            the same as the random container used in the algorithm when the number of data points equal
+            the number of outcomes being considered. 
+        dro_ctrs (dic of GRBCtr): dictionary storing the constraints whose dual variables are the transportation plan.  
+    '''
+    def __init__(self, norm = 1, radius = 1, primal_dus = 'ALL', dist_func = norm_fun, data_random_container = None):
+        super().__init__()
+        self.norm = norm
+        self.radius = radius
+        self.primal_dus = primal_dus
+        self.dist_func = dist_func
+        if self.primal_dus  != 'ALL':
+            assert isinstance(self.primal_dus, int) , 'Primal_DUS parameters should specify an integer'+ \
+            'value to determine the number of constraints to be added in the primal representation of the DUS'
+        self.data_random_container = data_random_container
+        self.dro_ctrs = {} 
+    
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
+        '''
+        Computes expected dual variables for the single cut version
+        and then the gradient.
+        
+        Args:
+            sp (StageProblem): current subproblem where the cut will be added.
+            sp_nex (StageProblem): subproblem for the next stage.
+            srv (StageRandomVector): Random vector of the next stage
+            soo (List of dict): A list of outputs of all the subproblems descendants.
+            spfs (dict (str-float)): Values for the states of the current stage computed 
+                in the forward pass.
+        Return 
+            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
+                the list contains just one element.
+            cut_gradiend_coeff(list[dict]):
+        '''
+        multicut = sp.multicut
+        pi_bar = None
+        cut_gradiend_coeff = None
+        
+        if multicut == False: #single cut
+            raise 'Risk measure does not support single cut'
+        else:           #Multicut
+            pi_bar = [{} for _ in srv.outcomes]
+            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
+            for ctr in sp_next.ctrsForDuals:
+                for (i,o) in enumerate(srv.outcomes):
+                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
+            
+            for (c,vi) in sp_next.ctrInStateMatrix:
+                vo = sp_next.get_out_state_var(vi)
+                for (i,o) in enumerate(srv.outcomes):
+                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
+            
+        self._current_cut_gradient = cut_gradiend_coeff
+        return pi_bar, cut_gradiend_coeff
+    
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+        '''
+        Computes cut intercept(s) 
+        
+        Args: (as in cut gradient method)
+        Returns:
+            cut_intercepts (list of int): List of intercep(s) of the cut(s).
+        '''
+        cut_gradiend_coeff = self._current_cut_gradient
+        cut_intercepts = None
+        if sp.multicut == False:
+            cut_intercepts = [sum(soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+        else:
+            cut_intercepts = [0  for _ in srv.outcomes]
+            for (i,o) in enumerate(srv.outcomes):
+                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
+        return cut_intercepts
+    
+    def update_cut_intercept(self):
+        raise 'update_cut_intercept is not available for this risk measure'           
+    
+    def modify_stage_problem(self, sp,  model, next_stage_rnd_vector):
+        '''
+        Modify the stage problem model to incorporate the DRO
+        risk measure as dual variables of the inner problem.
+        
+        Args:
+            sp (StageProblem): Stage problem to modify.
+            model (GRBModel): Model object associate to the stage.
+            next_stage_rnd_vector(StageRandomVector): random vector for the following stage.
+            
+        '''
+        assert sp.multicut, 'This risk measure implementation is only compatible with multicut setting.'
+        t = sp.stage
+        if sp._last_stage:
+            return
+        
+        nsrv_org = next_stage_rnd_vector #Origin points in the support for the transport problem
+        if self.data_random_container !=None:
+            nsrv_org = self.data_random_container[t+1]
+    
+        nsrv_des = next_stage_rnd_vector  #Destination points in the support for the transport problem
+        
+       
+        n_outcomes_org  = nsrv_org.outcomes_dim
+        n_outcomes_des  = nsrv_des.outcomes_dim
+        
+        #print(n_outcomes_org , '   ---   ' ,n_outcomes_des)
+        #lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+        gamma_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='gamma[%i]' %(t))
+        nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
+        model.update()
+        #Update objective function
+        new_objective = sp.cx  + self.radius*gamma_var + quicksum(nsrv_org.p[i]*nu_var[i] for i in range(n_outcomes_org))
+        model.setObjective(new_objective, GRB.MINIMIZE)
+        
+        #Add extra constraints associated to the primal representation of the uncertainty set
+        for i in range(n_outcomes_org):
+            #WARNING: This implementation assumes that the distance between outcomes is a valid metric
+            xi_i = nsrv_org.get_sorted_outcome(i)
+            for j in range(n_outcomes_des):
+                xi_j = nsrv_des.get_sorted_outcome(j)
+                d_ij = self.dist_func(xi_i,xi_j, self.norm)
+                crt = model.addConstr( (d_ij*gamma_var + nu_var[i] - sp.oracle[j]>= 0), 'dro_dual_ctr[%i%i]'%(i,j))
+                self.dro_ctrs[(i,j)]= crt
+            model.update()
+        
+        
+    
+    def forward_pass_updates(self, *args, **kwargs):
+        return False, 0 
+    
+    def forward_prob_update (self, t, rnd_container ):
+        '''Updates the probability distribution for the descendants of the current stage.
+        The update sets the probability use to sample new outcomes to the worst case prob
+        distribution for the particular sample path being explored.
+        Args:
+            t (int): current stage (just solved in forward pass)
+            rnd_container (RandomContainer): object that contains all the randomness in the problem.
+            
+        This method modifies the probabilities of the random vector for stage t+1.
+        '''
+        pass
+        #TODO: think how is the dynamic sampling scheme in this case
+        
+        #=======================================================================
+        # if t  == len(rnd_container.stage_vectors)-1:
+        #     #Last stage needs no update
+        #     return 
+        # desc_rnd_vec = rnd_container[t+1] #Descendant outcomes
+        # p_w = np.zeros(desc_rnd_vec.outcomes_dim)
+        # for (i,j) in self.dro_ctrs:
+        #     p_w[j]  += self.dro_ctrs[(i,j)].Pi
+        # p_w = np.around(np.abs(p_w), 8)
+        # p_w = p_w/p_w.sum()
+        #     
+        # desc_rnd_vec.modifyOutcomesProbabilities(p_w)
+        #=======================================================================
+        #=======================================================================
+        # if t== 0:
+        #     print(t, p_w)
+        #=======================================================================
+        
+
+   
+
         
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
