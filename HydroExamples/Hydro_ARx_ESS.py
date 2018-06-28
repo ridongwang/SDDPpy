@@ -293,7 +293,7 @@ if __name__ == '__main__':
                 #sim_results_com.append(sim_results)
                 #plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2Noise.pdf' %(instance_name), len(valley_chain[0].inflows))
                 
-                
+                #hello
                 '''
                 Wasserstein DUS Experiment 1.5 dynamic sampling 
                 '''
