@@ -277,23 +277,7 @@ class StageProblem():
         srv = rnd_vector_next
         soo = outputs_next
         spfs = sample_path_forward_states
-        
-        #=======================================================================
-        # for ctr in sp_next.ctrsForDuals:
-        #     pi_bar[ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
-        #     
-        # cut_gradiend_coeff = {vo:0 for vo in self.out_state}
-        # for (c,vi) in sp_next.ctrInStateMatrix:
-        #     vo = sp_next.get_out_state_var(vi)
-        #     cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
-        #=======================================================================
-        
         pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs)
-        
-        #=======================================================================
-        # cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in self.out_state) 
-        #=======================================================================
-        
         cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs)
         
         

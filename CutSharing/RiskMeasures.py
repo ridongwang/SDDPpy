@@ -408,7 +408,11 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
     '''
     Distributional uncertainty set defined by the Wasserstein metric with continuous support.
     
-    This class implements the cuts derived in Estahni and Khun 
+    This class implements the single-level reformulation in:
+    Data-driven distributionally robust optimization using the Wasserstein metric:
+    performance guarantees and tractable reformulations. 
+    Mohajerin Estahani and Kuhn, 2017
+    
     Attributes:
         norm (int): norm degree to compute the distance between two random vectors
         radius (float): length of the uncertainty set based on Wasserstein distance
