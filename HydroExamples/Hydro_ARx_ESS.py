@@ -236,7 +236,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 60
+                CutSharing.options['max_iter'] = 10
                 '''
                 Expected value risk measure
                 '''
