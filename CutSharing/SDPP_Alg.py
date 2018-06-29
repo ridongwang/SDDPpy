@@ -37,7 +37,7 @@ class SDDP(object):
         self.stage_problems = []
         self.random_container = random_builder()
         self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
-        
+        print(risk_measure_params)
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params}
         
         

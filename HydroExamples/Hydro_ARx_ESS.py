@@ -196,7 +196,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [15]:#[2,3,5,10,20,30]:
+            for N_training in [30]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -236,7 +236,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 50
+                CutSharing.options['max_iter'] = 60
                 '''
                 Expected value risk measure
                 '''
@@ -254,7 +254,7 @@ if __name__ == '__main__':
                 lbs_static = []
                 lbs_dynamic = []
                 lbs_list = []
-                r_lbs = [b*(10**c) for c in [0] for b in [0]]
+                r_lbs = [b*(10**c) for c in [] for b in []]
                 '''
                 Wasserstein DUS Experiment 1 static sampling 
                 '''
@@ -369,7 +369,7 @@ if __name__ == '__main__':
                     print('Wasserstein Cont r = %10.4e' %(rr))
                     supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
                     supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -RHSnoise_wasswer.sum(axis=0).min()]
-                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont,support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
