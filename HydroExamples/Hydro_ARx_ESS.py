@@ -140,9 +140,15 @@ def model_builder(stage):
     #R_t = Rmatrix[stage] #For lag 1 only!
     #m.addConstrs((inflow[i] - sum(R_t[1][i][j]*inflow0[j]  for j in range(0,len(valley_chain)) if j in R_t[1][i]) == innovations[i]    for i in range(0,len(valley_chain)) ), 'AR1')
     #Balance constraints
-    m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + sum(R_t[l][0][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][0]) + innovations[0] - outflow[0] - spill[0] + pour[0], 'balance[0]')
-    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
-          
+    #===========================================================================
+    # m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + sum(R_t[l][0][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][0]) + innovations[0] - outflow[0] - spill[0] + pour[0], 'balance[0]')
+    # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
+    #===========================================================================
+         
+    m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + inflow[0,1] - outflow[0] - spill[0] + pour[0], 'balance[0]')
+    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance') 
+    
+    
     #Generation
     m.addConstr(generation==quicksum(r.turbine.powerknots[level] * dispatch[i,level] for (i,r) in enumerate(valley_chain) for level in range(0,len(r.turbine.flowknots))), 'generationCtr')
 
@@ -163,8 +169,9 @@ def model_builder(stage):
     return m, in_state, out_state, rhs_vars
 
 def print_model(m):
-    for c in m.getConstrs(): print(m.getRow(c) , '  ', c.Sense, '  ', c.RHS)
+    for c in m.getConstrs(): print(c.ConstrName, m.getRow(c) , '  ', c.Sense, '  ', c.RHS)
     for v in m.getVars(): print(v.varname, ' '  , v.lb , '  ---  ', v.ub)
+    #for v in m.getVars(): print(v)
     
 if __name__ == '__main__':
     argv = sys.argv
@@ -189,7 +196,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [30]:#[2,3,5,10,20,30]:
+            for N_training in [15]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -229,7 +236,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 10
+                CutSharing.options['max_iter'] = 50
                 '''
                 Expected value risk measure
                 '''
@@ -247,7 +254,7 @@ if __name__ == '__main__':
                 lbs_static = []
                 lbs_dynamic = []
                 lbs_list = []
-                r_lbs = [b*(10**c) for c in [0] for b in [50]]
+                r_lbs = [b*(10**c) for c in [0] for b in [0]]
                 '''
                 Wasserstein DUS Experiment 1 static sampling 
                 '''
@@ -281,7 +288,7 @@ if __name__ == '__main__':
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
-                for rr in []:#r_lbs:
+                for rr in r_lbs:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,8]]:
                     print('DRO Dual Variation (via Wasserstein) r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
@@ -356,19 +363,19 @@ if __name__ == '__main__':
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
-                for rr in r_lbs:
+                #for rr in r_lbs:
+                    
+                for rr in [b*(10**c) for c in [-2,-1,-0,1] for b in [1,2,3,4,5,6,7,8,9]]:
                     print('Wasserstein Cont r = %10.4e' %(rr))
-                #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
-                #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
                     supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
-                    supp_rhs = [nr*50, -10]
+                    supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -RHSnoise_wasswer.sum(axis=0).min()]
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont,support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
-                #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDSE2.pdf' %(instance_name), N_training)
+                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinConts.pdf' %(instance_name), N_training)
                 #sim_results_com.append(sim_results)
                 #plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
                 

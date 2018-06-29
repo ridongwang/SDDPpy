@@ -505,17 +505,20 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                 for supp_ctr_ix in range(supp_ctr_dim):
                     v_name = gamma_k[i, supp_ctr_ix].VarName
                     if v_name in cut_gradiend_coeff[i]:
-                        cut_gradiend_coeff[i][v_name] += self._support_slack[i][supp_ctr_ix] #Negative is due to the change of sign in the cut
+                        cut_gradiend_coeff[i][v_name] += self._support_slack[i][supp_ctr_ix] 
                     else:
                         cut_gradiend_coeff[i][v_name] = self._support_slack[i][supp_ctr_ix]
                 pi_i_k = pi_bar[i]
-                for rhs_ctr_name in pi_i_k:
+                for rhs_ctr_name in sp_next.ctrRHSvName:
+                    if sp.stage == 0:
+                        pass # print(sp.stage)
+                    
                     rnd_ele_name = sp_next.ctrRHSvName[rhs_ctr_name]
                     m.addConstr(lhs=quicksum(gamma_k[i, supp_ctr_ix]*self.support_ctrs[supp_ctr_ix][rnd_ele_name] for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name], \
-                                 sense=GRB.LESS_EQUAL,  rhs=self.lambda_var , name='normCtr_%i_%i_%s' %(cut_id, i, rnd_ele_name))
+                                 sense=GRB.LESS_EQUAL,  rhs=self.lambda_var , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
                     m.addConstr(lhs=quicksum(-gamma_k[i, supp_ctr_ix]*self.support_ctrs[supp_ctr_ix][rnd_ele_name] for supp_ctr_ix in range(supp_ctr_dim))+pi_i_k[rhs_ctr_name], \
-                                 sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s' %(cut_id, i, rnd_ele_name))
-                    
+                                 sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s_neg' %(cut_id, i, rnd_ele_name))
+                    m.update()
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
     
