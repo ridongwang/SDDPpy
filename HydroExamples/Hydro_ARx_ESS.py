@@ -17,7 +17,7 @@ from gurobipy import *
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from HydroExamples import *
 from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality,\
-    InnerDROSolverX2, DistRobustWasserstein, mod_chi2
+    InnerDROSolverX2, DistRobustWasserstein, mod_chi2, DistRobustWassersteinCont
 from OutputAnalysis.SimulationAnalysis import plot_sim_results,\
     plot_metrics_comparison, plot_lbs
 from CutSharing.RandomManager import experiment_desing_gen,\
@@ -189,7 +189,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [15,30,90]:#[2,3,5,10,20,30]:
+            for N_training in [30]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -229,7 +229,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 300
+                CutSharing.options['max_iter'] = 10
                 '''
                 Expected value risk measure
                 '''
@@ -247,7 +247,7 @@ if __name__ == '__main__':
                 lbs_static = []
                 lbs_dynamic = []
                 lbs_list = []
-                r_lbs = [b*(10**c) for c in [0] for b in [20,100]]
+                r_lbs = [b*(10**c) for c in [0] for b in [50]]
                 '''
                 Wasserstein DUS Experiment 1 static sampling 
                 '''
@@ -338,6 +338,33 @@ if __name__ == '__main__':
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     print('Wasserstein r = %10.4e' %(rr))
+                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_results.append(sim_result)
+                    del(algo)
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDSE2.pdf' %(instance_name), N_training)
+                #sim_results_com.append(sim_results)
+                #plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
+                
+                
+                '''
+                Wasserstein DUS Experiment 3
+                Uses dat points for origins and continuum support for destinations
+                '''
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                #CutSharing.options['max_iter'] =10
+                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
+                CutSharing.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                sim_results = list()
+                for rr in r_lbs:
+                    print('Wasserstein Cont r = %10.4e' %(rr))
+                #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
+                    supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
+                    supp_rhs = [nr*50, -10]
+                    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont,support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
+                    algo.run( instance_name=instance_name, dynamic_sampling=True)
+                    
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)

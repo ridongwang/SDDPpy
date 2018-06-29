@@ -265,7 +265,7 @@ class SDDP(object):
             return True
         if self.pass_iteration > 0:
             if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:  #- self.ub_hw -
-                return True             
+                return False             
         return False
     
     
