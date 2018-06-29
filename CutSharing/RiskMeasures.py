@@ -58,7 +58,7 @@ class Expectation(AbstracRiskMeasure):
     def __init__(self):
         super().__init__()
         
-    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
         Computes expected dual variables for the single cut version
         and then the gradient.
@@ -70,6 +70,7 @@ class Expectation(AbstracRiskMeasure):
             soo (List of dict): A list of outputs of all the subproblems descendants.
             spfs (dict (str-float)): Values for the states of the current stage computed 
                 in the forward pass.
+            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
         Return 
             pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
                 the list contains just one element.
@@ -169,7 +170,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         self.data_random_container = data_random_container
         self.dro_ctrs = {} 
     
-    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes expected dual variables for the single cut version
         and then the gradient.
@@ -181,6 +182,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             soo (List of dict): A list of outputs of all the subproblems descendants.
             spfs (dict (str-float)): Values for the states of the current stage computed 
                 in the forward pass.
+            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
         Return 
             pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
                 the list contains just one element.
@@ -207,7 +209,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
     
-    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
         Computes cut intercept(s) 
         
@@ -416,26 +418,32 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
     Attributes:
         norm (int): norm degree to compute the distance between two random vectors
         radius (float): length of the uncertainty set based on Wasserstein distance
-        primal_dus (int): If different from 'ALL', specifies the number of combinations
-            to be considered for every outcome in the origin side of the transportation problem.
-        data_random_container (RandomContainer): contains the randomness coming form data. It might be
-            the same as the random container used in the algorithm when the number of data points equal
-            the number of outcomes being considered. 
+        support_ctrs(list of dict): Constraints that define the support of the random vector. 
+            Each element of the list corresponds to a constraint represented with a dictionary
+            that has as key the name of the random element and as value the corresponding ctr coefficient.
+            The constraion is assume to be C xi <= d. 
+             
+        support_rhs (list of float): RHS of the constraints defining the uncertainty support in R^m (m is the dimension of the random vector)
         dro_ctrs (dic of GRBCtr): dictionary storing the constraints whose dual variables are the transportation plan.  
     '''
-    def __init__(self, norm = 1, radius = 1, primal_dus = 'ALL', dist_func = norm_fun, data_random_container = None):
+    def __init__(self, norm = 1, radius = 1, support_ctrs = None,  support_rhs = None):
         super().__init__()
         self.norm = norm
         self.radius = radius
-        self.primal_dus = primal_dus
-        self.dist_func = dist_func
-        if self.primal_dus  != 'ALL':
-            assert isinstance(self.primal_dus, int) , 'Primal_DUS parameters should specify an integer'+ \
-            'value to determine the number of constraints to be added in the primal representation of the DUS'
-        self.data_random_container = data_random_container
+        
+        #verify suppor constraints consistency
+        assert len(support_ctrs)==len(support_rhs), 'Number of ctrs needs to be equal to the number of RHSs.'
+        self.support_ctrs = support_ctrs
+        self.support_rhs = support_rhs
         self.dro_ctrs = {} 
+        self.dro_support_var = {} 
+        
+        #===========================================
+        self.lambda_var = None
+        self._support_slack = None
+        self._support_slack_computed = False
     
-    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes expected dual variables for the single cut version
         and then the gradient.
@@ -443,14 +451,17 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         Args:
             sp (StageProblem): current subproblem where the cut will be added.
             sp_nex (StageProblem): subproblem for the next stage.
-            srv (StageRandomVector): Random vector of the next stage
-            soo (List of dict): A list of outputs of all the subproblems descendants.
-            spfs (dict (str-float)): Values for the states of the current stage computed 
+            srv (StageRandomVector): random vector of the next stage
+            soo (List of dict): a list of outputs of all the subproblems descendants.
+            spfs (dict (str-float)): values for the states of the current stage computed 
                 in the forward pass.
+            cut_id (int): numeric id of the cut being created (iteration in SDDP).
         Return 
-            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
-                the list contains just one element.
-            cut_gradiend_coeff(list[dict]):
+            pi_bar (list of dict): expected value of the duals. For the single cut algorithm
+                the list contains just one element. For the multicut algorithm the dual variables
+                correspond to the descendant problems. 
+            cut_gradiend_coeff(list of dict): gradient coefficients of the state variables. For this
+                risk measure, it also containt additional variables that modify the cuts (see Kuhn paper section 5.1).
         '''
         multicut = sp.multicut
         pi_bar = None
@@ -459,8 +470,10 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         if multicut == False: #single cut
             raise 'Risk measure does not support single cut'
         else:           #Multicut
+            #Gen and store regular cut gradients (w.r.t x)
             pi_bar = [{} for _ in srv.outcomes]
             cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
+            
             for ctr in sp_next.ctrsForDuals:
                 for (i,o) in enumerate(srv.outcomes):
                     pi_bar[i][ctr] = soo[i]['duals'][ctr]
@@ -470,10 +483,43 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                 for (i,o) in enumerate(srv.outcomes):
                     cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
             
+            
+            #Create new variables for the reformulation \lambda \in R^l (l number of constraints that define the support)
+            vec_dim = len(srv.elements)
+            outcomes_dim  = len(srv.outcomes)
+            supp_ctr_dim = len(self.support_ctrs)
+            m = sp.model
+            gamma_k = m.addVars(outcomes_dim, supp_ctr_dim, lb=0,ub=GRB.INFINITY,obj=0,vtype=GRB.CONTINUOUS, name='gamma[%i]'%(cut_id))
+            m.update()
+            
+            if self._support_slack_computed == False:
+                #Computes the coefficients for gamma in the cut (only computed once)
+                self._support_slack = [[self.support_rhs[sc_ix] - sum(o[ele]*sup_ctr[ele] for ele in o)  for (sc_ix, sup_ctr) in enumerate(self.support_ctrs)] for o in srv.outcomes]
+                self._support_slack_computed = True
+                
+            self.dro_support_var[cut_id] = gamma_k # store the variables by cut id for later use
+            
+            #Adding coefficients of NEW gamma variables to the cut
+            #Adding extra constraints that relates gradients of \xi (\pi) with gamma
+            for (i,o) in enumerate(srv.outcomes):
+                for supp_ctr_ix in range(supp_ctr_dim):
+                    v_name = gamma_k[i, supp_ctr_ix].VarName
+                    if v_name in cut_gradiend_coeff[i]:
+                        cut_gradiend_coeff[i][v_name] += self._support_slack[i][supp_ctr_ix] #Negative is due to the change of sign in the cut
+                    else:
+                        cut_gradiend_coeff[i][v_name] = self._support_slack[i][supp_ctr_ix]
+                pi_i_k = pi_bar[i]
+                for rhs_ctr_name in pi_i_k:
+                    rnd_ele_name = sp_next.ctrRHSvName[rhs_ctr_name]
+                    m.addConstr(lhs=quicksum(gamma_k[i, supp_ctr_ix]*self.support_ctrs[supp_ctr_ix][rnd_ele_name] for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name], \
+                                 sense=GRB.LESS_EQUAL,  rhs=self.lambda_var , name='normCtr_%i_%i_%s' %(cut_id, i, rnd_ele_name))
+                    m.addConstr(lhs=quicksum(-gamma_k[i, supp_ctr_ix]*self.support_ctrs[supp_ctr_ix][rnd_ele_name] for supp_ctr_ix in range(supp_ctr_dim))+pi_i_k[rhs_ctr_name], \
+                                 sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s' %(cut_id, i, rnd_ele_name))
+                    
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
     
-    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes cut intercept(s) 
         
@@ -511,35 +557,25 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
             return
         
         nsrv_org = next_stage_rnd_vector #Origin points in the support for the transport problem
-        if self.data_random_container !=None:
-            nsrv_org = self.data_random_container[t+1]
-    
-        nsrv_des = next_stage_rnd_vector  #Destination points in the support for the transport problem
+        #nsrv_des #Destination is a continuum
         
        
         n_outcomes_org  = nsrv_org.outcomes_dim
-        n_outcomes_des  = nsrv_des.outcomes_dim
         
-        #print(n_outcomes_org , '   ---   ' ,n_outcomes_des)
+        #Using the same notation as in Kuhn paper
         #lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
-        gamma_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='gamma[%i]' %(t))
-        nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
+        lambda_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+        self.lambda_var = lambda_var 
+        #nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
+        # Oracle variables are used in placed of nu_var
+        
         model.update()
         #Update objective function
-        new_objective = sp.cx  + self.radius*gamma_var + quicksum(nsrv_org.p[i]*nu_var[i] for i in range(n_outcomes_org))
+        new_objective = sp.cx  + self.radius*lambda_var + quicksum(nsrv_org.p[i]*sp.oracle[i] for i in range(n_outcomes_org))
         model.setObjective(new_objective, GRB.MINIMIZE)
         
-        #Add extra constraints associated to the primal representation of the uncertainty set
-        for i in range(n_outcomes_org):
-            #WARNING: This implementation assumes that the distance between outcomes is a valid metric
-            xi_i = nsrv_org.get_sorted_outcome(i)
-            for j in range(n_outcomes_des):
-                xi_j = nsrv_des.get_sorted_outcome(j)
-                d_ij = self.dist_func(xi_i,xi_j, self.norm)
-                crt = model.addConstr( (d_ij*gamma_var + nu_var[i] - sp.oracle[j]>= 0), 'dro_dual_ctr[%i%i]'%(i,j))
-                self.dro_ctrs[(i,j)]= crt
-            model.update()
-        
+        #Extra constraints are added on demand as cuts get generated
+     
         
     
     def forward_pass_updates(self, *args, **kwargs):
@@ -557,6 +593,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         '''
         pass
         #TODO: think how is the dynamic sampling scheme in this case
+        # Dual information is requiered
         
         #=======================================================================
         # if t  == len(rnd_container.stage_vectors)-1:
@@ -593,7 +630,7 @@ class DistRobustDuality(AbstracRiskMeasure):
             self.cuts_handler = None 
             self.cut_index = 0
         
-    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes expected dual variables for the single cut version
         and then the gradient.
@@ -605,6 +642,7 @@ class DistRobustDuality(AbstracRiskMeasure):
             soo (List of dict): A list of outputs of all the subproblems descendants.
             spfs (dict (str-float)): Values for the states of the current stage computed 
                 in the forward pass.
+            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
         Return 
             pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
                 the list contains just one element.
@@ -631,7 +669,7 @@ class DistRobustDuality(AbstracRiskMeasure):
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
     
-    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
         Computes cut intercept(s) 
         
@@ -842,7 +880,7 @@ class DistRobust(AbstracRiskMeasure):
         self._static_dist = True
        
         
-    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfv):
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfv, cut_id):
         '''
         Computes expected dual variables for the single cut version
         and then the gradient.
@@ -854,6 +892,7 @@ class DistRobust(AbstracRiskMeasure):
             soo (List of dict): A list of outputs of all the subproblems descendants.
             spfs (dict (str-float)): Values for the states of the current stage computed 
                 in the forward pass.
+            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
         Return 
             pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
                 the list contains just one element.
@@ -903,7 +942,7 @@ class DistRobust(AbstracRiskMeasure):
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
     
-    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
         Computes cut intercept(s) 
         

@@ -255,7 +255,7 @@ class StageProblem():
             
     def createStageCut(self, cut_id, sp_next, rnd_vector_next, outputs_next, sample_path_forward_states , sample_path):
         '''
-        Creates a cut for this stage
+        Creates a cut for this stage problem
         
         Args:
             cut_id (int): Numeric id of the cut (corresponds to the number of backward passes).
@@ -277,8 +277,8 @@ class StageProblem():
         srv = rnd_vector_next
         soo = outputs_next
         spfs = sample_path_forward_states
-        pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs)
-        cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs)
+        pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs , cut_id)
+        cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs, cut_id)
         
         
         stagewise_ind  = srv.is_independent
