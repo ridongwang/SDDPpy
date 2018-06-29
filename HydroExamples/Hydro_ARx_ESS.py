@@ -189,7 +189,7 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [15,30,90]:#[2,3,5,10,20,30]:
+            for N_training in [30]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
@@ -282,7 +282,7 @@ if __name__ == '__main__':
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
                 #for rr in []:#r_lbs:
-                if N_training ==30:
+                if N_training ==0:
                     for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,2,3,4,5,6,7,8,9]]:
                         print('DRO Dual Variation (via Wasserstein) r = %10.4e' %(rr))
                         algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
@@ -308,7 +308,7 @@ if __name__ == '__main__':
                 
                 #for rr in r_lbs:
                 #for rr in [b*(10**c) for c in [0] for b in [10]]:
-                if N_training in [15, 90]:
+                if N_training in [-9]:
                     for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                         print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
                         algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
@@ -338,9 +338,10 @@ if __name__ == '__main__':
                 #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
                 if N_training == 30:
                     for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                        print('Wasserstein N -> 3N  r = %10.4e' %(rr))
                         algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
                         algo.run( instance_name=instance_name, dynamic_sampling=True)
-                        print('Wasserstein r = %10.4e' %(rr))
+                        
                         sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                         sim_results.append(sim_result)
                         del(algo)
