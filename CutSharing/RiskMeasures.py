@@ -620,10 +620,19 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         
     def forward_prob_update_WassCont(self,i, sp, rnd_cont):
         cut_pool = sp.cut_pool
+        print('Stage!! ' ,  i )
         tup_ind, duals_vars  = cut_pool.get_non_zero_duals()
         for (i,tup) in enumerate(tup_ind):
             print(tup, duals_vars[i])
-   
+            
+        for k in range(int(len(cut_pool.pool)/10)):
+            for outc in range(10):
+                for inno in range(10):
+                    if sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno)).Pi != 0 or sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_pos' %(k, outc, inno)).Pi !=0:
+                        print(k,outc,inno)
+                        print(sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno)).Pi)
+                        print(sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_pos' %(k, outc, inno)).Pi)
+        #'normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
         print('Hello')
         
 class DistRobustDuality(AbstracRiskMeasure):
