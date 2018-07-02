@@ -37,7 +37,7 @@ class SDDP(object):
         self.stage_problems = []
         self.random_container = random_builder()
         self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
-        print(risk_measure_params)
+        
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params}
         
         
@@ -119,7 +119,8 @@ class SDDP(object):
 
     def dynamic_forwardpass(self, sample_path, simulation = False):
         '''
-        Runs a forward pass given a sample path
+        Runs a forward pass in which the sample path is constructed 
+        as as the forward pass progresses in time. 
         '''
         fp_out_states = []
         fp_ub_value = 0
@@ -138,6 +139,7 @@ class SDDP(object):
             
             fp_out_states.append(sp_output['out_state'])
             sp.risk_measure.forward_prob_update(i,self.random_container)   
+            sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
             '''
             IO and stats updates
             '''

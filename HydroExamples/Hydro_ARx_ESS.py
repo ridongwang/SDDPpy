@@ -236,19 +236,20 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 10
+                CutSharing.options['max_iter'] = 60
                 '''
                 Expected value risk measure
                 '''
-                #===================================================================
+                #===============================================================
+                # valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 # CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
                 # CutSharing.options['multicut'] = True
-                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
+                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 # algo = SDDP(T, model_builder, random_builder)
                 # algo.run( instance_name=instance_name)
                 # algo.simulate_policy(CutSharing.options['sim_iter'] , out_of_sample_rnd_cont)
                 # del(algo)
-                #===================================================================
+                #===============================================================
                 
                 sim_results_com = []
                 lbs_static = []
@@ -365,10 +366,15 @@ if __name__ == '__main__':
                 sim_results = list()
                 #for rr in r_lbs:
                     
-                for rr in [b*(10**c) for c in [-2,-1,-0,1] for b in [1,2,3,4,5,6,7,8,9]]:
+                #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1] for b in [1,2,3,4,5,6,7,8,9]]:
+                for rr in [b*(10**c) for c in [1] for b in [1,1.5,2,3,5,9]]:
                     print('Wasserstein Cont r = %10.4e' %(rr))
-                    supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
-                    supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -RHSnoise_wasswer.sum(axis=0).min()]
+                    #supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
+                    #supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -(RHSnoise_wasswer.sum(axis=0).min())]             
+                    supp_ctrs = [{'innovations[%i]' %(resv):1} for resv in range(nr)]
+                    supp_ctrs.extend(({'innovations[%i]' %(resv):-1}) for resv in range(nr))
+                    supp_rhs = [RHSnoise_wasswer[resv].max() for resv in range(nr)] 
+                    supp_rhs.extend((-RHSnoise_wasswer[resv].min() for resv in range(nr)))                                                                          
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     

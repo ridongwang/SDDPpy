@@ -8,6 +8,7 @@ from gurobipy import *
 import CutSharing as cs
 import numpy as np
 import logging
+from CutSharing import ZERO_TOL
 sddp_log = cs.logger
 
 class AbstracRiskMeasure(ABC):
@@ -104,7 +105,7 @@ class Expectation(AbstracRiskMeasure):
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
     
-    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs):
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes cut intercept(s) 
         
@@ -494,9 +495,10 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
             
             if self._support_slack_computed == False:
                 #Computes the coefficients for gamma in the cut (only computed once)
-                self._support_slack = [[self.support_rhs[sc_ix] - sum(o[ele]*sup_ctr[ele] for ele in o)  for (sc_ix, sup_ctr) in enumerate(self.support_ctrs)] for o in srv.outcomes]
+                self._support_slack = np.array([[self.support_rhs[sc_ix] - sum(o[ele]*sup_ctr[ele] for ele in sup_ctr)  for (sc_ix, sup_ctr) in enumerate(self.support_ctrs)] for o in srv.outcomes])
+                self._support_slack = np.around( self._support_slack, 10)
                 self._support_slack_computed = True
-                
+                assert (self._support_slack >=0).all(), 'Uncertainty set is infeasible for the training data set. '+  self._support_slack[self._support_slack<0]
             self.dro_support_var[cut_id] = gamma_k # store the variables by cut id for later use
             
             #Adding coefficients of NEW gamma variables to the cut
@@ -514,9 +516,9 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                         pass # print(sp.stage)
                     
                     rnd_ele_name = sp_next.ctrRHSvName[rhs_ctr_name]
-                    m.addConstr(lhs=quicksum(gamma_k[i, supp_ctr_ix]*self.support_ctrs[supp_ctr_ix][rnd_ele_name] for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name], \
+                    m.addConstr(lhs=quicksum(gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name], \
                                  sense=GRB.LESS_EQUAL,  rhs=self.lambda_var , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
-                    m.addConstr(lhs=quicksum(-gamma_k[i, supp_ctr_ix]*self.support_ctrs[supp_ctr_ix][rnd_ele_name] for supp_ctr_ix in range(supp_ctr_dim))+pi_i_k[rhs_ctr_name], \
+                    m.addConstr(lhs=quicksum(-gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))+pi_i_k[rhs_ctr_name], \
                                  sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s_neg' %(cut_id, i, rnd_ele_name))
                     m.update()
         self._current_cut_gradient = cut_gradiend_coeff
@@ -567,7 +569,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         
         #Using the same notation as in Kuhn paper
         #lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
-        lambda_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+        lambda_var =  model.addVar(lb=-1E10,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
         self.lambda_var = lambda_var 
         #nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
         # Oracle variables are used in placed of nu_var
@@ -616,9 +618,13 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         #     print(t, p_w)
         #=======================================================================
         
-
+    def forward_prob_update_WassCont(self,i, sp, rnd_cont):
+        cut_pool = sp.cut_pool
+        tup_ind, duals_vars  = cut_pool.get_non_zero_duals()
+        for (i,tup) in enumerate(tup_ind):
+            print(tup, duals_vars[i])
    
-
+        print('Hello')
         
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'

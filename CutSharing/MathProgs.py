@@ -67,7 +67,7 @@ class StageProblem():
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
                 self.oracle = self.model.addVars(num_outcomes, lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
-            
+            self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
               
                 
@@ -287,6 +287,7 @@ class StageProblem():
         if stagewise_ind:
             for (i,grad) in enumerate(cut_gradiend_coeffs):
                 new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
+                self.cut_pool.addCut(new_cut)
         else:
             if self.multicut == True:
                 raise "Multicut is not yet implemented for the dependent case"
@@ -310,7 +311,7 @@ class StageProblem():
                           stagewise_ind=False,
                           ind_rhs=ind_rhs,
                           dep_rhs_vector=dep_rhs_vector)
-        self.cut_pool.addCut(new_cut)
+            self.cut_pool.addCut(new_cut)
     
     def get_stage_objective_value(self):
         '''
