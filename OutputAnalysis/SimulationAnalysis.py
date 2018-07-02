@@ -8,10 +8,15 @@ Module to save and plot simulation results
 import numpy as np
 import pandas as pd
 import matplotlib
+from Utils.argv_parser import parse_args
+import os
+import pickle
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+import sys
+
 class SimResult():
     '''
     Class the stors the information for a particular instance
@@ -266,4 +271,36 @@ def plot_metrics_comparison(sim_results_metrics, plot_path):
     pp = PdfPages(plot_path)
     pp.savefig(f)
     pp.close()
-        
+
+
+if __name__ == '__main__':
+    argv = sys.argv
+    positional_args,kwargs = parse_args(argv[1:])
+    path_to_files = None
+    file_n = None
+    N = None
+    if 'path_to_files' in  kwargs:
+        path_to_files = kwargs['path_to_files']
+    else:
+        raise "path parameter is necessary."
+    
+    if 'exp_file' in  kwargs:
+        file_n = kwargs['exp_file']
+    else:
+        raise "Experiment file (exp_file) parameter is necessary."
+    
+    if 'N' in  kwargs:
+        N = kwargs['N']
+    else:
+        raise "Parameter  N is necessary."
+    
+    
+    experiment_files = os.listdir(path_to_files)
+    sim_results = []
+    for f in experiment_files:
+        if file_n in f and f[-6:]=='pickle':
+            new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
+            sim_results.append(new_sim)
+    sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
+    plot_path = path_to_files + file_n + ".pdf"
+    plot_sim_results(sim_results, plot_path, N)
