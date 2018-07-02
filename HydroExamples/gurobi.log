@@ -11119,3 +11119,56 @@ Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 12:16:23 2018
 
 Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 12:16:49 2018
 
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:12:42 2018
+
+Changed value of parameter OutputFlag to 1
+   Prev: 0  Min: 0  Max: 1  Default: 1
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+No solution available
+Error: it isn't a multi-objective model
+No solution available
+Optimize a model with 671 rows, 722 columns and 3036 nonzeros
+Coefficient statistics:
+  Matrix range     [9e-03, 1e+04]
+  Objective range  [1e-01, 1e+04]
+  Bounds range     [2e-01, 1e+10]
+  RHS range        [5e-01, 5e+05]
+Warning: Model contains large bounds
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 21 rows and 53 columns
+Presolve time: 0.01s
+Presolved: 650 rows, 669 columns, 2712 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.0000010e+11   6.600000e+12   0.000000e+00      0s
+     428   -7.6526081e+04   0.000000e+00   0.000000e+00      0s
+
+Solved in 428 iterations and 0.01 seconds
+Optimal objective -7.652608119e+04
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:32:00 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:32:18 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:32:40 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:32:59 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:33:45 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:35:12 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Mon Jul  2 13:40:03 2018
+

@@ -139,7 +139,7 @@ class SDDP(object):
             
             fp_out_states.append(sp_output['out_state'])
             sp.risk_measure.forward_prob_update(i,self.random_container)   
-            sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
+            #sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
             '''
             IO and stats updates
             '''
