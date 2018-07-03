@@ -8,7 +8,6 @@ Module to save and plot simulation results
 import numpy as np
 import pandas as pd
 import matplotlib
-from Utils.argv_parser import parse_args
 import os
 import pickle
 matplotlib.use('agg')
@@ -16,6 +15,11 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import sys
+if __name__ == '__main__':
+    from os import path
+    sys.path.append(path.abspath('/Users/dduque/Dropbox/WORKSPACE/SDDP'))
+from Utils.argv_parser import parse_args
+
 
 class SimResult():
     '''
@@ -294,7 +298,7 @@ if __name__ == '__main__':
     else:
         raise "Parameter  N is necessary."
     
-    
+    print(path_to_files,file_n)
     experiment_files = os.listdir(path_to_files)
     sim_results = []
     for f in experiment_files:

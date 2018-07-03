@@ -516,10 +516,13 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                         pass # print(sp.stage)
                     
                     rnd_ele_name = sp_next.ctrRHSvName[rhs_ctr_name]
-                    m.addConstr(lhs=quicksum(gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name], \
-                                 sense=GRB.LESS_EQUAL,  rhs=self.lambda_var , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
-                    m.addConstr(lhs=quicksum(-gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))+pi_i_k[rhs_ctr_name], \
-                                 sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s_neg' %(cut_id, i, rnd_ele_name))
+                    inf_norm = quicksum(gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name] 
+                    m.addConstr(lhs=self.lambda_var, sense=GRB.GREATER_EQUAL,  rhs=inf_norm , name='normCtr_%i_%i_%s_neg' %(cut_id, i, rnd_ele_name))
+                    m.addConstr(lhs=self.lambda_var, sense=GRB.GREATER_EQUAL,  rhs=-inf_norm , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
+                    #===========================================================
+                    # m.addConstr(lhs=quicksum(-gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))+pi_i_k[rhs_ctr_name], \
+                    #              sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
+                    #===========================================================
                     m.update()
         self._current_cut_gradient = cut_gradiend_coeff
         return pi_bar, cut_gradiend_coeff
@@ -618,20 +621,26 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         #     print(t, p_w)
         #=======================================================================
         
-    def forward_prob_update_WassCont(self,i, sp, rnd_cont):
+    def forward_prob_update_WassCont(self,stage, sp, rnd_cont):
+        if stage== len(rnd_cont.stage_vectors):
+            return
         cut_pool = sp.cut_pool
-        print('Stage!! ' ,  i )
+        print('Stage!! ' ,  stage )
         tup_ind, duals_vars  = cut_pool.get_non_zero_duals()
         for (i,tup) in enumerate(tup_ind):
             print(tup, duals_vars[i])
             
         for k in range(int(len(cut_pool.pool)/10)):
-            for outc in range(10):
+            for outc in range(rnd_cont[stage+1].outcomes_dim):
                 for inno in range(10):
-                    if sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno)).Pi != 0 or sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_pos' %(k, outc, inno)).Pi !=0:
-                        print(k,outc,inno)
-                        print(sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno)).Pi)
-                        print(sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_pos' %(k, outc, inno)).Pi)
+                    
+                    try:
+                        delta_change  = (-sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno)).Pi + sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_pos' %(k, outc, inno)).Pi) 
+                        if delta_change !=0:
+                            print(k,outc,inno, delta_change)
+                    except:
+                        print('Constriant not available: normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno))
+                        
         #'normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
         print('Hello')
         
