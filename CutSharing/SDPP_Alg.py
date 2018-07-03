@@ -124,9 +124,11 @@ class SDDP(object):
         '''
         fp_out_states = []
         fp_ub_value = 0
+        new_support = None
+        new_pmf = None
         for (i,sp) in enumerate(self.stage_problems):
             in_state = fp_out_states[-1] if i>0 else  None
-            self.random_container.getStageSample(i, sample_path, alg_rnd_gen)
+            self.random_container.getStageSample(i, sample_path, alg_rnd_gen, new_support = new_support, new_pmf = new_pmf)
             sp_output = sp.solve(in_state_vals = in_state, 
                                  random_realization= sample_path[i], 
                                  forwardpass = True, 
@@ -139,7 +141,7 @@ class SDDP(object):
             
             fp_out_states.append(sp_output['out_state'])
             sp.risk_measure.forward_prob_update(i,self.random_container)   
-            #sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
+            new_support, new_pmf =  sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
             '''
             IO and stats updates
             '''
