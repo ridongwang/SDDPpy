@@ -70,22 +70,35 @@ class RandomContainer:
                 partial_sample_path_ids.append(stage_outcome_id)
         return partial_sample_path, partial_sample_path_ids
     
-    def getStageSample(self, t, partial_sample_path, rnd_stream):
+    def getStageSample(self, t, partial_sample_path, rnd_stream, new_support = None , new_pmf = None):
         '''
         Generates a sample for a given stage and appends it to a partial path
         **** Modifies the partial_sample_path given as a parameter ****
         Args:
             t (int): stage number to be sample.
             partial_sample_path (list of dict): a sample path up to stage t-1.
+            rnd_stream (np.random.RandomStat): dedicated random stream
+            new_support (list of dict): New support to sample from (if different from None)
+            new_pmf (list of float): New pmf for the sampling.
         Return: 
             satage_sample (dict of (str-float)): A dictionary containing the
                 realized value of each random element.
             stage_outcome_id (int): id of the outcome drew in the stage 
         '''
-        srv = self.stage_vectors[t]
-        stage_sample, stage_outcome_id = srv.getSample(partial_sample_path, rnd_stream) 
-        partial_sample_path.append(stage_sample)
-        return stage_sample, stage_outcome_id
+        if new_support == None: #Sample w.r.t the original tree and given probs
+            srv = self.stage_vectors[t]
+            stage_sample, stage_outcome_id = srv.getSample(partial_sample_path, rnd_stream) 
+            partial_sample_path.append(stage_sample)
+            return stage_sample, stage_outcome_id
+        else:
+            #Ignores the tree and use the provided supprt points
+            assert len(new_support)==len(new_pmf), 'Inconsistent distribution to sample from.'
+            assert self.stage_vectors[t].is_independent, 'Stage-wise independence is required for variant trees.'
+            lucky_outcome = rnd_stream.choice([i for i in range(len(new_support))], p = new_pmf)
+            stage_sample = new_support[lucky_outcome]
+            partial_sample_path.append(stage_sample)
+            return stage_sample, np.nan
+            
         
         
     def preprocess_randomness(self):

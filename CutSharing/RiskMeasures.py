@@ -622,27 +622,30 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         #=======================================================================
         
     def forward_prob_update_WassCont(self,stage, sp, rnd_cont):
-        if stage== len(rnd_cont.stage_vectors):
-            return
-        cut_pool = sp.cut_pool
-        print('Stage!! ' ,  stage )
-        tup_ind, duals_vars  = cut_pool.get_non_zero_duals()
+        #print('Stage!! ' ,  stage )
+        tup_ind, duals_vars  = sp.cut_pool.get_non_zero_duals()
+        new_support = []
+        new_pmf = []
+        if stage == len(rnd_cont.stage_vectors) or len(duals_vars)==0:
+            return None, None
+        
+        
         for (i,tup) in enumerate(tup_ind):
-            print(tup, duals_vars[i])
-            
-        for k in range(int(len(cut_pool.pool)/10)):
-            for outc in range(rnd_cont[stage+1].outcomes_dim):
-                for inno in range(10):
-                    
-                    try:
-                        delta_change  = (-sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno)).Pi + sp.model.getConstrByName('normCtr_%i_%i_innovations[%i]_pos' %(k, outc, inno)).Pi) 
-                        if delta_change !=0:
-                            print(k,outc,inno, delta_change)
-                    except:
-                        print('Constriant not available: normCtr_%i_%i_innovations[%i]_neg' %(k, outc, inno))
-                        
-        #'normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
-        print('Hello')
+            #print(tup, duals_vars[i])
+            k = tup[0]
+            outc = tup[1]
+            new_pmf.append(duals_vars[i])
+            new_supp_point = rnd_cont[stage+1].outcomes[outc].copy()
+            for ele in rnd_cont[stage+1].elements:
+                try:
+                    delta_change  = (-sp.model.getConstrByName('normCtr_%i_%i_%s_neg' %(k, outc, ele)).Pi + sp.model.getConstrByName('normCtr_%i_%i_%s_pos' %(k, outc, ele)).Pi) 
+                    if np.abs(delta_change)>ZERO_TOL:
+                        #print(ele, delta_change/duals_vars[i])
+                        new_supp_point[ele] =  new_supp_point[ele]  + delta_change/duals_vars[i]
+                except:
+                    print('Constraint not available: normCtr_%i_%i_%s_neg' %(k, outc, ele))
+            new_support.append(new_supp_point)
+        return new_support, new_pmf
         
 class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'

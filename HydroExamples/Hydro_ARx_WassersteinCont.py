@@ -184,13 +184,15 @@ if __name__ == '__main__':
         T = kwargs['T']
     if 'max_iter' in kwargs:
         CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+        CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/10)
     if 'sim_iter' in kwargs:
         CutSharing.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
         lag = kwargs['lag']
     if 'dro_radius' in kwargs:
         dro_radius = kwargs['dro_radius']
+    if 'N' in kwargs:
+        N = kwargs['N']
         
     sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
@@ -199,7 +201,7 @@ if __name__ == '__main__':
         instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
         Rmatrix = hydro_instance.ar_matrices
         RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-        for N_training in [10,30,100]:#[2,3,5,10,20,30]:
+        for N_training in [N]:#[2,3,5,10,20,30]:
             #Reset experiment design stream 
             reset_experiment_desing_gen()
             train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
