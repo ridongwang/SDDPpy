@@ -9,11 +9,12 @@ import CutSharing as cs
 import numpy as np
 import logging
 from CutSharing import ZERO_TOL
+from astropy.coordinates.builtin_frames.utils import norm
 sddp_log = cs.logger
 
 class AbstracRiskMeasure(ABC):
     '''
-    Abstract representation of what a risk measure should do in SDD
+    Abstract representation of what a risk measure should do in SDDP
     '''
     
     @abstractmethod
@@ -25,7 +26,7 @@ class AbstracRiskMeasure(ABC):
                 cut gradient (used again when computing the.
         '''
         
-        
+        self.next_stage_rnd_vec = None
         self._current_cut_gradient = None
     
     @abstractmethod
@@ -388,7 +389,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         else:
             raise 'Trial point or direction are invalid, opt problem not optimal'
         
-    def get_dus_params(self,srv , stage):
+    def get_dus_params(self, srv , stage):
         nsrv_org = srv #Origin points in the support for the transport problem
         if self.data_random_container !=None:
             nsrv_org = self.data_random_container[stage+1]
@@ -895,10 +896,13 @@ class DRO_CuttingPlanes():
 
 
 '''
-Distributionaly robust classes
+Distributionally robust classes
 '''
 class DistRobust(AbstracRiskMeasure):
-    
+    INF_NORM = 'inf_norm'
+    L1_NORM = 'L1_norm'
+    L2_NORM = 'L2_norm'
+    D_Wasserstein = 'Discrete_Wasserstein'
     def __init__(self, dro_solver, dro_solver_params):
         '''
         inner_solver (DRO_solver): a class that computes the worst
@@ -930,20 +934,7 @@ class DistRobust(AbstracRiskMeasure):
         '''
         zs = np.array([soo[i]['objval'] for i in range(len(srv.outcomes))])
         p = self.inner_solver.compute_worst_case_distribution(zs)
-        #p = srv.p
         self._wors_case_dist = p
-        #=======================================================================
-        # pi_bar = {}
-        # for ctr in sp_next.ctrsForDuals:
-        #     pi_bar[ctr] = sum(p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
-        #     
-        # cut_gradiend_coeff = {vo:0 for vo in sp.out_state}
-        # for (c,vi) in sp_next.ctrInStateMatrix:
-        #     vo = sp_next.get_out_state_var(vi)
-        #     cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
-        # self._current_cut_gradient =cut_gradiend_coeff
-        # return pi_bar, cut_gradiend_coeff
-        #=======================================================================
         multicut = sp.multicut
         pi_bar = None
         cut_gradiend_coeff = None
@@ -980,12 +971,6 @@ class DistRobust(AbstracRiskMeasure):
         Returns:
             cut_intercepts (list of int): List of intercep(s) of the cut(s).
         '''
-        #=======================================================================
-        # cut_gradiend_coeff = self._current_cut_gradient
-        # p = self._wors_case_dist
-        # cut_intercept = sum(p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in sp.out_state) 
-        # return cut_intercept
-        #=======================================================================
         p = self._wors_case_dist
         cut_gradiend_coeff = self._current_cut_gradient
         cut_intercepts = None
@@ -1003,6 +988,7 @@ class DistRobust(AbstracRiskMeasure):
         pass  
     def modify_stage_problem(self,  sp,  model, next_stage_rnd_vector):
         model.setObjective(sp.cx + sp.oracle.sum())
+        self.inner_solver.build_model(t=sp.stage,next_stage_rnd_vec = next_stage_rnd_vector)
 
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
@@ -1019,6 +1005,7 @@ class DistRobusInnerSolver(ABC):
     @abstractmethod
     def compute_worst_case_distribution(self):
         pass
+
 
 class InnerDROSolverX2(DistRobusInnerSolver):
     def __init__(self, nominal_p, DUS_radius, set_type):
@@ -1060,11 +1047,13 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         self.nominal_p = nominal_p
         self.uncertanty_radius = DUS_radius
         self._one_time_warning = True
+        self.set_type = set_type
         
-        self.model, self.p_var = self.build_model(nominal_p, DUS_radius, set_type)
     
-    
-    def build_model(self, q, DUS_radius, set_type):
+    def build_model(self, **kwargs):
+        q = self.nominal_p
+        DUS_radius = self.uncertanty_radius
+        set_type = self.set_type
         m = Model('DRO_solver')
         m.params.OutputFlag = 0 
         #m.params.FeasibilityTol = 1E-9
@@ -1080,7 +1069,9 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
             m.addConstrs((d_plus[i] - d_minus[i] == p[i]- q[i] for i in p), 'ABS_liner')
         m.setObjective(m.getObjective(), GRB.MAXIMIZE)
         m.update()
-        return m, p
+        self.model = m
+        self.p_var = m
+    
     
     
     
@@ -1105,3 +1096,88 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         assert len(outcomes_objs) == len(self.nominal_p)
         new_p = np.array([vars[i].X for i in range(len(vars))])
         return new_p
+    
+class DiscreteWassersteinInnerSolver(DistRobusInnerSolver):
+    '''
+    Implements the linear program to obtain the worst-case
+    distribution in the discrete setting, i.e., there is a finite
+    number of support points that will ship probability mass to 
+    a finite (potentially) larger set of support points.
+    '''
+    
+    def __init__(self, norm = 1, radius = 1, dist_func = norm_fun, data_random_container = None):
+        self.norm = norm
+        self.radius = radius
+        self.dist_func = dist_func
+        self.org_rnd_cnt = data_random_container
+        self.model   =  None 
+        self.worst_p = None
+
+    def build_model(self, t,  next_stage_rnd_vec):
+        '''
+        Constructs the model that will be used to 
+        compute the worst case probabilities.
+        
+        Args:
+            t (int): stage id for which the model is the inner problem
+            next_stage_rnd_vec (StageRandomVector): random vector for  stage t + 1
+        '''
+        srv = next_stage_rnd_vec
+        nsrv_org = srv #Origin points in the support for the transport problem
+        if self.org_rnd_cnt !=None:
+            nsrv_org = self.org_rnd_cnt[t+1]
+    
+        nsrv_des = srv  #Destination points in the support for the transport problem
+        n_org  = nsrv_org.outcomes_dim
+        n_des  = nsrv_des.outcomes_dim
+        
+        model = Model()
+        model.params.OutputFlag = 0 
+        p = model.addVars(n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='p[t_%i]' % (t))
+        z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z[t_%i]' % (t))
+        model.update()
+        model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org[t_%i]' % (t))
+        model.addConstrs((z.sum('*', d)==p[d] for d in range(n_des)), name='des[t_%i]' % (t))
+        
+        DUS_exp = LinExpr()
+        for i in range(n_org):
+            xi_i = nsrv_org.get_sorted_outcome(i)
+            for j in range(n_des):
+                xi_j = nsrv_des.get_sorted_outcome(j)
+                d_ij = self.dist_func(xi_i,xi_j, self.norm)
+                DUS_exp.addTerms(d_ij,z[i,j])
+        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus[t_%i]' %(t))
+        model.ModelSense= GRB.MAXIMIZE
+        model.update()
+        
+        #Save the model an the variables reference
+        self.model = model
+        self.worst_p = p 
+    
+    def compute_worst_case_distribution(self, outcomes_objs):
+        '''
+        Compute the worst-case probability distribution for a particular stage
+        given the objective function value of the descendent nodes (as many as outcomes)
+        Args:
+            outcomes_objs (ndarray): vector of objectives values of the next stage.
+        Returns:
+            new_p (ndarray): array with the worse case probabilities in DRO
+        '''
+        assert len(outcomes_objs)==len(self.worst_p)
+        for (i, out_obj) in enumerate(outcomes_objs):
+            self.worst_p[i].Obj = out_obj 
+        self.model.update()
+        self.model.optimize()
+        
+        if self.model.status == GRB.OPTIMAL:
+            new_p = np.array([self.worst_p[i].X for i in range(len(outcomes_objs))])
+            return new_p
+        else:
+            raise 'Discrete Wasserstein model was not optimal.'    
+        
+        
+
+class ContinuousWassersetinInnerSolver(DistRobusInnerSolver):
+    '''
+    .
+    '''

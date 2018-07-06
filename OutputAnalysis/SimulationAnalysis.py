@@ -107,7 +107,10 @@ def plot_sim_results(sim_results, plot_path, N):
     try:
         r = [sr.instance['risk_measure_params']['radius']  for sr in sim_results]
     except: 
-        r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
+        try:
+            r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
+        except:
+            r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
     p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
@@ -298,13 +301,67 @@ if __name__ == '__main__':
     else:
         raise "Parameter  N is necessary."
     
-    print(path_to_files,file_n)
-    experiment_files = os.listdir(path_to_files)
-    sim_results = []
-    for f in experiment_files:
-        if file_n in f and f[-6:]=='pickle':
-            new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
-            sim_results.append(new_sim)
-    sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
-    plot_path = path_to_files + file_n + ".pdf"
-    plot_sim_results(sim_results, plot_path, N)
+    if 'plot_type' in  kwargs:
+        plot_type = kwargs['plot_type']
+        assert plot_type in ['LBS', 'OOS'], 'Plot type is either lbs or oos %s' %(plot_type)
+    else:
+        raise "Parameter  N is necessary."
+    
+    if plot_type == 'OOS':
+        print(path_to_files,file_n)
+        experiment_files = os.listdir(path_to_files)
+        sim_results = []
+        for f in experiment_files:
+            if file_n in f and f[-6:]=='pickle' and 'OOS'in f:
+                new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
+                sim_results.append(new_sim)
+        
+        #Sort experiments
+        if 'radius' in sim_results[0].instance['risk_measure_params']:
+            sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
+        elif 'dro_solver_params' in  sim_results[0].instance['risk_measure_params']:
+            if 'radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
+                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+            elif 'DUS_radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
+                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+            else:
+                print(sim_results[0].instance)
+                raise 'Unknown dro params'
+        else:
+            print(sim_results[0].instance)
+            raise 'Unknown dro params'
+
+        plot_path = path_to_files + file_n + ".pdf"
+        plot_sim_results(sim_results, plot_path, N)
+    elif plot_type == 'LBS':
+        print(path_to_files,file_n)
+        experiment_files = os.listdir(path_to_files)
+        lbs_r_list = []
+        for f in experiment_files:
+            if file_n in f and f[-6:]=='pickle' and 'LBS'in f:
+                new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
+                sim_results.append(new_sim)
+        
+        #Sort experiments
+        if 'radius' in sim_results[0].instance['risk_measure_params']:
+            sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
+        elif 'dro_solver_params' in  sim_results[0].instance['risk_measure_params']:
+            if 'radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
+                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+            elif 'DUS_radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
+                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+            else:
+                print(sim_results[0].instance)
+                raise 'Unknown dro params'
+        else:
+            print(sim_results[0].instance)
+            raise 'Unknown dro params'
+
+        plot_path = path_to_files + file_n + ".pdf"
+        plot_sim_results(sim_results, plot_path, N)
+    else:
+        raise 'Not identified plot'
+    
+    
+    
+    
