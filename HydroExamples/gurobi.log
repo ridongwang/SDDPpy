@@ -11355,3 +11355,203 @@ Gurobi 7.0.2 (mac64, Python) logging started Tue Jul  3 11:58:59 2018
 
 Gurobi 7.0.2 (mac64, Python) logging started Tue Jul  3 11:59:17 2018
 
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 08:40:25 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 09:49:44 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 09:54:24 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 09:55:11 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 09:56:07 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 09:56:53 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 09:58:37 2018
+
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+No solution available
+Error: it isn't a multi-objective model
+No solution available
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:00:17 2018
+
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+Error: it isn't a multi-objective model
+No solution available
+Error: it isn't a multi-objective model
+No solution available
+Optimize a model with 7 rows, 12 columns and 27 nonzeros
+Coefficient statistics:
+  Matrix range     [1e+00, 7e+01]
+  Objective range  [2e+03, 2e+05]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [3e-01, 2e+01]
+Presolve removed 5 rows and 8 columns
+Presolve time: 0.00s
+Presolved: 2 rows, 4 columns, 6 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    1.5508377e+05   2.942212e-01   0.000000e+00      0s
+       1    1.1709248e+05   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective  1.170924795e+05
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:01:39 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:01:51 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:02:59 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:04:51 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:05:05 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:06:29 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:06:37 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:07:32 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:09:12 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:10:50 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 10:15:18 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:09:50 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:11:59 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:12:32 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:13:58 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:14:47 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:16:03 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:16:34 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:51:28 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:51:39 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:51:48 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:52:01 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:52:20 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:53:05 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:55:07 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 16:59:26 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:01:13 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:02:12 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:10:03 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:30:43 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:33:25 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:34:18 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:34:24 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:36:36 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:48:27 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 17:49:05 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:03:51 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:12:06 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:13:37 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:14:37 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:17:38 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:17:56 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:20:52 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:21:38 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:23:57 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:37:22 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:37:31 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Thu Jul  5 18:44:53 2018
+

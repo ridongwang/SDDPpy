@@ -196,16 +196,19 @@ if __name__ == '__main__':
             instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-            for N_training in [15,30,90]:#[2,3,5,10,20,30]:
+            for N_training in [10]:#[2,3,5,10,20,30]:
                 #Reset experiment design stream 
                 reset_experiment_desing_gen()
                 train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
                 
-                wasserstein_data_n = np.maximum(1, int(N_training/3.0))
-                wasserstein_sub = set(experiment_desing_gen.choice(list(train_indeces),size=wasserstein_data_n, replace = False))
+                wasserstein_data_n = 2*N_training
+                wassersetin_set  = set(range(len(RHSnoise_density[0]))) - train_indeces
+                wasserstein_sub = set(experiment_desing_gen.choice(list(wassersetin_set),size=wasserstein_data_n, replace = False))
+                wasserstein_sub = wasserstein_sub.union(train_indeces)
+                #set(experiment_desing_gen.choice(list(train_indeces),size=wasserstein_data_n, replace = False))
                 
                 
-                test_indeces = set(range(len(RHSnoise_density[0]))) - train_indeces
+                test_indeces = set(range(len(RHSnoise_density[0]))) - train_indeces# train_indeces
                 assert len(train_indeces.intersection(test_indeces))==0,  'Not disjoint'
                 l_train = list(train_indeces)
                 l_train.sort()
@@ -216,7 +219,7 @@ if __name__ == '__main__':
                 
                 l_wasser = list(wasserstein_sub)
                 l_wasser.sort()
-                RHSnoise_wasswer = RHSnoise_density[:,l_wasser]
+                RHSnoise_wasswer = RHSnoise_density[:,l_wasser] # extended 
                 q_prob_wasser = 1/len(RHSnoise_wasswer[0])
                 
 
@@ -226,6 +229,7 @@ if __name__ == '__main__':
                 
                 #For out of sample performance measure
                 l_test = list(test_indeces) 
+                print(sum(l_test))
                 l_test.sort()
                 RHSnoise_oos = RHSnoise_density#[:,l_test]
                 valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_oos]
@@ -268,6 +272,7 @@ if __name__ == '__main__':
                 # sim_results = list()
                 # #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,3,5,8]]:
                 # for rr in r_lbs:
+                #     raise 'Wasserstein noice not fixed '
                 #     print('Wasserstein r = %10.4e' %(rr))
                 #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
                 #     lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
@@ -289,7 +294,9 @@ if __name__ == '__main__':
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
+               
                 for rr in r_lbs:
+                    raise 'Wasserstein noice not fixed '
                 #for rr in [b*(10**c) for c in [-3,-2,-1,0] for b in [1,3,5,8]]:
                     print('DRO Dual Variation (via Wasserstein) r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
@@ -305,7 +312,8 @@ if __name__ == '__main__':
                 '''
                 Wasserstein DUS Experiment 1.5 dynamic sampling 
                 '''
-                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
+                valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
+                print(RHSnoise)
                 #CutSharing.options['max_iter'] =10
                 CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
                 CutSharing.options['multicut'] = True
@@ -315,10 +323,10 @@ if __name__ == '__main__':
                 
                 #for rr in [b*(10**c) for c in [0] for b in [10]]:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
-                for rr in r_lbs:
+                for rr in [100]:
                     print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
-                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
+                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
                     lbs_dynamic.append(lbs)
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
@@ -343,6 +351,7 @@ if __name__ == '__main__':
                 for rr in []:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                 #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
+                    raise 'Wasserstein noice not fixed '
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     print('Wasserstein r = %10.4e' %(rr))
@@ -364,11 +373,11 @@ if __name__ == '__main__':
                 CutSharing.options['multicut'] = True
                 instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
-                #for rr in r_lbs:
-                    
-                for rr in [b*(10**c) for c in [-4,-3,-2,-1,-0,1,2,3] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
+                for rr in r_lbs:
+                    #for rr in [b*(10**c) for c in [-4,-3,-2,-1,-0,1,2,3] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                     #for rr in [b*(10**c) for c in [1] for b in [1,1.5,2,3,5,9]]:
                     print('Wasserstein Cont r = %10.4e' %(rr))
+                    raise 'Wasserstein noice not fixed '
                     #supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
                     #supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -(RHSnoise_wasswer.sum(axis=0).min())]             
                     supp_ctrs = [{'innovations[%i]' %(resv):1} for resv in range(nr)]
@@ -402,7 +411,7 @@ if __name__ == '__main__':
                     print('DRO Philpott - Variation - r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':rr, 'set_type':DistRobustDuality.L1_NORM})
                     algo.run( instance_name=instance_name)
-                    
+                    raise 'Wasserstein noice not fixed '
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)

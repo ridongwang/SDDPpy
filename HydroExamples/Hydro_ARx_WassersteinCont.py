@@ -197,75 +197,60 @@ if __name__ == '__main__':
     sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
     
-    for nr in [10]:#,10,50,100,500,1000]:
-        instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
-        Rmatrix = hydro_instance.ar_matrices
-        RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-        for N_training in [N]:#[2,3,5,10,20,30]:
-            #Reset experiment design stream 
-            reset_experiment_desing_gen()
-            train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
-            
-         
-            
-            test_indeces = set(range(len(RHSnoise_density[0]))) - train_indeces
-            
-            assert len(train_indeces.intersection(test_indeces))==0,  'Not disjoint'
-            l_train = list(train_indeces)
-            l_train.sort()
-            RHSnoise = RHSnoise_density[:,l_train]
-            dim_p = len(RHSnoise[0]) 
-            q_prob = 1/len(RHSnoise[0])
-        
-       
-
-            initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
-            valley_turbines  = Turbine([50, 60, 70], [55, 65, 70])
-            
-            
-            #For out of sample performance measure
-            l_test = list(test_indeces) 
-            l_test.sort()
-            RHSnoise_oos = RHSnoise_density#[:,l_test]
-            valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_oos]
-            out_of_sample_rnd_cont = random_builder_out_of_sample(valley_chain_oos)
-            
-            prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
-            
-            sim_results_com = []
-            '''
-            Wasserstein DUS Experiment 3
-            Uses dat points for origins and continuum support for destinations
-            '''
-            valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
-            CutSharing.options['multicut'] = True
-            sim_results = list()
-            #for rr in r_lbs:
-                
-            #for rr in [b*(10**c) for c in [-4,-3,-2,-1,-0,1,2,3] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
-            #for rr in [b*(10**c) for c in [1] for b in [1,1.5,2,3,5,9]]:
-            rr = dro_radius
-            instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_WC_%.5f" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows), rr)
-            #print('Wasserstein Cont r = %10.4e' %(rr))
-            #supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
-            #supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -(RHSnoise_wasswer.sum(axis=0).min())]             
-            supp_ctrs = [{'innovations[%i]' %(resv):1} for resv in range(nr)]
-            supp_ctrs.extend(({'innovations[%i]' %(resv):-1}) for resv in range(nr))
-            supp_rhs = [RHSnoise[resv].max() for resv in range(nr)] 
-            supp_rhs.extend((-RHSnoise[resv].min() for resv in range(nr)))                                                                          
-            algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
-            algo.run( instance_name=instance_name, dynamic_sampling=True)
-            
-            sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-            save_path = hydro_path+'/Output/WassersteinCont/%s.pickle' %(instance_name)
-            write_object_results(save_path, sim_result)
-            
-            del(algo)
-            
-            #sim_results.append(sim_result, sim_result)
-            #plot_sim_results(sim_results, hydro_path+'/Output/WassersteinCont/%s_WassersteinConts.pdf' %(instance_name), N_training)
-            #sim_results_com.append(sim_results)
-            #plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
-            
     
+    instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
+    Rmatrix = hydro_instance.ar_matrices
+    RHSnoise_density = hydro_instance.RHS_noise[0:nr]
+    N_training = N
+    #Reset experiment design stream 
+    reset_experiment_desing_gen()
+    train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
+    test_indeces = set(range(len(RHSnoise_density[0]))) - train_indeces
+    assert len(train_indeces.intersection(test_indeces))==0,  'Not disjoint'
+    
+    l_train = list(train_indeces)
+    l_train.sort()
+    RHSnoise = RHSnoise_density[:,l_train]
+    dim_p = len(RHSnoise[0]) 
+    q_prob = 1/len(RHSnoise[0])
+    
+    initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
+    valley_turbines  = Turbine([50, 60, 70], [55, 65, 70])
+    
+    
+    #For out of sample performance measure
+    l_test = list(test_indeces) 
+    l_test.sort()
+    RHSnoise_oos = RHSnoise_density#[:,l_test]
+    valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_oos]
+    out_of_sample_rnd_cont = random_builder_out_of_sample(valley_chain_oos)
+    
+    prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
 
+    '''
+    Wasserstein DUS Experiment 3
+    Uses data points for origins and continuum support for destinations. Inner max problem
+    is dualized to form a series of single-level problems. 
+    '''
+    valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
+    CutSharing.options['multicut'] = True
+    rr = dro_radius
+    instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_WC_%.5f" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows), rr)
+    #supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
+    #supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -(RHSnoise_wasswer.sum(axis=0).min())]             
+    supp_ctrs = [{'innovations[%i]' %(resv):1} for resv in range(nr)]
+    supp_ctrs.extend(({'innovations[%i]' %(resv):-1}) for resv in range(nr))
+    supp_rhs = [RHSnoise[resv].max() for resv in range(nr)] 
+    supp_rhs.extend((-RHSnoise[resv].min() for resv in range(nr)))                                                                          
+    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
+    lbs = algo.run( instance_name=instance_name, dynamic_sampling=True)
+    
+    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+    save_path = hydro_path+'/Output/WassersteinCont/%s_OSS.pickle' %(instance_name)
+    write_object_results(save_path, sim_result)
+    save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_LBS.pickle' %(instance_name)
+    write_object_results(save_path, (algo.instance, lbs))   
+    
+    del(algo)
+    
+    
