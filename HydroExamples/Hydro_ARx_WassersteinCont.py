@@ -243,10 +243,10 @@ if __name__ == '__main__':
     supp_rhs = [RHSnoise[resv].max() for resv in range(nr)] 
     supp_rhs.extend((-RHSnoise[resv].min() for resv in range(nr)))                                                                          
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
-    lbs = algo.run( instance_name=instance_name, dynamic_sampling=True)
+    lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
     
     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-    save_path = hydro_path+'/Output/WassersteinCont/%s_OSS.pickle' %(instance_name)
+    save_path = hydro_path+'/Output/WassersteinCont/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
     save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_LBS.pickle' %(instance_name)
     write_object_results(save_path, (algo.instance, lbs))   
