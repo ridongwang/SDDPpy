@@ -3,7 +3,9 @@ Created on Nov 17, 2017
 
 @author: dduque
 '''
+import numpy as np
 from gurobipy import *
+from CutSharing import ZERO_TOL
 
 class CutPool():
     
@@ -21,6 +23,18 @@ class CutPool():
     
     def needs_update(self):
         return self._requires_ajustment
+    
+    
+    def get_non_zero_duals(self):
+        tup_ind = []
+        duals = []
+        for ctr_name in self.pool:
+            opt_cut = self.pool[ctr_name]
+            if np.abs(opt_cut.ctrRef.Pi) > ZERO_TOL:
+                tup_ind.append((opt_cut.cut_id, opt_cut.outcome))
+                duals.append(opt_cut.ctrRef.Pi)
+        return tup_ind, duals
+                
     
     def __len__(self):
         return len(self.pool)
@@ -49,6 +63,12 @@ class Cut():
         self.dep_rhs_vector = dep_rhs_vector
         #Reference to the constraint
         self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
+        
+        #==============================#
+        # Extra information for dual retrieval
+        self.cut_id = cut_id
+        self.outcome = outcome
+        
 
     def adjust_intercept(self, omega_last):
         '''
