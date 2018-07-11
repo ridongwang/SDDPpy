@@ -67,7 +67,7 @@ class StageProblem():
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
                 self.oracle = self.model.addVars(num_outcomes, lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
-            
+            self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
               
                 
@@ -255,7 +255,7 @@ class StageProblem():
             
     def createStageCut(self, cut_id, sp_next, rnd_vector_next, outputs_next, sample_path_forward_states , sample_path):
         '''
-        Creates a cut for this stage
+        Creates a cut for this stage problem
         
         Args:
             cut_id (int): Numeric id of the cut (corresponds to the number of backward passes).
@@ -277,24 +277,8 @@ class StageProblem():
         srv = rnd_vector_next
         soo = outputs_next
         spfs = sample_path_forward_states
-        
-        #=======================================================================
-        # for ctr in sp_next.ctrsForDuals:
-        #     pi_bar[ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
-        #     
-        # cut_gradiend_coeff = {vo:0 for vo in self.out_state}
-        # for (c,vi) in sp_next.ctrInStateMatrix:
-        #     vo = sp_next.get_out_state_var(vi)
-        #     cut_gradiend_coeff[vo] += pi_bar[c]*sp_next.ctrInStateMatrix[c,vi]
-        #=======================================================================
-        
-        pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs)
-        
-        #=======================================================================
-        # cut_intercept = sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[vn] for vn in self.out_state) 
-        #=======================================================================
-        
-        cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs)
+        pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs , cut_id)
+        cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs, cut_id)
         
         
         stagewise_ind  = srv.is_independent
@@ -303,6 +287,7 @@ class StageProblem():
         if stagewise_ind:
             for (i,grad) in enumerate(cut_gradiend_coeffs):
                 new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
+                self.cut_pool.addCut(new_cut)
         else:
             if self.multicut == True:
                 raise "Multicut is not yet implemented for the dependent case"
@@ -326,7 +311,7 @@ class StageProblem():
                           stagewise_ind=False,
                           ind_rhs=ind_rhs,
                           dep_rhs_vector=dep_rhs_vector)
-        self.cut_pool.addCut(new_cut)
+            self.cut_pool.addCut(new_cut)
     
     def get_stage_objective_value(self):
         '''
