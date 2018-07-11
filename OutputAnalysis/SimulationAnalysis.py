@@ -312,7 +312,7 @@ if __name__ == '__main__':
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
-            if file_n in f and f[-6:]=='pickle' and 'OOS'in f:
+            if file_n in f and f[-6:]=='pickle' and ('OOS'in f or 'OSS' in f):
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
         
@@ -358,7 +358,7 @@ if __name__ == '__main__':
             raise 'Unknown dro params'
 
         plot_path = path_to_files + file_n + ".pdf"
-        plot_sim_results(sim_results, plot_path, N)
+        
     else:
         raise 'Not identified plot'
     

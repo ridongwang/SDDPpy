@@ -235,12 +235,12 @@ if __name__ == '__main__':
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
     CutSharing.options['multicut'] = False
     sim_results = list()
-    
+    print(RHSnoise)
     rr = dro_radius
     instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_SingleCut_DW_%.5f" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows), rr)
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
                 dro_solver_params = {'norm': 1 , 'radius':rr})
-    lbs = algo.run( instance_name=instance_name, dynamic_sampling=False)
+    lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
     
     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_OOS.pickle' %(instance_name)

@@ -240,7 +240,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 100
+                CutSharing.options['max_iter'] = 300
                 '''
                 Expected value risk measure
                 '''
@@ -323,10 +323,10 @@ if __name__ == '__main__':
                 
                 #for rr in [b*(10**c) for c in [0] for b in [10]]:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
-                for rr in [100]:
+                for rr in [10]:
                     print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
-                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
+                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
                     lbs_dynamic.append(lbs)
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)

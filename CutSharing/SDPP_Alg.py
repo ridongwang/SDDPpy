@@ -141,7 +141,10 @@ class SDDP(object):
             
             fp_out_states.append(sp_output['out_state'])
             sp.risk_measure.forward_prob_update(i,self.random_container)   
-            #new_support, new_pmf =  sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
+            try:
+                new_support, new_pmf =  sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
+            except:
+                pass
             '''
             IO and stats updates
             '''
@@ -307,7 +310,7 @@ class SDDP(object):
             '''
             if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
                 pass
-                self.compute_statistical_bound(alg_options['in_sample_ub'])
+                #self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
                 # if self.pass_iteration>3:
                 #     self.compute_upper_bound_opt_sim_knitro(100)
