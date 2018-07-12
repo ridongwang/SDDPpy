@@ -236,16 +236,18 @@ if __name__ == '__main__':
     rr = dro_radius
     cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
     sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_Dual_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
     print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])                                                              
     
+    save_path = hydro_path+'/Output/DW_Dual/%s_LBS.pickle' %(instance_name)
+    write_object_results(save_path, (algo.instance, lbs))
+    
     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/DW_Dual/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
-    save_path = hydro_path+'/Output/DW_Dual/%s_LBS.pickle' %(instance_name)
-    write_object_results(save_path, (algo.instance, lbs))    
+        
     
     del(algo)
     

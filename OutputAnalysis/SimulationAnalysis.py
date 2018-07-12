@@ -99,8 +99,8 @@ def plot_lbs(lb_s, lb_d, N, r_list, plot_path):
     writer.save()
     
 def plot_lbs_comp(lbs_by_r, plot_path):
-    dash_styles = [(4, 1),(3, 2),(2, 3),(1, 4)]
-    plot_colors = ['black','red','blue','green']
+    dash_styles = [(4, 1),(3, 2),(2, 3),(1, 4),(1,1),(2,2)]
+    plot_colors = ['black','red','blue','green', 'magenta', 'grey']
     methods_names = ['Empirical', 'Dynamic']  
     
     for r in lbs_by_r:
@@ -108,7 +108,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
         lb_exps = lbs_by_r[r]
         min_val = np.inf
         max_val = -np.inf
-        max_time =  np.inf
+        max_time =   np.inf
         exp_ix = 0
         for lbs_exp in lb_exps:
             exp_name = lbs_exp[0]
@@ -117,15 +117,15 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             #print([lbs_data[i][1] for i in range(lb_points)])
             #print([lbs_data[i][0] for i in range(lb_points)])
             axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[200][0])
+            min_val = np.minimum(min_val,lbs_data[50][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
-            max_time = np.minimum(max_time, lbs_data[-1][1])
+            max_time = 150#np.minimum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
         #max_time = 100
         print(min_val,max_val,max_time)   
         axarr.legend(loc='best', shadow=True, fontsize='small')
-        axarr.set_ylim(min_val, max_val+0.05*np.abs(max_val-min_val))
-        axarr.yaxis.set_minor_locator(MultipleLocator(500))
+        axarr.set_ylim(min_val, max_val+0.01*np.abs(max_val-min_val))
+        axarr.yaxis.set_minor_locator(MultipleLocator(100))
         axarr.set_ylabel('Lower bound')
         
         axarr.set_xlim(0, max_time)
@@ -401,10 +401,10 @@ if __name__ == '__main__':
         lbs_by_r = {}
         for f in experiment_files:
             try:
-                exp_name = ''
+                exp_name = 'Primal' if 'Primal' in f else 'Dual'
                 print('%s%s' %(path_to_files,f))
                 instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
-                exp_name = exp_name + ('DS' if instance['alg_options']['dynamic_sampling'] else 'ES')
+                exp_name = exp_name + ('_DS' if instance['alg_options']['dynamic_sampling'] else '_ES')
                 exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')
                 r_instance = None
                 if 'radius' in instance['risk_measure_params']:

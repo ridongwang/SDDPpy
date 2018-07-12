@@ -21,3 +21,6 @@ do
 		python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py $rootdirSC$rootname$n$midnameSC$r$endnameDS $rootdirDual$rootname$n$midnameDual$r$endnameDS --exp_file=$rootname$n$DSONLY --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/ --plot_type=LBS
 	done
 done
+
+
+### python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_MC_DW_10.000000_DS_LBS.pickle DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_MC_DW_10.000000_ES_LBS.pickle DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_SC_DW_10.000000_DS_LBS.pickle DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_SC_DW_10.000000_ES_LBS.pickle DW_Dual/Hydro_R10_AR1_T12_N5_I500ESS_Dual_MC_DW_10.000000_DS_LBS.pickle DW_Dual/Hydro_R10_AR1_T12_N5_I500ESS_Dual_MC_DW_10.000000_ES_LBS.pickle --exp_file=PrimalLBS --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/ --plot_type=LBS
