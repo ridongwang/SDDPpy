@@ -283,7 +283,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
     def forward_pass_updates(self, *args, **kwargs):
         return False, 0 
     
-    def forward_prob_update (self, t, rnd_container ):
+    def forward_prob_update (self, t, sp, next_sp, fp_out_states , sample_path,  rnd_container ):
         '''Updates the probability distribution for the descendants of the current stage.
         The update sets the probability use to sample new outcomes to the worst case prob
         distribution for the particular sample path being explored.
@@ -993,9 +993,30 @@ class DistRobust(AbstracRiskMeasure):
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0   
-    def forward_prob_update(self, *args, **kwargs):
-        '''No probability modifications for this risk measure'''
-        pass
+    def forward_prob_update(self, t, sp, next_sp, forward_out_states, sample_path, rnd_cnt):
+        '''
+            Computes a proxy of the worst case distribution by solving the inner max problem
+            with the value of the oracles as objective function.
+        '''
+        if next_sp == None:
+            #No change in probabilities
+            return
+        
+        next_rnd_vector = rnd_cnt[t+1]
+        omega_t = next_rnd_vector.getOutcomes(sample_path, ev=False)
+        zs = np.zeros(len(omega_t))
+        for (i,outcome) in enumerate(omega_t):
+            next_sp_output = next_sp.solve(in_state_vals=forward_out_states[t-1], 
+                                 random_realization=outcome, 
+                                 forwardpass=False, 
+                                 random_container=rnd_cnt, 
+                                 sample_path = sample_path)
+            zs[i] = next_sp_output['objval']
+    
+        p_worst = self.inner_solver.compute_worst_case_distribution(zs)
+        next_rnd_vector.modifyOutcomesProbabilities(p_worst)
+        
+        
 
 class DistRobusInnerSolver(ABC):
     @abstractmethod

@@ -38,7 +38,7 @@ class SDDP(object):
         self.random_container = random_builder()
         self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
         
-        self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params}
+        self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params, 'alg_options':alg_options}
         
         
         self.lb = None
@@ -140,8 +140,10 @@ class SDDP(object):
                 self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
             
             fp_out_states.append(sp_output['out_state'])
-            sp.risk_measure.forward_prob_update(i,self.random_container)   
+            next_sp = self.stage_problems[i+1] if i+1<len(self.stage_problems) else None
+            sp.risk_measure.forward_prob_update(i,sp, next_sp , fp_out_states , sample_path , self.random_container)   
             try:
+                
                 new_support, new_pmf =  sp.risk_measure.forward_prob_update_WassCont(i, sp,self.random_container)   
             except:
                 pass
@@ -239,10 +241,8 @@ class SDDP(object):
         
     def init_out(self, instance_name):
         sddp_log.info(instance_name)
-        sddp_log.info('T: %i' %(len(self.stage_problems)))
-        sddp_log.info('Number of passes: %i:' %(alg_options['max_iter']))
-        sddp_log.info('Sample paths per pass: %i:' %(alg_options['n_sample_paths']))
         sddp_log.info('Multicut: %s' %(str(alg_options['multicut'])))
+        sddp_log.info('Dynamic Sampling: %s' %(str(alg_options['dynamic_sampling'])))
         
         if alg_options['outputlevel']>=2:
             sddp_log.info('==============================================================================================')
@@ -251,9 +251,15 @@ class SDDP(object):
             sddp_log.info('==============================================================================================')
         
     
+    def get_wall_time(self):
+        '''
+        Return the wall time since the begining of the algorithm
+        '''
+        return time.time() - self.ini_time
+        
     def iteration_update(self,fp_time, bp_time, force_print = False, last_iter = False):
         if (alg_options['outputlevel']>=2 and (self.pass_iteration % alg_options['lines_freq'] == 0 or last_iter==True) and  force_print==False):
-            elapsed_time = time.time() - self.ini_time
+            elapsed_time = self.get_wall_time()
             additional_msg = '' 
             if self.cutting_plane_max_vio !=None:
                 additional_msg = '%15.5e' %(self.cutting_plane_max_vio)
@@ -262,7 +268,7 @@ class SDDP(object):
             sddp_log.info('==============================================================================================')
             sddp_log.info('%4s %15s %15s %15s %12s %12s %12s'
                           %('Pass', 'LB', 'iUB','iHW', 'F time', 'B time', 'Wall time'))
-            elapsed_time = time.time() - self.ini_time
+            elapsed_time = self.get_wall_time()
             sddp_log.info('%4s %15.5e %15.5e %15.5e %12.2f %12.2f %12.2f' 
                   %("Sim%i" %(alg_options['sim_iter']) , self.lb, self.ub, self.ub_hw, fp_time, bp_time, elapsed_time))
             sddp_log.info('==============================================================================================')
@@ -286,10 +292,14 @@ class SDDP(object):
         termination = False
         while termination ==False:
             
+            '''
+            ==================================================
+            Forward path 
+            ==================================================
+            '''
             f_timer = time.time()
             sample_paths = []
             fp_outputs = [] 
-            
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = None
                 if pre_sample_paths == None and dynamic_sampling == False:
@@ -305,8 +315,12 @@ class SDDP(object):
             fp_time = time.time()-f_timer
             self.stats.updateStats(cs.FORWARD_PASS, total_time = fp_time)
             
+            lbs.append((self.lb,self.get_wall_time()))
+            
             '''
+            ==================================================
             Compute statistical upper bounds
+            ==================================================
             '''
             if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
                 pass
@@ -318,14 +332,20 @@ class SDDP(object):
                 #    self.compute_upper_bound_math_prog(2*alg_options['in_sample_ub'])
             
             '''
+            ==================================================
             Stopping criteria
+            ==================================================
             '''
-            lbs.append(self.lb)
             termination =  self.termination()
             self.iteration_update(fp_time, bp_time, last_iter = termination)
             if termination:
                 break
             
+            '''
+            ==================================================
+            Forward path 
+            ==================================================
+            '''
             b_timer = time.time()
             for i in range(0,alg_options['n_sample_paths']):
                 s_path = sample_paths[i]

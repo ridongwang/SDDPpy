@@ -14,8 +14,8 @@ expectation in DRO.
 import sys
 sys.path.append('/Applications/knitro-11.0.1-z-MacOS-64/examples/Python/')
 
-from knitro import *
-from knitroNumPy import *
+#from knitro import *
+#from knitroNumPy import *
 import numpy as np
 
 

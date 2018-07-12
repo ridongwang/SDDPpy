@@ -98,6 +98,66 @@ def plot_lbs(lb_s, lb_d, N, r_list, plot_path):
     experiment_data.to_excel(writer,sheet_name)
     writer.save()
     
+def plot_lbs_comp(lbs_by_r, plot_path):
+    dash_styles = [(5, 2),(1, 1),(3, 2),(4, 7)]
+    methods_names = ['Empirical', 'Dynamic']  
+    
+    for r in lbs_by_r:
+        f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=300)
+        lb_exps = lbs_by_r[r]
+        min_val = np.inf
+        max_val = -np.inf
+        max_time = np.inf
+        exp_ix = 0
+        for lbs_exp in lb_exps:
+            exp_name = lbs_exp[0]
+            lb_points = len(lbs_exp[1])
+            lbs_data = lbs_exp[1]
+            print([lbs_data[i][1] for i in range(lb_points)])
+            print([lbs_data[i][0] for i in range(lb_points)])
+            axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color='black', linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
+            min_val = np.minimum(min_val,lbs_data[5][0])
+            max_val = np.maximum(max_val,lbs_data[-1][0])
+            max_time = np.minimum(max_time, lbs_data[-1][1])
+            exp_ix = exp_ix +1
+        
+        print(min_val,max_val,max_time)   
+        axarr.legend(loc='best', shadow=True, fontsize='small')
+        axarr.set_ylim(min_val, max_val+0.05*np.abs(max_val-min_val))
+        axarr.yaxis.set_minor_locator(MultipleLocator(500))
+        axarr.set_ylabel('Lower bound')
+        
+        axarr.set_xlim(0, max_time)
+        axarr.xaxis.set_minor_locator(MultipleLocator(5))
+        axarr.set_xlabel('Time')
+        
+        axarr.grid(which='minor', alpha=0.2)
+        axarr.grid(which='major', alpha=0.5)
+        #step = int(len(lb_s[k])/10)
+        #axarr.set_xticks(np.arange(0,len(lb_s[k]),step))
+        complete_file_name = plot_path + 'r_%f.pdf' %(r)
+        plt.tight_layout()
+        pp = PdfPages(complete_file_name)
+        pp.savefig(f)
+        pp.close()
+        
+    #===========================================================================
+    # '''
+    # Save to file 
+    # '''
+    # experiment_data = pd.DataFrame()
+    # all_lbs = {'Empirical':lb_s, 'Dynamic':lb_d}
+    # for (k,r) in enumerate(r_list):
+    #     for m in methods_names:
+    #         col_name = 'lb_%s_r_%f' %(m,r)
+    #         experiment_data[col_name]=all_lbs[m][k]
+    # 
+    # writer = pd.ExcelWriter('%s.xlsx' %(plot_path))
+    # sheet_name = 'LBs'
+    # experiment_data.to_excel(writer,sheet_name)
+    # writer.save()
+    #===========================================================================
+    
 
 def plot_sim_results(sim_results, plot_path, N):
     '''
@@ -282,31 +342,36 @@ def plot_metrics_comparison(sim_results_metrics, plot_path):
 
 if __name__ == '__main__':
     argv = sys.argv
+    print(argv)
     positional_args,kwargs = parse_args(argv[1:])
+    print(positional_args)
+    print(kwargs)
     path_to_files = None
     file_n = None
     N = None
+    
+    #===========================================================================
+    # if 'N' in  kwargs:
+    #     N = kwargs['N']
+    # else:
+    #     raise "Parameter  N is necessary."
+    #===========================================================================
     if 'path_to_files' in  kwargs:
         path_to_files = kwargs['path_to_files']
     else:
         raise "path parameter is necessary."
-    
-    if 'exp_file' in  kwargs:
-        file_n = kwargs['exp_file']
-    else:
-        raise "Experiment file (exp_file) parameter is necessary."
-    
-    if 'N' in  kwargs:
-        N = kwargs['N']
-    else:
-        raise "Parameter  N is necessary."
-    
+
     if 'plot_type' in  kwargs:
         plot_type = kwargs['plot_type']
         assert plot_type in ['LBS', 'OOS'], 'Plot type is either lbs or oos %s' %(plot_type)
     else:
         raise "Parameter  N is necessary."
     
+    if 'exp_file' in  kwargs:
+            file_n = kwargs['exp_file']
+    else:
+        raise "Experiment file (exp_file) parameter is necessary."
+        
     if plot_type == 'OOS':
         print(path_to_files,file_n)
         experiment_files = os.listdir(path_to_files)
@@ -323,7 +388,7 @@ if __name__ == '__main__':
             if 'radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
                 sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
             elif 'DUS_radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
-                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['DUS_radius'])
             else:
                 print(sim_results[0].instance)
                 raise 'Unknown dro params'
@@ -334,31 +399,35 @@ if __name__ == '__main__':
         plot_path = path_to_files + file_n + ".pdf"
         plot_sim_results(sim_results, plot_path, N)
     elif plot_type == 'LBS':
-        print(path_to_files,file_n)
-        experiment_files = os.listdir(path_to_files)
-        lbs_r_list = []
+        experiment_files = list(positional_args)
+        lbs_by_r = {}
         for f in experiment_files:
-            if file_n in f and f[-6:]=='pickle' and 'LBS'in f:
-                new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
-                sim_results.append(new_sim)
-        
-        #Sort experiments
-        if 'radius' in sim_results[0].instance['risk_measure_params']:
-            sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
-        elif 'dro_solver_params' in  sim_results[0].instance['risk_measure_params']:
-            if 'radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
-                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
-            elif 'DUS_radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
-                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+            exp_name = ''
+            print('%s%s' %(path_to_files,f))
+            instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
+            exp_name = exp_name + ('DS' if instance['alg_options']['dynamic_sampling'] else 'ES')
+            exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')
+            r_instance = None
+            if 'radius' in instance['risk_measure_params']:
+                r_instance =instance['risk_measure_params']['radius']
+            elif 'dro_solver_params' in  instance['risk_measure_params']:
+                if 'radius' in instance['risk_measure_params']['dro_solver_params']:
+                    r_instance = instance['risk_measure_params']['dro_solver_params']['radius']
+                elif 'DUS_radius' in instance['risk_measure_params']['dro_solver_params']:
+                    r_instance = instance['risk_measure_params']['dro_solver_params']['DUS_radius']
+                else:
+                    print(instance)
+                    raise 'Unknown dro params'
             else:
-                print(sim_results[0].instance)
+                print(instance)
                 raise 'Unknown dro params'
-        else:
-            print(sim_results[0].instance)
-            raise 'Unknown dro params'
+            if r_instance not in lbs_by_r:
+                lbs_by_r[r_instance] = [(exp_name, lb_data)]
+            else:
+                lbs_by_r[r_instance].append((exp_name,lb_data))
 
-        plot_path = path_to_files + file_n + ".pdf"
-        
+        plot_path = path_to_files + file_n + "_DW_LBS"
+        plot_lbs_comp(lbs_by_r, plot_path)   
     else:
         raise 'Not identified plot'
     
