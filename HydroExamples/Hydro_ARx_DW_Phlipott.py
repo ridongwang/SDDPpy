@@ -240,7 +240,7 @@ if __name__ == '__main__':
     
     sim_results = list()
     #print(RHSnoise)
-    rr = 0#dro_radius
+    rr = 10#dro_radius
     CutSharing.options['max_iter'] = 100
     CutSharing.options['multicut'] = False
     cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
