@@ -9,7 +9,7 @@ import logging
 import numpy as np
 np.set_printoptions(linewidth= 200, nanstr='nen')
 from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
-from CutSharing.SDPP_Alg import SDDP
+from CutSharing.SDDP_Alg import SDDP
 from CutSharing import logger as sddp_log
 
 from Utils.argv_parser import sys,parse_args
@@ -239,7 +239,7 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 100
+                CutSharing.options['max_iter'] = 300
                 '''
                 Expected value risk measure
                 '''
@@ -389,7 +389,7 @@ if __name__ == '__main__':
                     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
-                plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinConts.pdf' %(instance_name), N_training)
+                #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinConts.pdf' %(instance_name), N_training)
                 #sim_results_com.append(sim_results)
                 #plot_metrics_comparison(sim_results_com, hydro_path+'/Output/%s_WassersteinCompX3.pdf' %(instance_name))
                 

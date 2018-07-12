@@ -53,6 +53,7 @@ options['grb_threads'] = 1
 options['multicut'] = False
 options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
+options['dynamic_sampling'] = False
 
 
 def gurobiStatusCodeToStr( intstatus ):

@@ -9,7 +9,7 @@ from CutSharing.RandomManager import experiment_desing_gen,\
     reset_experiment_desing_gen
 from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector
 from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
-from CutSharing.SDPP_Alg import SDDP
+from CutSharing.SDDP_Alg import SDDP
 from HydroExamples import *
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from OutputAnalysis.SimulationAnalysis import plot_sim_results,\
@@ -194,6 +194,10 @@ if __name__ == '__main__':
         dro_radius = kwargs['dro_radius']
     if 'N' in kwargs:
         N = kwargs['N']
+    if 'dynamic_sampling' in kwargs:
+        CutSharing.options['dynamic_sampling'] = kwargs['dynamic_sampling']
+    if 'multicut' in kwargs:
+        CutSharing.options['multicut'] = kwargs['multicut']
         
     sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
@@ -233,14 +237,16 @@ if __name__ == '__main__':
     inner problem is solved in the backward pass (transportation problem).
     '''
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
-    CutSharing.options['multicut'] = False
+    
     sim_results = list()
-    print(RHSnoise)
+    #print(RHSnoise)
     rr = dro_radius
-    instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_SingleCut_DW_%.5f" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows), rr)
+    cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
+    sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
                 dro_solver_params = {'norm': 1 , 'radius':rr})
-    lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
+    lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])
     
     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_OOS.pickle' %(instance_name)
