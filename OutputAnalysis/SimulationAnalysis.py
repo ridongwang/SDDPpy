@@ -108,7 +108,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
         lb_exps = lbs_by_r[r]
         min_val = np.inf
         max_val = -np.inf
-        max_time = 0# np.inf
+        max_time =  np.inf
         exp_ix = 0
         for lbs_exp in lb_exps:
             exp_name = lbs_exp[0]
@@ -117,9 +117,9 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             #print([lbs_data[i][1] for i in range(lb_points)])
             #print([lbs_data[i][0] for i in range(lb_points)])
             axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[20][0])
+            min_val = np.minimum(min_val,lbs_data[200][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
-            max_time = np.maximum(max_time, lbs_data[-1][1])
+            max_time = np.minimum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
         #max_time = 100
         print(min_val,max_val,max_time)   
@@ -343,10 +343,7 @@ def plot_metrics_comparison(sim_results_metrics, plot_path):
 
 if __name__ == '__main__':
     argv = sys.argv
-    print(argv)
     positional_args,kwargs = parse_args(argv[1:])
-    print(positional_args)
-    print(kwargs)
     path_to_files = None
     file_n = None
     N = None
@@ -403,29 +400,32 @@ if __name__ == '__main__':
         experiment_files = list(positional_args)
         lbs_by_r = {}
         for f in experiment_files:
-            exp_name = ''
-            print('%s%s' %(path_to_files,f))
-            instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
-            exp_name = exp_name + ('DS' if instance['alg_options']['dynamic_sampling'] else 'ES')
-            exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')
-            r_instance = None
-            if 'radius' in instance['risk_measure_params']:
-                r_instance =instance['risk_measure_params']['radius']
-            elif 'dro_solver_params' in  instance['risk_measure_params']:
-                if 'radius' in instance['risk_measure_params']['dro_solver_params']:
-                    r_instance = instance['risk_measure_params']['dro_solver_params']['radius']
-                elif 'DUS_radius' in instance['risk_measure_params']['dro_solver_params']:
-                    r_instance = instance['risk_measure_params']['dro_solver_params']['DUS_radius']
+            try:
+                exp_name = ''
+                print('%s%s' %(path_to_files,f))
+                instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
+                exp_name = exp_name + ('DS' if instance['alg_options']['dynamic_sampling'] else 'ES')
+                exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')
+                r_instance = None
+                if 'radius' in instance['risk_measure_params']:
+                    r_instance =instance['risk_measure_params']['radius']
+                elif 'dro_solver_params' in  instance['risk_measure_params']:
+                    if 'radius' in instance['risk_measure_params']['dro_solver_params']:
+                        r_instance = instance['risk_measure_params']['dro_solver_params']['radius']
+                    elif 'DUS_radius' in instance['risk_measure_params']['dro_solver_params']:
+                        r_instance = instance['risk_measure_params']['dro_solver_params']['DUS_radius']
+                    else:
+                        print(instance)
+                        raise 'Unknown dro params'
                 else:
                     print(instance)
                     raise 'Unknown dro params'
-            else:
-                print(instance)
-                raise 'Unknown dro params'
-            if r_instance not in lbs_by_r:
-                lbs_by_r[r_instance] = [(exp_name, lb_data)]
-            else:
-                lbs_by_r[r_instance].append((exp_name,lb_data))
+                if r_instance not in lbs_by_r:
+                    lbs_by_r[r_instance] = [(exp_name, lb_data)]
+                else:
+                    lbs_by_r[r_instance].append((exp_name,lb_data))
+            except:
+                print('Something wring with %s' %(f))
 
         plot_path = path_to_files + file_n + "_DW_LBS"
         plot_lbs_comp(lbs_by_r, plot_path)   
