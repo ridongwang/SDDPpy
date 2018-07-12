@@ -912,6 +912,9 @@ class DistRobust(AbstracRiskMeasure):
         self.inner_solver = dro_solver(**dro_solver_params)
         self._wors_case_dist = None
         self._static_dist = True
+        
+        #For multi-cut version
+        self.global_oracle = None
        
         
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfv, cut_id):
@@ -949,6 +952,7 @@ class DistRobust(AbstracRiskMeasure):
                 vo = sp_next.get_out_state_var(vi)
                 cut_gradiend_coeff[0][vo] += pi_bar[0][c]*sp_next.ctrInStateMatrix[c,vi]
         else:           #Multicut
+            sp.model.addConstr(lhs=self.global_oracle - quicksum(p[i]*sp.oracle[i] for i in sp.oracle), sense=GRB.GREATER_EQUAL, rhs=0, name='unicut[%i]' %(cut_id))
             pi_bar = [{} for _ in srv.outcomes]
             cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
             for ctr in sp_next.ctrsForDuals:
@@ -987,8 +991,17 @@ class DistRobust(AbstracRiskMeasure):
     def update_cut_intercept(self):
         pass  
     def modify_stage_problem(self,  sp,  model, next_stage_rnd_vector):
-        model.setObjective(sp.cx + sp.oracle.sum())
+        '''
+        Modify the stage problem to accomadtes additional variables and constraints
+        defined in the DRO appoach
+        '''
         self.inner_solver.build_model(t=sp.stage,next_stage_rnd_vec = next_stage_rnd_vector)
+        if sp.multicut == False:
+            model.setObjective(sp.cx + sp.oracle.sum())
+        else:
+            self.global_oracle =model.addVar(lb=-1E8, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='GlobalOracle[%i]' %(sp.stage))
+            model.setObjective(sp.cx + self.global_oracle)
+            
 
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
