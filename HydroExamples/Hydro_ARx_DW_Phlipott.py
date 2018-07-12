@@ -185,7 +185,7 @@ if __name__ == '__main__':
         T = kwargs['T']
     if 'max_iter' in kwargs:
         CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/10)
+        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
     if 'sim_iter' in kwargs:
         CutSharing.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
@@ -240,21 +240,24 @@ if __name__ == '__main__':
     
     sim_results = list()
     #print(RHSnoise)
-    rr = 10#dro_radius
+    rr = dro_radius
     CutSharing.options['max_iter'] = 100
-    CutSharing.options['multicut'] = False
+    CutSharing.options['multicut'] = True
+    CutSharing.options['dynamic_sampling'] = False
     cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
     sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_Primal_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
                 dro_solver_params = {'norm': 1 , 'radius':rr})
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])
     
+    save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_LBS.pickle' %(instance_name)
+    write_object_results(save_path, (algo.instance, lbs))      
+    
     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
-    save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_LBS.pickle' %(instance_name)
-    write_object_results(save_path, (algo.instance, lbs))            
+          
     del(algo)
     
     
