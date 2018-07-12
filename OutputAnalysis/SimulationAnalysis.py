@@ -99,7 +99,8 @@ def plot_lbs(lb_s, lb_d, N, r_list, plot_path):
     writer.save()
     
 def plot_lbs_comp(lbs_by_r, plot_path):
-    dash_styles = [(5, 2),(1, 1),(3, 2),(4, 7)]
+    dash_styles = [(4, 1),(3, 2),(2, 3),(1, 4)]
+    plot_colors = ['black','red','blue','green']
     methods_names = ['Empirical', 'Dynamic']  
     
     for r in lbs_by_r:
@@ -107,20 +108,20 @@ def plot_lbs_comp(lbs_by_r, plot_path):
         lb_exps = lbs_by_r[r]
         min_val = np.inf
         max_val = -np.inf
-        max_time = np.inf
+        max_time = 0# np.inf
         exp_ix = 0
         for lbs_exp in lb_exps:
             exp_name = lbs_exp[0]
             lb_points = len(lbs_exp[1])
             lbs_data = lbs_exp[1]
-            print([lbs_data[i][1] for i in range(lb_points)])
-            print([lbs_data[i][0] for i in range(lb_points)])
-            axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color='black', linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[5][0])
+            #print([lbs_data[i][1] for i in range(lb_points)])
+            #print([lbs_data[i][0] for i in range(lb_points)])
+            axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
+            min_val = np.minimum(min_val,lbs_data[20][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
-            max_time = np.minimum(max_time, lbs_data[-1][1])
+            max_time = np.maximum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
-        
+        #max_time = 100
         print(min_val,max_val,max_time)   
         axarr.legend(loc='best', shadow=True, fontsize='small')
         axarr.set_ylim(min_val, max_val+0.05*np.abs(max_val-min_val))
