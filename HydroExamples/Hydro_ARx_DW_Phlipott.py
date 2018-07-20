@@ -241,9 +241,6 @@ if __name__ == '__main__':
     sim_results = list()
     #print(RHSnoise)
     rr = dro_radius
-    CutSharing.options['max_iter'] = 100
-    CutSharing.options['multicut'] = True
-    CutSharing.options['dynamic_sampling'] = False
     cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
     sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
     instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_Primal_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
