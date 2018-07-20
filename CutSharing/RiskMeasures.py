@@ -589,8 +589,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
     
     def forward_pass_updates(self, *args, **kwargs):
         return False, 0 
-    
-    def forward_prob_update (self, t, rnd_container ):
+    def forward_prob_update (self, t, sp, next_sp,  fp_out_states, sample_path ,rnd_container ):
         '''Updates the probability distribution for the descendants of the current stage.
         The update sets the probability use to sample new outcomes to the worst case prob
         distribution for the particular sample path being explored.

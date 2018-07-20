@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib
 import os
 import pickle
-matplotlib.use('agg')
+#matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
@@ -108,7 +108,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
         lb_exps = lbs_by_r[r]
         min_val = np.inf
         max_val = -np.inf
-        max_time =   np.inf
+        max_time =    np.inf
         exp_ix = 0
         for lbs_exp in lb_exps:
             exp_name = lbs_exp[0]
@@ -117,19 +117,19 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             #print([lbs_data[i][1] for i in range(lb_points)])
             #print([lbs_data[i][0] for i in range(lb_points)])
             axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[50][0])
+            min_val = np.minimum(min_val,lbs_data[200][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
-            max_time = 150#np.minimum(max_time, lbs_data[-1][1])
+            max_time = np.minimum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
-        #max_time = 100
+        #max_time = 2000
         print(min_val,max_val,max_time)   
         axarr.legend(loc='best', shadow=True, fontsize='small')
         axarr.set_ylim(min_val, max_val+0.01*np.abs(max_val-min_val))
-        axarr.yaxis.set_minor_locator(MultipleLocator(100))
+        axarr.yaxis.set_minor_locator(MultipleLocator(10))
         axarr.set_ylabel('Lower bound')
         
         axarr.set_xlim(0, max_time)
-        axarr.xaxis.set_minor_locator(MultipleLocator(5))
+        #axarr.xaxis.set_minor_locator(MultipleLocator(10))
         axarr.set_xlabel('Time')
         
         axarr.grid(which='minor', alpha=0.2)
@@ -160,7 +160,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
     #===========================================================================
     
 
-def plot_sim_results(sim_results, plot_path, N):
+def plot_sim_results(sim_results, plot_path, N, excel_file = True):
     '''
     Plot out-of-sample simulation results
     '''
@@ -184,16 +184,16 @@ def plot_sim_results(sim_results, plot_path, N):
     p1 = [np.percentile(sr.sims_ub, q=1)   for sr in sim_results]
     f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=300)
     axarr.semilogx(r,mean, color='black', label='Mean')
-    axarr.semilogx(r,median, color='black',linestyle='--', label='Median')
+    #axarr.semilogx(r,median, color='black',linestyle='--', label='Median')
     axarr.semilogx(r,p20, color='red', linestyle='--', dashes=(1, 1),label='20-80')
     axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
     axarr.semilogx(r,p10, color='red', linestyle='--', dashes=(3, 1),label='10-90')
     axarr.semilogx(r,p90, color='red', linestyle='--', dashes=(3, 1))
     #===========================================================================
-    # axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
-    # axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
-    # axarr.semilogx(r,p1, color='red', label=' 1 - 99')
-    # axarr.semilogx(r,p99, color='red', )
+    axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
+    axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
+    #axarr.semilogx(r,p1, color='red', label=' 1 - 99')
+    #axarr.semilogx(r,p99, color='red', )
     #===========================================================================
     
     #axarr[1].plot(iterations,test_accuracy, color='b', label='Test acc.')
@@ -237,28 +237,29 @@ def plot_sim_results(sim_results, plot_path, N):
     '''
     Save raw data and percentiles
     '''
-    experiment_data = pd.DataFrame()
-    experiment_data['Name']=[sr.instance['risk_measure'].__name__ for sr in sim_results]
-    #experiment_data['Distance']=[sr.instance['risk_measure_params']['dist_func'].__name__ for sr in sim_results]
-    experiment_data['Radius']= r
-    experiment_data['Mean']=[np.mean(sr.sims_ub) for sr in sim_results]
-    for q in [1,5,10,20,50,80,90,95,99]:
-        col_name = 'Percentile%i' %(q)
-        experiment_data[col_name]=[np.percentile(sr.sims_ub, q=q, interpolation='lower')   for sr in sim_results]
-    n_data_points = len(sim_results[0].sims_ub)
-    for i in range(n_data_points):
-        col_name = 'Obs%i' %(i)
-        experiment_data[col_name]=[sr.sims_ub[i] for sr in sim_results]
-    
-    writer = pd.ExcelWriter('%s.xlsx' %(plot_path))
-    sheet_name = 'Wasserstein%i' %(N)
-    try:
-        if sim_results[0].instance['risk_measure_params']['dist_func'].__name__ != 'norm_fun':
-            sheet_name = 'ChiSquare%i' %(N)
-    except:
-        pass
-    experiment_data.to_excel(writer,sheet_name)
-    writer.save()
+    if excel_file:
+        experiment_data = pd.DataFrame()
+        experiment_data['Name']=[sr.instance['risk_measure'].__name__ for sr in sim_results]
+        #experiment_data['Distance']=[sr.instance['risk_measure_params']['dist_func'].__name__ for sr in sim_results]
+        experiment_data['Radius']= r
+        experiment_data['Mean']=[np.mean(sr.sims_ub) for sr in sim_results]
+        for q in [1,5,10,20,50,80,90,95,99]:
+            col_name = 'Percentile%i' %(q)
+            experiment_data[col_name]=[np.percentile(sr.sims_ub, q=q, interpolation='lower')   for sr in sim_results]
+        n_data_points = len(sim_results[0].sims_ub)
+        for i in range(n_data_points):
+            col_name = 'Obs%i' %(i)
+            experiment_data[col_name]=[sr.sims_ub[i] for sr in sim_results]
+        
+        writer = pd.ExcelWriter('%s.xlsx' %(plot_path))
+        sheet_name = 'Wasserstein%i' %(N)
+        try:
+            if sim_results[0].instance['risk_measure_params']['dist_func'].__name__ != 'norm_fun':
+                sheet_name = 'ChiSquare%i' %(N)
+        except:
+            pass
+        experiment_data.to_excel(writer,sheet_name)
+        writer.save()
     
     
 def plot_metrics_comparison(sim_results_metrics, plot_path):
@@ -402,7 +403,7 @@ if __name__ == '__main__':
         for f in experiment_files:
             try:
                 exp_name = 'Primal' if 'Primal' in f else 'Dual'
-                print('%s%s' %(path_to_files,f))
+                #print('%s%s' %(path_to_files,f))
                 instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 exp_name = exp_name + ('_DS' if instance['alg_options']['dynamic_sampling'] else '_ES')
                 exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')

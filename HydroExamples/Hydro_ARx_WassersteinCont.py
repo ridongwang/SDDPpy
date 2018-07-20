@@ -234,6 +234,7 @@ if __name__ == '__main__':
     '''
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
     CutSharing.options['multicut'] = True
+    CutSharing.options['dynamic_sampling'] = True
     rr = dro_radius
     instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_WC_%.5f" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows), rr)
     #supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
@@ -243,7 +244,7 @@ if __name__ == '__main__':
     supp_rhs = [RHSnoise[resv].max() for resv in range(nr)] 
     supp_rhs.extend((-RHSnoise[resv].min() for resv in range(nr)))                                                                          
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
-    lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
+    lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])
     
     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/WassersteinCont/%s_OOS.pickle' %(instance_name)
