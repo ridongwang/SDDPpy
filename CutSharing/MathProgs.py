@@ -62,7 +62,7 @@ class StageProblem():
         if last_stage == False:
             num_outcomes = next_stage_rnd_vector.outcomes_dim 
             if multicut == False: #Gen single cut variable
-                self.oracle = self.model.addVars(1,lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(1,lb=-1E8*0, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
@@ -131,7 +131,7 @@ class StageProblem():
                 self.model.getVarByName(self.states_map[in_s_name]).lb = in_state_vals[in_s_name]
                 self.model.getVarByName(self.states_map[in_s_name]).ub = in_state_vals[in_s_name]
             
-            assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected"
+            assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars))
             for rr in random_realization:
                 self.model.getVarByName(rr).lb = random_realization[rr]
                 self.model.getVarByName(rr).ub = random_realization[rr]   
@@ -161,6 +161,7 @@ class StageProblem():
                 self.model.params.Outputflag = 1
                 self.model.optimize()
                 self.model.write('subprob%i.mps' % self.stage)
+                
             if forwardpass == True:
                 resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
                 output['risk_measure_info'] = violation
@@ -172,6 +173,7 @@ class StageProblem():
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
                 
             output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
+            output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
             #if self.stage == 0:
@@ -279,7 +281,6 @@ class StageProblem():
         spfs = sample_path_forward_states
         pi_bar, cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs , cut_id)
         cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs, cut_id)
-        
         
         stagewise_ind  = srv.is_independent
         

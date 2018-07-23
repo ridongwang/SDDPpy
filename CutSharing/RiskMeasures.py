@@ -444,7 +444,8 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         self.lambda_var = None
         self._support_slack = None
         self._support_slack_computed = False
-    
+        self._pi_bar = None
+
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes expected dual variables for the single cut version
@@ -485,6 +486,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                 for (i,o) in enumerate(srv.outcomes):
                     cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
             
+            self._pi_bar  = pi_bar
             
             #Create new variables for the reformulation \lambda \in R^l (l number of constraints that define the support)
             vec_dim = len(srv.elements)
@@ -539,7 +541,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         cut_gradiend_coeff = self._current_cut_gradient
         cut_intercepts = None
         if sp.multicut == False:
-            cut_intercepts = [sum(soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+            raise 'Risk measure does not support single cut'
         else:
             cut_intercepts = [0  for _ in srv.outcomes]
             for (i,o) in enumerate(srv.outcomes):
@@ -645,6 +647,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                 except:
                     print('Constraint not available: normCtr_%i_%i_%s_neg' %(k, outc, ele))
             new_support.append(new_supp_point)
+        rnd_cont[stage+1].worst_case_dist = {'support':new_support , 'pmf':new_pmf}
         return new_support, new_pmf
         
 class DistRobustDuality(AbstracRiskMeasure):
