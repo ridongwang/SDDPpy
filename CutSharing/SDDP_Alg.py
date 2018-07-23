@@ -46,7 +46,7 @@ class SDDP(object):
         self.ub_hw = 0
         self.upper_bounds = [] 
         self.pass_iteration = 0
-        self.num_cuts = 0
+        self.num_cuts = [0]*T
         
         #Attribute to keep track of the maximum violation when using cutting planes. 
         self.cutting_plane_max_vio = None
@@ -209,8 +209,24 @@ class SDDP(object):
                 
             cut_creation_time = self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
+              
+            #DELLETE OR FIX LATER
+            try:
+               # TODO: ONLY ADD TYHE cuts for the correspondig original  support point form where the new suppor came. 
+                for outcome in stage_rnd_vector.worst_case_dist['support']:
+                    sp_output = sp.solve(in_state_vals=forward_out_states[t-1], random_realization=outcome, forwardpass=False,random_container=self.random_container, sample_path = sample_path)
+                    outputs_per_outcome2 = [sp_output.copy() for _ in range(len(omega_t))]
+                    for (i,o) in enumerate(omega_t):
+                        #Intercept adjustment. Remove the perturved part (pi*b_wc) and adds the original dual obj intercept rhs
+                        outputs_per_outcome2[i]['objval'] = outputs_per_outcome2[i]['objval'] - outputs_per_outcome2[i]['dual_obj_rhs_noice'] + sum(o[sp.ctrRHSvName[ctr_name]]* sp_output['duals'][ctr_name] for ctr_name in sp.ctrRHSvName)
+                    cut_creation_time = self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome2, forward_out_states[t-1], sample_path)
+                    self.num_cuts[t] +=1  
+            except:
+                pass
+            # END EDITS
             #del(outputs_per_outcome)
-        self.num_cuts +=1   
+            
+         
         
         
     def createStageCut(self, stage, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path):
@@ -236,7 +252,8 @@ class SDDP(object):
             return
         sp_t = self.stage_problems[stage]
         sp_t1 = self.stage_problems[stage+1]
-        sp_t.createStageCut(self.num_cuts, sp_t1, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path )  
+        sp_t.createStageCut(self.num_cuts[stage], sp_t1, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path )  
+        self.num_cuts[stage] +=1
         return time.time()-cut_creation_time
         
     def init_out(self, instance_name):
@@ -278,7 +295,7 @@ class SDDP(object):
             return True
         if self.pass_iteration > 0:
             if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:  #- self.ub_hw -
-                return False             
+                return True             
         return False
     
     
@@ -323,8 +340,8 @@ class SDDP(object):
             ==================================================
             '''
             if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
-                pass
-                #self.compute_statistical_bound(alg_options['in_sample_ub'])
+                #pass
+                self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
                 # if self.pass_iteration>3:
                 #     self.compute_upper_bound_opt_sim_knitro(100)

@@ -183,8 +183,8 @@ if __name__ == '__main__':
     if 'T' in kwargs:
         T = kwargs['T']
     if 'max_iter' in kwargs:
-        CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+        CutSharing.options['max_iter'] = 100#kwargs['max_iter']
+        CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/10)
     if 'sim_iter' in kwargs:
         CutSharing.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
