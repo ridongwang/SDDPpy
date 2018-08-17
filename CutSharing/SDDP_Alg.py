@@ -8,7 +8,8 @@ import time
 
 import numpy as np
 import CutSharing as cs
-from CutSharing.MathProgs import StageProblem, not_optimal_sp
+from CutSharing.MathProgs import StageProblem, not_optimal_sp,\
+    StageOracleProblem
 
 from CutSharing.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen
 
@@ -29,14 +30,14 @@ class SDDP(object):
     Implementation of Stochastic Dual Dynamic Programming algorithm.
     '''
     
-    def __init__(self, T, model_builder, random_builder, risk_measure = Expectation, **risk_measure_params):
+    def __init__(self, T, model_builder,  random_builder, lower_bound=-1E8, risk_measure = Expectation, **risk_measure_params):
         '''
         Constructor
         '''
         self.stats = Stats()
         self.stage_problems = []
         self.random_container = random_builder()
-        self.createStageProblems(T, model_builder, risk_measure, **risk_measure_params)
+        self.createStageProblems(T, model_builder, lower_bound, risk_measure, **risk_measure_params)
         
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params, 'alg_options':alg_options}
         
@@ -50,11 +51,13 @@ class SDDP(object):
         
         #Attribute to keep track of the maximum violation when using cutting planes. 
         self.cutting_plane_max_vio = None
-
-
-        self.best_p = None #Used in the opt-simulation methodf
+        self.best_p = None #Used in the opt-simulation method
         
-    def createStageProblems(self, T, model_builder, risk_measure, **risk_measure_params):
+        #Attributes to store oracle subproblems
+        self.stage_oracle_subproblems = []
+        
+        
+    def createStageProblems(self, T, model_builder, lower_bound, risk_measure, **risk_measure_params):
         '''
         Creates all subproblems given a builder.
         Args:
@@ -68,8 +71,25 @@ class SDDP(object):
         for i in range(T):
             sp_risk_measure = risk_measure(**risk_measure_params)
             next_stage_rnd_vector = self.random_container[i+1] if i<T-1 else None
-            sp = StageProblem(i,model_builder, next_stage_rnd_vector,  i==T-1, risk_measure= sp_risk_measure, multicut = alg_options['multicut'])
+            sp = StageProblem(i,model_builder, next_stage_rnd_vector, lower_bound,  last_stage=(i==T-1), risk_measure=sp_risk_measure, multicut = alg_options['multicut'])
             self.stage_problems.append(sp)
+
+
+
+    def add_oracle_model(self, oracle_model_builder):
+        '''
+        Adds a handle on each subproblem to a  model that serves as an oracle. 
+        oracle_model_builder (func): Function that builds an auxiliary problem that serves as 
+            an oracle of the value function. The signature of the oracle builder is:
+                oracle_model_builder params:
+                    t (int): stage of the oracle (i.e., oracler represents cost from stage t to T).
+                    T (int): number of stages
+        '''
+        T = len(self.stage_problems)
+        for i in range(T):
+            if i<=alg_options['max_stage_with_oracle']:
+                osp = StageOracleProblem(i,T,oracle_model_builder)
+                self.stage_oracle_subproblems.append(osp)
 
     def forwardpass(self, sample_path, simulation = False):
         '''
@@ -128,6 +148,8 @@ class SDDP(object):
         new_pmf = None
         for (i,sp) in enumerate(self.stage_problems):
             in_state = fp_out_states[-1] if i>0 else  None
+            new_support = self.random_container[i].outcomes
+            new_pmf = [1] if i ==0 else [0.1,0.2,0.7]
             self.random_container.getStageSample(i, sample_path, alg_rnd_gen, new_support = new_support, new_pmf = new_pmf)
             sp_output = sp.solve(in_state_vals = in_state, 
                                  random_realization= sample_path[i], 
@@ -206,13 +228,13 @@ class SDDP(object):
                                                          data_out_time= sp_output['datamanagement'],
                                                          num_lp_ctrs=sp.model.num_constrs,
                                                          iteration=self.pass_iteration)
-                
-            cut_creation_time = self.createStageCut(t-1, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
+            sp_cut = self.stage_problems[t-1]
+            cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
               
             #DELLETE OR FIX LATER
             try:
-               # TODO: ONLY ADD TYHE cuts for the correspondig original  support point form where the new suppor came. 
+                # TODO: ONLY ADD THE cuts for the correspondig original  support point form where the new suppor came. 
                 for outcome in stage_rnd_vector.worst_case_dist['support']:
                     sp_output = sp.solve(in_state_vals=forward_out_states[t-1], random_realization=outcome, forwardpass=False,random_container=self.random_container, sample_path = sample_path)
                     outputs_per_outcome2 = [sp_output.copy() for _ in range(len(omega_t))]
@@ -229,7 +251,7 @@ class SDDP(object):
          
         
         
-    def createStageCut(self, stage, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path):
+    def createStageCut(self, stage, sp_t, sp_t1, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path):
         '''
         Calls the cut routine in the stage given as a parameter.
         Args:
@@ -250,8 +272,6 @@ class SDDP(object):
         cut_creation_time = time.time()
         if stage<0:
             return
-        sp_t = self.stage_problems[stage]
-        sp_t1 = self.stage_problems[stage+1]
         sp_t.createStageCut(self.num_cuts[stage], sp_t1, stage_rnd_vector, outputs_per_outcome, forward_out_states, sample_path )  
         self.num_cuts[stage] +=1
         return time.time()-cut_creation_time
@@ -304,14 +324,21 @@ class SDDP(object):
         lbs = []
         self.ini_time = time.time()
         self.init_out(instance_name)
+        
+        '''
+        ==================================================
+            Initialization pass
+        ==================================================
+        '''
+        self.run_oracle_initialization(lbs)
+        print('INI END')
         fp_time = 0
         bp_time = 0
         termination = False
         while termination ==False:
-            
             '''
             ==================================================
-            Forward path 
+            Forward pass
             ==================================================
             '''
             f_timer = time.time()
@@ -339,7 +366,7 @@ class SDDP(object):
             Compute statistical upper bounds
             ==================================================
             '''
-            if self.pass_iteration % 10 == 0 and self.pass_iteration>2:
+            if self.pass_iteration % 100 == 0 and self.pass_iteration>-1:
                 #pass
                 self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
@@ -360,7 +387,7 @@ class SDDP(object):
             
             '''
             ==================================================
-            Forward path 
+            Backward pass
             ==================================================
             '''
             b_timer = time.time()
@@ -376,6 +403,55 @@ class SDDP(object):
             
         #self.stats.print_report(instance_name, self.stage_problems)
         return lbs
+    
+    
+    def run_oracle_initialization(self, lbs):
+        '''
+        If an oracle model is provided, runs SDDP up to a given stage
+        and approximates the reminder stages with a single linear program
+        in which all random variables take the expected value as realization. 
+        '''
+        if len(self.stage_oracle_subproblems)==0:
+            return
+        reset_all_rnd_gen()
+        for limit_stage in range(alg_options['max_stage_with_oracle']):
+            oracle_stage = limit_stage +1 
+            for lim_stage_iters in range(alg_options['max_iters_oracle_ini']):
+                '''Forward path '''
+                fp_out_states = [] 
+                sample_path, _ = self.random_container.getSamplePath(alg_rnd_gen)
+                for i in range(oracle_stage):
+                    sp = self.stage_problems[i]
+                    in_state = fp_out_states[-1] if i>0 else  None
+                    sp_output = sp.solve(in_state_vals = in_state, random_realization= sample_path[i], forwardpass = True, random_container=self.random_container, sample_path = sample_path, num_cuts = self.num_cuts)
+                    fp_out_states.append(sp_output['out_state'])
+                    if i == 0: #Update global lower bound
+                        self.lb = sp_output['objval']
+                lbs.append((self.lb,self.get_wall_time()))
+                '''
+                Backward pass
+                First step in the backward pass calls the oracle problem.
+                '''
+                
+                for t in range(oracle_stage, 0, -1):
+                    outputs_per_outcome = []
+                    stage_rnd_vector = self.random_container[t]
+                    omega_t = stage_rnd_vector.getOutcomes(sample_path, ev=False)
+                    sp = None
+                    for outcome in omega_t:
+                        sp_output = None
+                        if t == oracle_stage:
+                            sp = self.stage_oracle_subproblems[t]
+                            sp_output = sp.solve(in_state_vals=fp_out_states[t-1],random_realization=outcome, forwardpass=False, random_container=self.random_container, sample_path = sample_path)
+                        else:
+                            sp = self.stage_problems[t]
+                            sp_output = sp.solve(in_state_vals=fp_out_states[t-1],random_realization=outcome, forwardpass=False, random_container=self.random_container, sample_path = sample_path)
+                        outputs_per_outcome.append(sp_output)
+                    sp_cut = self.stage_problems[t-1]
+                    cut_creation_time = self.createStageCut(t-1,sp_cut, sp,  stage_rnd_vector, outputs_per_outcome, fp_out_states[t-1], sample_path)
+                self.iteration_update(0, 0)
+                self.pass_iteration+=1
+                
     
     
     def simulate_policy(self, n_samples, out_of_sample_random_container):

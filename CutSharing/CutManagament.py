@@ -61,6 +61,8 @@ class Cut():
         self.rhs = intercept
         self.ind_rhs = ind_rhs
         self.dep_rhs_vector = dep_rhs_vector
+        #assert self.lhs.getValue() <= intercept 
+        #print(self.lhs.getValue() > intercept , np.abs(self.lhs.getValue() - intercept)<1E-8)
         #Reference to the constraint
         self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
         

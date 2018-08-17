@@ -22,7 +22,7 @@ class StageProblem():
     '''
 
 
-    def __init__(self, stage, model_builder, next_stage_rnd_vector, last_stage=False, risk_measure = Expectation(), multicut = False):
+    def __init__(self, stage, model_builder, next_stage_rnd_vector, lower_bound,  last_stage=False, risk_measure = Expectation(), multicut = False):
         '''
         Constructor
         
@@ -30,6 +30,7 @@ class StageProblem():
             stage(int): Stage of the model
             model_builder(func): A function that build the stage model (GRBModel)
             next_stage_rnd_vector (StageRandomVector): Random vector that characterizes realizations in the next stage.
+            lower_bound (float): A valid lower bound on the problem objective. 
             last_stage (bool): Boolean flag indicating if this stage problem is the last one.
             risk_measure (AbstractRiskMeasure): A risk measure object to form the cuts.
             multicut (bool): Boolean flag indicating weather to use multicut or single cut.
@@ -62,11 +63,11 @@ class StageProblem():
         if last_stage == False:
             num_outcomes = next_stage_rnd_vector.outcomes_dim 
             if multicut == False: #Gen single cut variable
-                self.oracle = self.model.addVars(1,lb=-1E8*0, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(1,lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
-                self.oracle = self.model.addVars(num_outcomes, lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(num_outcomes, lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
               
@@ -141,26 +142,26 @@ class StageProblem():
             cutupdatetime = time()   
             self.update_cut_pool(random_container, random_realization)
             cutupdatetime = time()  - cutupdatetime  
-            
-        
+    
         #Solve LP
         lp_time = time()
         self.model.optimize()
         lp_time = time() - lp_time
-        
         data_mgt_time = time()
         output = {}
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
         if status ==  SP_OPTIMAL or status == SP_UNKNOWN:
             output['objval'] = self.model.objVal
-            try:
-                output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
-            except:
-                print('No duals')
-                self.model.params.Outputflag = 1
-                self.model.optimize()
-                self.model.write('subprob%i.mps' % self.stage)
+            #===================================================================
+            # try:
+            #     output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+            # except:
+            #     print('No duals')
+            #     self.model.params.Outputflag = 1
+            #     self.model.optimize()
+            #     self.model.write('subprob%i.mps' % self.stage)
+            #===================================================================
                 
             if forwardpass == True:
                 resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
@@ -171,9 +172,10 @@ class StageProblem():
                 #if resolve == True and self.stage<=3:
                 #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
-                
-            output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
-            output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
+            else:
+                output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+                output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
+                output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
             #if self.stage == 0:
@@ -206,11 +208,14 @@ class StageProblem():
     def printPostSolutionInformation(self):
         print('------------------------------------')
         print('Model in stage %i: obj>> %f' %(self.stage, self.model.ObjVal))
-        for c in self.model.getConstrs():
-            print('%20s %10.3f %10.3f'  %(c.ConstrName, c.RHS, c.PI))
+        #=======================================================================
+        # for c in self.model.getConstrs():
+        #     print('%20s %10.3f %10.3f'  %(c.ConstrName, c.RHS, c.PI))
+        #=======================================================================
         print('%20s %10s %10s %10s %10s %10s' %('name', 'lb' , 'ub' , 'obj', 'x', 'RC'))
         for v in self.model.getVars():
-            print('%20s %10.3f %10.6e %10.3f %10.3f %10.3f'   %(v.varname, v.LB, v.UB, v.obj, v.X, v.RC))
+            if np.abs(v.X)>1E-8 and 'travel_ind' not in v.varname:
+                print('%30s %15.3f %15.3e %15.3f %15.3f %15.3f'   %(v.varname, v.LB, v.UB, v.obj, v.X, v.RC))
         print('------------------------------------\n')
        
     #===========================================================================
@@ -237,12 +242,6 @@ class StageProblem():
         stage.
         '''
         return self.states_map[in_state]
-        #=======================================================================
-        # sindex = in_state.index('[')
-        # newkey = in_state[:sindex-1]+in_state[sindex:]
-        # return newkey
-        #=======================================================================
-
     
     def update_cut_pool(self, random_container, current_outcome):
         if self.stage > 0 and len(self.cut_pool)>0 and self.cut_pool.needs_update():
@@ -329,6 +328,152 @@ class StageProblem():
     
     def __repr__(self):
         return "SP(%i): #cuts:%i" %(self.stage,len(self.cut_pool.pool))
+
+
+class StageOracleProblem():
+    '''
+    Class to represent an oracle model. An oracle model
+    starts at a particular stage t and includes decision 
+    variables of all stages from t to T. Randomnes for stage
+    t is a place holder and is fixed to the expected value 
+    for stages t+1...T. 
+    '''
+    def __init__(self, stage, T, model_builder):
+        '''
+        Constructor
+        
+        Args:
+            stage(int): Stage of the model
+            T (int): max number of stages
+            model_builder(func): A function that build the stage oracle model (GRBModel)
+                The signature of the oracle builder is:
+                oracle_model_builder params:
+                    t (int): stage of the oracle (i.e., oracle represents cost from stage t to T).
+                    T (int): number of stages
+                oracle_model_build outputs:
+                    model (GRBModel): gurobi model
+                    in_state (list): list with the state values of the previous stage.
+                    rsh_vars (list): list of RHS place holders for the stage given as parameter 
+        '''
+        self.stage = stage
+        self.model_stats = MathProgStats()
+        model, in_states, rhs_vars = model_builder(stage, T)
+        
+        self.states_map = {}  
+        self.in_state = [x for x in in_states]
+        self.gen_states_map(self.in_state)
+        self.rhs_vars = [x for x in rhs_vars]
+        
+        self.model = model
+        
+        # Optimizer parameters
+        self.model.params.OutputFlag = 0
+        self.model.params.Threads = CutSharing.options['grb_threads']
+        #self.model.params.Method = 2
+                
+        
+        #Construct dictionaries of (constraints,variables) key where duals are needed
+        self.ctrsForDuals = set()
+        self.ctrInStateMatrix = {}
+        for vname in self.in_state:
+            var = self.model.getVarByName(vname)
+            col =  self.model.getCol(var)
+            for j in range(0,col.size()):
+                ctr = col.getConstr(j)
+                ctr_coeff = col.getCoeff(j)
+                self.ctrsForDuals.add(ctr.ConstrName)
+                self.ctrInStateMatrix[ctr.ConstrName, vname] = -ctr_coeff
+                
+        self.ctrRHSvName = {}
+        for vname in self.rhs_vars:
+            var = self.model.getVarByName(vname)
+            col =  self.model.getCol(var)
+            #assert col.size() == 1, "RHS noise is not well defined"
+            for c_index in range(col.size()):
+                ctr = col.getConstr(c_index)
+                assert ctr.ConstrName not in self.ctrRHSvName, "Duplicated RHS noise variable in the a single constraint."
+                self.ctrRHSvName[ctr.ConstrName] = vname
+                self.ctrsForDuals.add(ctr.ConstrName)
+        
+    def gen_states_map(self, in_states):
+        for in_state in in_states:
+            sindex = in_state.index('[')
+            self.states_map[in_state] = in_state[:sindex-1]+in_state[sindex:]
+            self.states_map[in_state[:sindex-1]+in_state[sindex:]] = in_state
+        
+    def get_out_state_var(self, in_state):
+        '''
+        Returns the corresponding out state variable name
+        given a in state variable name of the next
+        stage.
+        '''
+        return self.states_map[in_state]     
+    
+     
+    def solve(self, in_state_vals=None, random_realization=None, forwardpass = False, random_container=None, sample_path = None, num_cuts = 0):   
+        '''
+        Solves a stage problem given the state variables of the previous stage
+        Args:
+            in_state_vals (dict of real): dictionary containing the values of the state variables
+                in the previous stage. They are referred as in_state for this model.
+            random_realization (dic of real): dictionary containing the realization values to be solved.
+                the key is the name of the variable that models the random value as a placeholder.
+        
+        Output:
+            output (dict of objects): a dictionary with output information
+                'status': Optimization model status
+                'duals': dictionary of the dual variables associated to previous 
+                        stage cuts.
+                'out_state': Value of the state variables at the end of the sate
+                        (input for the next stage).
+                'cputime': float time solving the problem
+                'lptipe': float value of the time solving the lp only
+                'cutupdatetime' float value of the time updating the cuts.
+        ''' 
+        tnow = time()  
+        cutupdatetime = 0  
+        setuptime = 0;
+        if self.stage > 0:
+            #if forwardpass:
+            setuptime = time()
+            assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
+            for in_s_name in in_state_vals:
+                #sindex = in_s_name.index('[')
+                #newkey = in_s_name[:sindex]+'0'+in_s_name[sindex:]
+                self.model.getVarByName(self.states_map[in_s_name]).lb = in_state_vals[in_s_name]
+                self.model.getVarByName(self.states_map[in_s_name]).ub = in_state_vals[in_s_name]
+            
+            #===================================================================
+            # assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars))
+            # for rr in random_realization:
+            #     self.model.getVarByName(rr).lb = random_realization[rr]
+            #     self.model.getVarByName(rr).ub = random_realization[rr]   
+            #===================================================================
+            #self.model.update()
+            setuptime = time()  - setuptime 
+            cutupdatetime = 0
+        
+        #Solve LP
+        lp_time = time()
+        self.model.optimize()
+        lp_time = time() - lp_time
+        
+        data_mgt_time = time()
+        output = {}
+        status = gurobiStatusCodeToStr(self.model.status)
+        output['status'] = status
+        if status ==  SP_OPTIMAL or status == SP_UNKNOWN:
+            output['objval'] = self.model.objVal
+            output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+            self.model_stats.add_simplex_iter_entr(self.model.IterCount)
+        data_mgt_time = time() - data_mgt_time
+        output['lptime'] = lp_time
+        output['cutupdatetime'] = cutupdatetime
+        output['setuptime']  = setuptime
+        output['datamanagement'] = data_mgt_time
+        output['cputime'] = time() - tnow
+        return output
+
 
 class MathProgStats:
     '''

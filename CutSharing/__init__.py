@@ -54,7 +54,8 @@ options['multicut'] = False
 options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
-
+options['max_stage_with_oracle'] = 3
+options['max_iters_oracle_ini'] = 10
 
 def gurobiStatusCodeToStr( intstatus ):
     if intstatus == 1:

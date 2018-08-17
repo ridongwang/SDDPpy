@@ -204,7 +204,8 @@ if __name__ == '__main__':
     news_vendor_fun = create_obj(c,r)
     news_vendor_fun = create_obj2(c,r)
     #density = np.append(np.append(np.random.lognormal(0,1,size=1000) ,np.random.normal(10,1,size=2000)), np.random.normal(15,2,size=1000))
-    density = np.abs(np.random.normal(50,25,size=2000))
+    #density = np.abs(np.random.normal(50,25,size=2000))
+    density = np.abs(np.random.binomial(200,0.25,size=20000))
     
     #===========================================================================
     # n, bins, patches = plt.hist(density, 100, normed=1, facecolor='green', alpha=0.75)
@@ -220,7 +221,7 @@ if __name__ == '__main__':
     # plt.show()
     #===========================================================================
     xi_n = np.array([])
-    for n in [10]:
+    for n in [100]:
         print('Solving n=',n)
         extra_poits = n- len(xi_n)
 
@@ -247,11 +248,11 @@ if __name__ == '__main__':
             instance['risk_measure']= DistRobustWassersteinCont
             x_star, supp, pmf =   solve_cont_wasserstain2(N,K,L,xi_n, C, d, r,c, dro_radius)
             data_worst_case = np.random.choice(supp, size=1000000, p=pmf)
-            heights,bins = np.histogram(data_worst_case,bins=int(n/5))
+            heights,bins = np.histogram(data_worst_case,bins=int(n/4))
             heights = heights/sum(heights)
             plt.bar(bins[:-1],heights,width=(max(bins) - min(bins))/len(bins), color="red", alpha=0.5)
             #plt.bar(supp,pmf, color="red", alpha=0.5)
-            #plt.show()
+            plt.show()
             sim_res  = test_out_of_sample(x_star,oos_sim,news_vendor_fun,instance)
             sim_results.append(sim_res)
         
