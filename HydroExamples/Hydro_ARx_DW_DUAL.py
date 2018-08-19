@@ -184,7 +184,7 @@ if __name__ == '__main__':
         T = kwargs['T']
     if 'max_iter' in kwargs:
         CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+        CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/10)
     if 'sim_iter' in kwargs:
         CutSharing.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
@@ -233,6 +233,7 @@ if __name__ == '__main__':
     
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
     CutSharing.options['multicut'] = True
+    CutSharing.options['cut_selector'] = CutSharing.LAST_CUTS_SELECTOR
     rr = dro_radius
     cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
     sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
