@@ -43,6 +43,7 @@ SDDP_OPT_TOL = 1E-3
 Cut selector
 '''
 LAST_CUTS_SELECTOR = 'last_cut_selector'
+SLACK_BASED_CUT_SELECTOR = 'slack_based_cut_selector'
 
 
 '''
@@ -62,6 +63,8 @@ options['dynamic_sampling'] = False
 options['max_stage_with_oracle'] = 3
 options['max_iters_oracle_ini'] = 10
 options['max_cuts_last_cuts_selector'] = 2000
+options['slack_cut_selector'] = 1E-4
+options['slack_num_iters_cut_selector'] = 300
 options['cut_selector'] = None
 
 def gurobiStatusCodeToStr( intstatus ):

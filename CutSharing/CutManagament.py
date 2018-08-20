@@ -5,7 +5,7 @@ Created on Nov 17, 2017
 '''
 import numpy as np
 from gurobipy import *
-from CutSharing import ZERO_TOL, options, LAST_CUTS_SELECTOR
+from CutSharing import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
 from abc import ABC, abstractmethod
 
 class CutPool():
@@ -19,17 +19,30 @@ class CutPool():
         
         if options['cut_selector'] == LAST_CUTS_SELECTOR:
             self.cut_selector = LastCutsSelector()
-            
+        elif options['cut_selector'] == SLACK_BASED_CUT_SELECTOR:
+            self.cut_selector = SlackBasedCutSelector()
         
+        else:
+            self.cut_selector = None
         
     
-    def addCut(self, model, new_cut):
-        if new_cut.recomputable_rhs:
-            self._requires_ajustment = True
-        assert new_cut.name not in self.pool
-        self.pool[new_cut.name] = new_cut
-        self.pool_order.append(new_cut.name)
+    def addCuts(self, model, new_cuts):
+        '''
+        Add cut to the pool manager
+        
+        Params:
+            model(GRBModel): Model that contain the cuts
+            new_cuts (list of cut): list with the cuts to be added.
+        '''
+        for new_cut in new_cuts:
+            if new_cut.recomputable_rhs:
+                self._requires_ajustment = True
+            assert new_cut.name not in self.pool
+            self.pool[new_cut.name] = new_cut
+            self.pool_order.append(new_cut.name)
+        
         if self.cut_selector != None:
+            self.cut_selector.add_recent_cuts([c.name for c in new_cuts])
             self.cut_selector.select_cuts(model, self.pool, self.pool_order)
     
     def needs_update(self):
@@ -96,42 +109,73 @@ class Cut():
 class CutSelector(ABC):
     @abstractmethod
     def __init__(self):
-        pass
+        self.active = []
+        self.unactive = []
     
     @abstractmethod
     def select_cuts(self, model, pool, pool_order):
         pass
-        
-    def enforce_all(self, model, pool):
-        pass
-
-class LastCutsSelector(CutSelector):
-    
-    def __init__(self):
-        self.active = []
-        self.unactive = []
-        
-        
-    def select_cuts(self, model, pool, pool_order):
-        N_max = options['max_cuts_last_cuts_selector']
-        last_cut = pool_order[-1]
-        self.active.append(last_cut)
-        if len(self.active)<= N_max or len(self.active)==0:
-            pass
-        else:
-            first_cut = self.active.pop(0)
-            pool[first_cut].is_active = False
-            model.remove(pool[first_cut].ctrRef)
-            pool[first_cut].ctrRef = None
-            self.unactive.append(first_cut)
     
     def enforce_all(self,model,pool):
         for u in self.unactive:
             pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
             self.active.append(u)
         self.unactive.clear()
-            
-            
         
+    def add_recent_cuts(self,c_names):
+        self.active.extend(c_names)
+
+class LastCutsSelector(CutSelector):
     
-     
+    def __init__(self):
+        super().__init__()
+        
+    def select_cuts(self, model, pool, pool_order):
+        N_max = options['max_cuts_last_cuts_selector']
+        if len(self.active)<= N_max or len(self.active)==0:
+            pass
+        else:
+            while len(self.active)> N_max:
+                first_cut = self.active.pop(0)
+                pool[first_cut].is_active = False
+                model.remove(pool[first_cut].ctrRef)
+                pool[first_cut].ctrRef = None
+                self.unactive.append(first_cut)
+        
+
+class  SlackBasedCutSelector(CutSelector):
+    
+    def __init__(self):
+        super().__init__()
+        self.active_stats = {}
+
+    def select_cuts(self, model, pool, pool_order):
+        #Check unactive cuts
+        new_unactive = []
+        for u in self.unactive:
+            if pool[u].lhs.getValue()  < pool[u].rhs:
+                self.active.append(u)
+                pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
+                pool[u].is_active = True
+                self.active_stats[u] = 0
+            else: 
+                new_unactive.append(u)
+        self.unactive = new_unactive
+        new_active = []
+        for a in self.active:
+            if (a in self.active_stats) == False:
+                self.active_stats[a]=0
+            
+            if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
+                self.active_stats[a] +=1
+            
+            if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
+                pool[a].is_active = False
+                model.remove(pool[a].ctrRef)
+                pool[a].ctrRef = None
+                self.unactive.append(a)
+            else:
+                new_active.append(a)
+                
+        self.active = new_active
+        
