@@ -39,6 +39,11 @@ tolerances
 ZERO_TOL = 1E-8
 SDDP_OPT_TOL = 1E-3
 
+'''
+Cut selector
+'''
+LAST_CUTS_SELECTOR = 'last_cut_selector'
+
 
 '''
 Algorithm options
@@ -56,6 +61,8 @@ options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
 options['max_stage_with_oracle'] = 3
 options['max_iters_oracle_ini'] = 10
+options['max_cuts_last_cuts_selector'] = 2000
+options['cut_selector'] = None
 
 def gurobiStatusCodeToStr( intstatus ):
     if intstatus == 1:

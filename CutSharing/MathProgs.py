@@ -172,10 +172,12 @@ class StageProblem():
                 #if resolve == True and self.stage<=3:
                 #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
+
             else:
                 output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
-                output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool}
+                output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
                 output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
+
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
             #if self.stage == 0:
@@ -287,7 +289,7 @@ class StageProblem():
         if stagewise_ind:
             for (i,grad) in enumerate(cut_gradiend_coeffs):
                 new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
-                self.cut_pool.addCut(new_cut)
+                self.cut_pool.addCut(self.model, new_cut)
         else:
             if self.multicut == True:
                 raise "Multicut is not yet implemented for the dependent case"
@@ -311,7 +313,7 @@ class StageProblem():
                           stagewise_ind=False,
                           ind_rhs=ind_rhs,
                           dep_rhs_vector=dep_rhs_vector)
-            self.cut_pool.addCut(new_cut)
+            self.cut_pool.addCut(self.model, new_cut)
     
     def get_stage_objective_value(self):
         '''
