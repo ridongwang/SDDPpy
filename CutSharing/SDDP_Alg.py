@@ -249,7 +249,7 @@ class SDDP(object):
             #del(outputs_per_outcome)
         
         pool0 = self.stage_problems[0].cut_pool
-        #print('% active cuts in 0: ',  (len(pool0.cut_selector.active)/len(pool0.pool)), ' of ' , len(pool0.pool))
+        print('% active cuts in 0: ',  (len(pool0.cut_selector.active)/len(pool0.pool)), ' of ' , len(pool0.pool))
          
         
         

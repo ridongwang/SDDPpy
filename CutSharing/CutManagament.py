@@ -114,7 +114,12 @@ class CutSelector(ABC):
     
     @abstractmethod
     def select_cuts(self, model, pool, pool_order):
-        pass
+        '''
+        Makes a selection of the cuts to consider in the model.
+        Updates local active and unactive list as well as the 
+        status of the cut (cut.is_active and cut.ctrRef)
+        '''
+        raise 'Unimplmented method in a cut selection class.'
     
     def enforce_all(self,model,pool):
         for u in self.unactive:
@@ -126,7 +131,10 @@ class CutSelector(ABC):
         self.active.extend(c_names)
 
 class LastCutsSelector(CutSelector):
-    
+    '''
+    Cut selector based on the last added cuts. The number of cuts
+    is set in the algorithm options.
+    '''
     def __init__(self):
         super().__init__()
         
@@ -144,7 +152,12 @@ class LastCutsSelector(CutSelector):
         
 
 class  SlackBasedCutSelector(CutSelector):
-    
+    '''
+    Cut selector based on binding cuts. At each iteration
+    statistics on the cuts are updated to keep track of the
+    number of times a cut is non-binding and is removed from
+    the problem after a threshold is exceeded. 
+    '''
     def __init__(self):
         super().__init__()
         self.active_stats = {}
