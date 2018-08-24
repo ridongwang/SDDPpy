@@ -143,12 +143,25 @@ class LastCutsSelector(CutSelector):
         if len(self.active)<= N_max or len(self.active)==0:
             pass
         else:
+            iters = 0
             while len(self.active)> N_max:
-                first_cut = self.active.pop(0)
-                pool[first_cut].is_active = False
-                model.remove(pool[first_cut].ctrRef)
-                pool[first_cut].ctrRef = None
-                self.unactive.append(first_cut)
+                a = self.active[0]
+                if pool[a].lhs.getValue() > pool[a].rhs + 1E-6: #todo: use other parameter
+                    pool[a].is_active = False
+                    model.remove(pool[a].ctrRef)
+                    pool[a].ctrRef = None
+                    self.unactive.append(a)
+                    self.active.pop(0)
+                if iters >= len(self.active):
+                    '''
+                    Cardinality of selected cuts can't be satisfied.
+                    Augmenting the maximum number of cuts
+                    '''
+                    options['max_cuts_last_cuts_selector'] = int(1.5*options['max_cuts_last_cuts_selector'])
+                    print('max_cuts_last_cuts_selector -- > ' , options['max_cuts_last_cuts_selector'])
+                    break
+                iters +=1
+                
         
 
 class  SlackBasedCutSelector(CutSelector):
@@ -189,6 +202,5 @@ class  SlackBasedCutSelector(CutSelector):
                 self.unactive.append(a)
             else:
                 new_active.append(a)
-                
         self.active = new_active
         
