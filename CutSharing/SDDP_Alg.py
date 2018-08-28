@@ -248,8 +248,8 @@ class SDDP(object):
             # END EDITS
             #del(outputs_per_outcome)
         
-        pool0 = self.stage_problems[0].cut_pool
-        print('% active cuts in 0: ',  (len(pool0.cut_selector.active)/len(pool0.pool)), ' of ' , len(pool0.pool))
+        #pool0 = self.stage_problems[0].cut_pool
+        #print('% active cuts in 0: ',  (len(pool0.cut_selector.active)/len(pool0.pool)), ' of ' , len(pool0.pool))
          
         
         
@@ -699,7 +699,14 @@ class SDDP(object):
             sp.model.computeIIS()
             sp.model.write("model.ilp")
             raise not_optimal_sp('A stage %i problem was not optimal' %(t))
-        
+
+    def simulate_single_scenario(self, out_of_sample_random_container):
+        self.upper_bounds = []
+        s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)
+        output_fp = self.forwardpass(sample_path = s_path, simulation=True)
+        models = [sp.model for sp in self.stage_problems]
+        return s_path, output_fp, models
+
 class Stats:
     '''
     Class to keep track of performance statistics.
