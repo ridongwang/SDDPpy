@@ -148,8 +148,8 @@ class SDDP(object):
         new_pmf = None
         for (i,sp) in enumerate(self.stage_problems):
             in_state = fp_out_states[-1] if i>0 else  None
-            new_support = self.random_container[i].outcomes
-            new_pmf = [1] if i ==0 else [0.1,0.2,0.7]
+            #new_support = self.random_container[i].outcomes
+            #new_pmf = [1] if i ==0 else [0.1,0.2,0.7]
             self.random_container.getStageSample(i, sample_path, alg_rnd_gen, new_support = new_support, new_pmf = new_pmf)
             sp_output = sp.solve(in_state_vals = in_state, 
                                  random_realization= sample_path[i], 
@@ -700,9 +700,13 @@ class SDDP(object):
             sp.model.write("model.ilp")
             raise not_optimal_sp('A stage %i problem was not optimal' %(t))
 
-    def simulate_single_scenario(self, out_of_sample_random_container):
+    def simulate_single_scenario(self, out_of_sample_random_container, sample_path=None):
         self.upper_bounds = []
-        s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)
+        s_path = None
+        if sample_path == None:
+            s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)
+        else:
+            s_path = sample_path
         output_fp = self.forwardpass(sample_path = s_path, simulation=True)
         models = [sp.model for sp in self.stage_problems]
         return s_path, output_fp, models
