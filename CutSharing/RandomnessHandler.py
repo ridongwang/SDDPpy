@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse as sp
 from gurobipy import * 
 from CutSharing.SDDP_utils import print_model
-
+import CutSharing as cs
 #NOT USED FOR THE MOMENT
 class SamplePath():
     '''
@@ -178,10 +178,11 @@ class StageRandomVector:
                 self.outcomes.append({})
                 self.ev_outcomes.append({})   
             self._first_element_added = True
-            if ele_prob==None:
-                self.p = np.array([1/len(ele_outcomes) for x in ele_outcomes])
-            else:
+            if type(ele_prob) == list or type(ele_prob) == np.ndarray:
                 self.p = np.array(ele_prob)
+            else:
+                self.p = np.array([1/len(ele_outcomes) for x in ele_outcomes])
+            assert np.abs(1-sum(self.p))<cs.ZERO_TOL, "Invalid outcome probabilities"
             self.p_copy = self.p.copy()
         else:
             assert len(self.outcomes)==len(ele_outcomes), "Random element with a different number of outcomes."

@@ -88,13 +88,22 @@ class Cut():
         #assert self.lhs.getValue() <= intercept 
         #print(self.lhs.getValue() > intercept , np.abs(self.lhs.getValue() - intercept)<1E-8)
         #Reference to the constraint
-        self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
+        
+        if self.lhs.getValue() > self.rhs - ZERO_TOL:
+            self.is_active  = False
+            #print(sp.stage, '   ' , outcome)
+        else:
+            #print('New cuts: ' , self.name)
+            self.is_active  = True
+            #Reference to the constraint
+            self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
+            #print(self.lhs.getValue()  , self.rhs)
         
         #==============================#
         # Extra information for dual retrieval
         self.cut_id = cut_id
         self.outcome = outcome
-        self.is_active  = True
+       
         
 
     def adjust_intercept(self, omega_last):

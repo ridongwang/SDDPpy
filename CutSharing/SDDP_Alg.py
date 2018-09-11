@@ -149,7 +149,7 @@ class SDDP(object):
         for (i,sp) in enumerate(self.stage_problems):
             in_state = fp_out_states[-1] if i>0 else  None
             #new_support = self.random_container[i].outcomes
-            #new_pmf = [1] if i ==0 else [0.1,0.2,0.7]
+            #new_pmf = [1] if i ==0 else [0.1,0.2,0.4,0.3]
             self.random_container.getStageSample(i, sample_path, alg_rnd_gen, new_support = new_support, new_pmf = new_pmf)
             sp_output = sp.solve(in_state_vals = in_state, 
                                  random_realization= sample_path[i], 
