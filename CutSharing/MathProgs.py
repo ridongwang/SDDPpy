@@ -62,7 +62,7 @@ class StageProblem():
         if last_stage == False:
             num_outcomes = next_stage_rnd_vector.outcomes_dim 
             if multicut == False: #Gen single cut variable
-                self.oracle = self.model.addVars(1,lb=-1E8*0, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(1,lb=-1E8, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'

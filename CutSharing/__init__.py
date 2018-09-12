@@ -1,4 +1,5 @@
-from gurobipy import *
+from gurobipy import GRB
+from Utils.argv_parser import sys,parse_args
 import numpy as np
 import os
 import logging
@@ -61,7 +62,7 @@ options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
 options['dynamic_sampling_beta'] = 0.95
-options['max_cuts_last_cuts_selector'] = 500
+options['max_cuts_last_cuts_selector'] = 1000
 options['slack_cut_selector'] = 1E-4
 options['slack_num_iters_cut_selector'] = 100
 options['max_cuts_slack_based'] = options['max_cuts_last_cuts_selector']
@@ -82,6 +83,21 @@ def gurobiStatusCodeToStr( intstatus ):
 def alg_options():
     return options
 
+
+def load_algorithm_options():
+    argv = sys.argv
+    _,kwargs = parse_args(argv[1:])
+    if 'max_iter' in kwargs:
+        options['max_iter'] = kwargs['max_iter']
+        options['lines_freq'] = int(options['max_iter']/10)
+    if 'sim_iter' in kwargs:
+        options['sim_iter'] = kwargs['sim_iter']
+    if 'dynamic_sampling' in kwargs:
+        options['dynamic_sampling'] = kwargs['dynamic_sampling']
+    if 'multicut' in kwargs:
+        options['multicut'] = kwargs['multicut']
+    
+    
 
 class not_optimal_sp(Exception):
     def __init__(self, msg):

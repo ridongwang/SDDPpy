@@ -1,28 +1,45 @@
 '''
-Created on Jul 12, 2018
+Created on Sep 12, 2018
 
 @author: dduque
-'''
-import csv
-import CutSharing
-import logging
-import numpy as np
-from Utils.file_savers import write_object_results
-np.set_printoptions(linewidth= 200, nanstr='nen')
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
-from CutSharing.SDDP_Alg import SDDP
-from CutSharing import logger as sddp_log
 
+Hydro model functions. Unifies the creation of the model for testing
+with different risk measures.
+'''
+from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector
+from CutSharing.RandomManager import reset_experiment_desing_gen, experiment_desing_gen
+from CutSharing.SDDP_utils import print_model
+from CutSharing import logger as sddp_log, options
+from gurobipy import Model, GRB, quicksum
 from Utils.argv_parser import sys,parse_args
-from gurobipy import *
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
-from HydroExamples import *
-from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality,\
-    InnerDROSolverX2, DistRobustWasserstein, mod_chi2, DistRobustWassersteinCont
-from OutputAnalysis.SimulationAnalysis import plot_sim_results,\
-    plot_metrics_comparison, plot_lbs
-from CutSharing.RandomManager import experiment_desing_gen,\
-    reset_experiment_desing_gen
+import numpy as np
+import logging
+
+
+'''
+Objects for Hydro scheduling examples
+'''
+import os 
+import sys
+hydro_path = os.path.dirname(os.path.realpath(__file__))
+
+
+class Turbine():
+    def __init__(self, flowknots, powerknots):
+        self.flowknots = flowknots
+        self.powerknots = powerknots
+class Reservoir():
+    def __init__(self, minlevel, maxlevel, initial, turbine, s_cost, inflows):
+        self.min = minlevel
+        self.max = maxlevel
+        self.initial = initial
+        self.turbine = turbine
+        self.spill_cost = s_cost
+        self.inflows = inflows 
+
+
+
 
 '''
 Global variables to store instance data
@@ -170,38 +187,32 @@ def model_builder(stage):
         print_model(m)
     return m, in_state, out_state, rhs_vars
 
-def print_model(m):
-    for c in m.getConstrs(): print(c.ConstrName, m.getRow(c) , '  ', c.Sense, '  ', c.RHS)
-    for v in m.getVars(): print(v.varname, ' '  , v.lb , '  ---  ', v.ub)
-    #for v in m.getVars(): print(v)
-    
-if __name__ == '__main__':
+def load_hydro_data():
+    global T 
+    global nr 
+    global lag 
+    global dro_radius 
+    global Rmatrix 
+    global RHSnoise 
+    global initial_inflow 
+    global valley_chain 
+    global valley_chain_oos 
+    global prices 
     argv = sys.argv
     positional_args,kwargs = parse_args(argv[1:])
     if 'R' in kwargs:
         nr = kwargs['R']
     if 'T' in kwargs:
         T = kwargs['T']
-    if 'max_iter' in kwargs:
-        CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
-    if 'sim_iter' in kwargs:
-        CutSharing.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
         lag = kwargs['lag']
     if 'dro_radius' in kwargs:
         dro_radius = kwargs['dro_radius']
     if 'N' in kwargs:
         N = kwargs['N']
-    if 'dynamic_sampling' in kwargs:
-        CutSharing.options['dynamic_sampling'] = kwargs['dynamic_sampling']
-    if 'multicut' in kwargs:
-        CutSharing.options['multicut'] = kwargs['multicut']   
-    sddp_log.addHandler(logging.FileHandler("HydroAR%i_ESS.log" %(lag), mode='w'))
+        
+    prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
-    
-    
-    instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr]
     N_training = N
@@ -226,29 +237,21 @@ if __name__ == '__main__':
     l_test.sort()
     RHSnoise_oos = RHSnoise_density#[:,l_test]
     valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_oos]
-    out_of_sample_rnd_cont = random_builder_out_of_sample(valley_chain_oos)
-    
-    prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
 
-    
+
+    '''
+    Single-cut implementation of Wasserstein uncertanty set.
+    Based on Philpotts' implementation to build a policy and the
+    inner problem is solved in the backward pass (transportation problem).
+    '''
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
-    CutSharing.options['cut_selector'] = CutSharing.LAST_CUTS_SELECTOR
+    
+    
     rr = dro_radius
-    cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
-    sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_Dual_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], cut_type, rr,sampling_type)
-    print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
-    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
-    lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])                                                              
+    cut_type = 'MC' if options['multicut'] else 'SC'
+    sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_Primal_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  options['max_iter'], cut_type, rr,sampling_type)
+    sddp_log.addHandler(logging.FileHandler("./Output/log/%s.log" %(instance_name), mode='w'))
     
-    save_path = hydro_path+'/Output/DW_Dual/%s_LBS.pickle' %(instance_name)
-    write_object_results(save_path, (algo.instance, lbs))
-    
-    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
-    save_path = hydro_path+'/Output/DW_Dual/%s_OOS.pickle' %(instance_name)
-    write_object_results(save_path, sim_result)
-        
-    
-    del(algo)
-    
+    return T, rr, instance_name
     

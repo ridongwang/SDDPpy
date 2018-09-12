@@ -212,7 +212,7 @@ class SDDP(object):
               
             #DELLETE OR FIX LATER
             try:
-               # TODO: ONLY ADD TYHE cuts for the correspondig original  support point form where the new suppor came. 
+                # TODO: ONLY ADD TYHE cuts for the correspondig original  support point form where the new suppor came. 
                 for outcome in stage_rnd_vector.worst_case_dist['support']:
                     sp_output = sp.solve(in_state_vals=forward_out_states[t-1], random_realization=outcome, forwardpass=False,random_container=self.random_container, sample_path = sample_path)
                     outputs_per_outcome2 = [sp_output.copy() for _ in range(len(omega_t))]
