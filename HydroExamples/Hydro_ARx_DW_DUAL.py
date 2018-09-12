@@ -233,7 +233,7 @@ if __name__ == '__main__':
     
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
     CutSharing.options['multicut'] = True
-    CutSharing.options['cut_selector'] = CutSharing.SLACK_BASED_CUT_SELECTOR
+    CutSharing.options['cut_selector'] = CutSharing.LAST_CUTS_SELECTOR
     rr = dro_radius
     cut_type = 'MC' if CutSharing.options['multicut'] else 'SC'
     sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
