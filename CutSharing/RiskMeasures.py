@@ -3,14 +3,15 @@ Created on Jan 11, 2018
 
 @author: dduque
 '''
+
 from abc import ABC, abstractmethod
 from gurobipy import *
+#from CutSharing import ZERO_TOL
 import CutSharing as cs
 import numpy as np
-import logging
-from CutSharing import ZERO_TOL
-from astropy.coordinates.builtin_frames.utils import norm
+
 sddp_log = cs.logger
+ds_beta = cs.options['dynamic_sampling_beta']
 
 class AbstracRiskMeasure(ABC):
     '''
@@ -302,10 +303,11 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             p_w[j]  += self.dro_ctrs[(i,j)].Pi
         p_w = np.around(np.abs(p_w), 8)
         p_w = p_w/p_w.sum()
-            
+        #Mix with nominal distribution
+        p_w = ds_beta*p_w + (1-ds_beta)*desc_rnd_vec.p_copy
         desc_rnd_vec.modifyOutcomesProbabilities(p_w)
         #=======================================================================
-        # if t== 0:
+        # if t<= 3:
         #     print(t, p_w)
         #=======================================================================
         
@@ -641,7 +643,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
             for ele in rnd_cont[stage+1].elements:
                 try:
                     delta_change  = (-sp.model.getConstrByName('normCtr_%i_%i_%s_neg' %(k, outc, ele)).Pi + sp.model.getConstrByName('normCtr_%i_%i_%s_pos' %(k, outc, ele)).Pi) 
-                    if np.abs(delta_change)>ZERO_TOL:
+                    if np.abs(delta_change)>cs.ZERO_TOL:
                         #print(ele, delta_change/duals_vars[i])
                         new_supp_point[ele] =  new_supp_point[ele]  + delta_change/duals_vars[i]
                 except:
@@ -829,7 +831,7 @@ class DRO_CuttingPlanes():
     '''
     Implements helper function to do an outer approximation of the 
     of the uncertainty set in the DRO setting. In particular, it approximates 
-    the dual a given uncertainty set
+    the dual of a given uncertainty set
     
     Attrs:
         dual_dro_set (list of func): A list of functions that define the dual uncertatny set.    
@@ -897,27 +899,32 @@ class DRO_CuttingPlanes():
 
 
 
-'''
-Distributionally robust classes
-'''
+
 class DistRobust(AbstracRiskMeasure):
+    '''
+        Distributionally robust risk measure based on primal problem (Philpott et al.). 
+    '''
+    
+    #Constants to identify the type of distance being used.
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
     L2_NORM = 'L2_norm'
     D_Wasserstein = 'Discrete_Wasserstein'
+    
     def __init__(self, dro_solver, dro_solver_params):
         '''
-        inner_solver (DRO_solver): a class that computes the worst
-            distribution to update the risk measure probabilities.
+        inner_solver (DRO_solver): a class that computes the worst distribution on the 
+            backward pass of the algorithm given descendants objective values. In particular
+            it solves the inner max problem of a particular stage to where it belongs.
         '''
         super().__init__()
         self.inner_solver = dro_solver(**dro_solver_params)
-        self._wors_case_dist = None
-        self._static_dist = True
         
         #For multi-cut version
         self.global_oracle = None
-       
+        
+        self._wors_case_dist = None
+        self._static_dist = True
         
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfv, cut_id):
         '''

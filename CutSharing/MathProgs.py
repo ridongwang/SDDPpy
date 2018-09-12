@@ -284,11 +284,14 @@ class StageProblem():
         
         stagewise_ind  = srv.is_independent
         
-        new_cut = None
         if stagewise_ind:
-            for (i,grad) in enumerate(cut_gradiend_coeffs):
-                new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
-                self.cut_pool.addCut(self.model, new_cut)
+            new_cuts = [Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i) for (i,grad) in enumerate(cut_gradiend_coeffs)]
+            self.cut_pool.addCuts(self.model, new_cuts)
+            #===================================================================
+            # for (i,grad) in enumerate(cut_gradiend_coeffs):
+            #     new_cut = Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i)
+            #     self.cut_pool.addCut(self.model, new_cut)
+            #===================================================================
         else:
             if self.multicut == True:
                 raise "Multicut is not yet implemented for the dependent case"
