@@ -50,6 +50,7 @@ Algorithm options
 '''
 options = {}
 options['max_iter'] = 200
+options['max_time'] = 1800 
 options['sim_iter'] = 1000
 options['outputlevel']  = 2
 options['lines_freq']  = 1

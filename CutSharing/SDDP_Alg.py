@@ -291,7 +291,8 @@ class SDDP(object):
             sddp_log.info('==============================================================================================')
         
     def termination(self):
-        if self.pass_iteration >= alg_options['max_iter']:
+        elapsed_time = self.get_wall_time()
+        if self.pass_iteration >= alg_options['max_iter'] or elapsed_time>alg_options['max_time']:
             return True
         if self.pass_iteration > 0:
             if self.lb >= self.ub - self.ub_hw - alg_options['opt_tol']:  #- self.ub_hw -
