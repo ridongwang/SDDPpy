@@ -6,9 +6,9 @@ Created on Jun 13, 2018
 
 
 
-def print_model(model):
+def print_model(m):
     '''
     Print out a gurobi model
     '''
-    for c in model.getConstrs():
-        print(c.ConstrName, model.getRow(c), c.Sense, c.RHS)
+    for c in m.getConstrs(): print(c.ConstrName, m.getRow(c) , '  ', c.Sense, '  ', c.RHS)
+    for v in m.getVars(): print(v.varname, ' '  , v.lb , '  ---  ', v.ub)

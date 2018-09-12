@@ -1,3 +1,4 @@
+
 '''
 Objects for Hydro scheduling examples
 '''
@@ -18,4 +19,3 @@ class Reservoir():
         self.turbine = turbine
         self.spill_cost = s_cost
         self.inflows = inflows 
-
