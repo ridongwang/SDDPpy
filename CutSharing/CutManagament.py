@@ -5,7 +5,7 @@ Created on Nov 17, 2017
 '''
 import numpy as np
 from gurobipy import *
-from CutSharing import ZERO_TOL, options, LAST_CUTS_SELECTOR
+from CutSharing import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
 from abc import ABC, abstractmethod
 
 class CutPool():
@@ -19,6 +19,10 @@ class CutPool():
         
         if options['cut_selector'] == LAST_CUTS_SELECTOR:
             self.cut_selector = LastCutsSelector()
+        elif options['cut_selector'] == SLACK_BASED_CUT_SELECTOR:
+            self.cut_selector = SlackBasedCutSelector()
+        else:
+            self.cut_selector = None
             
         
         
@@ -46,9 +50,9 @@ class CutPool():
             assert new_cut.name not in self.pool
             self.pool[new_cut.name] = new_cut
             self.pool_order.append(new_cut.name)
-        
+
         if self.cut_selector != None:
-            self.cut_selector.add_recent_cuts([c.name for c in new_cuts])
+            self.cut_selector.add_recent_cuts([(c.name, c.is_active) for c in new_cuts])
             self.cut_selector.select_cuts(model, self.pool, self.pool_order)
     
     
@@ -99,7 +103,6 @@ class Cut():
         #Reference to the constraint
         if self.lhs.getValue() > self.rhs - ZERO_TOL:
             self.is_active  = False
-            #print(sp.stage, '   ' , outcome)
         else:
             #print('New cuts: ' , self.name)
             self.is_active  = True
@@ -144,8 +147,12 @@ class CutSelector(ABC):
             self.active.append(u)
         self.unactive.clear()
         
-    def add_recent_cuts(self,c_names):
-        self.active.extend(c_names)
+    def add_recent_cuts(self,c_info):
+        for (c_name,c_is_active) in c_info:
+            if c_is_active:
+                self.active.append(c_name)
+            else:
+                self.unactive.append(c_name)
 
 class LastCutsSelector(CutSelector):
     '''
@@ -187,41 +194,57 @@ class  SlackBasedCutSelector(CutSelector):
     statistics on the cuts are updated to keep track of the
     number of times a cut is non-binding and is removed from
     the problem after a threshold is exceeded. 
+    
+    Attributes:
+        active_stats (dict of (str,int)): count the number of times a cut 
+            has been non-binding.
     '''
     def __init__(self):
         super().__init__()
         self.active_stats = {}
 
     def select_cuts(self, model, pool, pool_order):
-        #Check unactive cuts
-        new_unactive = []
-        for u in self.unactive:
-            if pool[u].lhs.getValue()  < pool[u].rhs:
-                self.active.append(u)
-                pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
-                pool[u].is_active = True
-                self.active_stats[u] = 0
-            else: 
-                new_unactive.append(u)
-        self.unactive = new_unactive
-        new_active = []
+        
+        #Update stats 
         for a in self.active:
+            
             if (a in self.active_stats) == False:
                 self.active_stats[a]=0
-            
+            #Count unactive times
             if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
                 self.active_stats[a] +=1
-            
-            if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
-                pool[a].is_active = False
-                model.remove(pool[a].ctrRef)
-                pool[a].ctrRef = None
-                self.unactive.append(a)
-            else:
-                new_active.append(a)
-        self.active = new_active
-            
-            
+            else:    
+                self.active_stats[a] = 0 
         
-    
-     
+        N_max = options['max_cuts_slack_based']
+        if len(self.active)<= N_max or len(self.active)==0:
+            pass #Not cut management requiered
+        else:
+            #Check active cuts (removing cuts from subproblems)
+            new_active = []
+            for a in self.active:
+                if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
+                    pool[a].is_active = False
+                    model.remove(pool[a].ctrRef)
+                    pool[a].ctrRef = None
+                    self.unactive.append(a)
+                else:
+                    new_active.append(a)
+            self.active = new_active
+            
+            #Check unactive cuts (adding cuts)
+            new_unactive = []
+            for u in self.unactive:
+                if pool[u].lhs.getValue()  < pool[u].rhs:
+                    self.active.append(u)
+                    pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
+                    pool[u].is_active = True
+                    self.active_stats[u] = 0
+                else: 
+                    new_unactive.append(u)
+            self.unactive = new_unactive
+            
+            if len(self.active)>N_max:
+                options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
+                print('max_cuts_slack_based -- > ' , options['max_cuts_slack_based'])
+            
