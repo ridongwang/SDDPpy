@@ -19,15 +19,14 @@ if __name__ == '__main__':
     worst-case expectation.
     '''
     load_algorithm_options()
-    T, r_dro, instance_name = load_hydro_data('DUAL', 'DW')
-    options['cut_selector'] = SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
+    T, r_dro, instance_name, out_of_sample_rnd_cont = load_hydro_data('DUAL', 'DW')
+    options['cut_selector'] = LAST_CUTS_SELECTOR#SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = r_dro)
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])                                                              
     
     save_path = hydro_path+'/Output/DW_Dual/%s_LBS.pickle' %(instance_name)
     write_object_results(save_path, (algo.instance, lbs))
     
-    out_of_sample_rnd_cont = random_builder_out_of_sample(valley_chain_oos)
     sim_result = algo.simulate_policy(options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/DW_Dual/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)

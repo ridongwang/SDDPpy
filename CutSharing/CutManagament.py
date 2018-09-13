@@ -169,15 +169,16 @@ class LastCutsSelector(CutSelector):
         else:
             iters = 0
             while len(self.active)> N_max:
-                a = self.active[iters]
+                a = self.active[0]
                 if pool[a].lhs.getValue() > pool[a].rhs + 1E-6: #todo: use other parameter
                     pool[a].is_active = False
                     model.remove(pool[a].ctrRef)
                     pool[a].ctrRef = None
                     self.unactive.append(a)
-                    self.active.pop(iters)
+                    self.active.pop(0)
                 else:
-                    iters +=1    
+                    iters +=1
+                    self.active.append(self.active.pop(0))
                 if iters >= len(self.active):
                     '''
                     Cardinality of selected cuts can't be satisfied.
@@ -204,20 +205,30 @@ class  SlackBasedCutSelector(CutSelector):
     def __init__(self):
         super().__init__()
         self.active_stats = {}
+        self.track_ini=0
+        self.track_end=0
 
     def select_cuts(self, model, pool, pool_order):
         
         #Update stats 
-        for a in self.active:
+        tracked = int(len(self.active))
+        ini_changed = False
+        for i in range(self.track_ini, tracked):
+            a = self.active[i]
             if (a in self.active_stats) == False:
                 self.active_stats[a]=0
             else:
                 #Count unactive times
                 if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
                     self.active_stats[a] +=1
+                    if self.active_stats[a] >= options['slack_num_iters_cut_selector'] and ini_changed==False:
+                        self.track_ini= i
+                    else:
+                        ini_changed=True
                 else:    
                     self.active_stats[a] = 0 
-        
+                
+            
         N_max = options['max_cuts_slack_based']
         if len(self.active)<= N_max or len(self.active)==0:
             pass #Not cut management requiered
@@ -225,7 +236,8 @@ class  SlackBasedCutSelector(CutSelector):
             #Check active cuts (removing cuts from subproblems)
             hay_cut = len(self.active)
             new_active = []
-            for a in self.active:
+            for i in range(tracked):
+                a = self.active[i]
                 if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
                     pool[a].is_active = False
                     model.remove(pool[a].ctrRef)
@@ -233,6 +245,7 @@ class  SlackBasedCutSelector(CutSelector):
                     self.unactive.append(a)
                 else:
                     new_active.append(a)
+            new_active.extend(self.active[tracked:])
             self.active = new_active
             
             #Check unactive cuts (adding cuts)
@@ -246,6 +259,7 @@ class  SlackBasedCutSelector(CutSelector):
                 else: 
                     new_unactive.append(u)
             self.unactive = new_unactive
+            self.track_ini=0
             print(self.active[0], hay_cut, len(self.active))
             if len(self.active)>N_max:
                 options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
