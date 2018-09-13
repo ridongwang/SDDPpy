@@ -50,7 +50,7 @@ SLACK_BASED_CUT_SELECTOR = 'slack_based_cut_selector'
 Algorithm options
 '''
 options = {}
-options['max_iter'] = 200
+options['max_iter'] = 1000
 options['max_time'] = 1800 
 options['sim_iter'] = 1000
 options['outputlevel']  = 2
@@ -62,9 +62,9 @@ options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
 options['dynamic_sampling_beta'] = 0.95
-options['max_cuts_last_cuts_selector'] = 1000
+options['max_cuts_last_cuts_selector'] = 100
 options['slack_cut_selector'] = 1E-4
-options['slack_num_iters_cut_selector'] = 100
+options['slack_num_iters_cut_selector'] = 50
 options['max_cuts_slack_based'] = options['max_cuts_last_cuts_selector']
 options['cut_selector'] = None
 
@@ -87,15 +87,15 @@ def alg_options():
 def load_algorithm_options():
     argv = sys.argv
     _,kwargs = parse_args(argv[1:])
-    if 'max_iter' in kwargs:
-        options['max_iter'] = kwargs['max_iter']
+    for kword in kwargs:
+        if kword in options:
+            options[kword] = kwargs[kword]
+            print('Loading %s' %(kword))
+        else:
+            if len(kword)>5:
+                logger.warning('Parameter %s is not in the algorithm options. Check algorithm parameters wiki.' %(kword))
+    if 'lines_freq' not in kwargs:
         options['lines_freq'] = int(options['max_iter']/10)
-    if 'sim_iter' in kwargs:
-        options['sim_iter'] = kwargs['sim_iter']
-    if 'dynamic_sampling' in kwargs:
-        options['dynamic_sampling'] = kwargs['dynamic_sampling']
-    if 'multicut' in kwargs:
-        options['multicut'] = kwargs['multicut']
     
     
 

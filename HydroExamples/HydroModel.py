@@ -187,7 +187,7 @@ def model_builder(stage):
         print_model(m)
     return m, in_state, out_state, rhs_vars
 
-def load_hydro_data():
+def load_hydro_data(approach, dus_type):
     global T 
     global nr 
     global lag 
@@ -206,8 +206,8 @@ def load_hydro_data():
         T = kwargs['T']
     if 'lag' in kwargs:
         lag = kwargs['lag']
-    if 'dro_radius' in kwargs:
-        dro_radius = kwargs['dro_radius']
+    if 'dro_r' in kwargs:
+        dro_radius = kwargs['dro_r']
     if 'N' in kwargs:
         N = kwargs['N']
         
@@ -250,7 +250,7 @@ def load_hydro_data():
     rr = dro_radius
     cut_type = 'MC' if options['multicut'] else 'SC'
     sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_Primal_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  options['max_iter'], cut_type, rr,sampling_type)
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_%s_%s_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  options['max_iter'],  approach, cut_type, dus_type, rr,sampling_type)
     sddp_log.addHandler(logging.FileHandler("./Output/log/%s.log" %(instance_name), mode='w'))
     
     return T, rr, instance_name
