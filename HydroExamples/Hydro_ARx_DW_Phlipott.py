@@ -7,7 +7,8 @@ from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
 from Utils.file_savers import write_object_results
-from HydroModel import load_hydro_data, model_builder, random_builder, valley_chain_oos, random_builder_out_of_sample
+from HydroModel import load_hydro_data, model_builder, random_builder, valley_chain_oos, random_builder_out_of_sample,\
+    hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
     
 if __name__ == '__main__':
@@ -17,7 +18,7 @@ if __name__ == '__main__':
     compute the cuts. This approach is regarded as Primal.
     '''
     load_algorithm_options()
-    T, r_dro, instance_name = load_hydro_data()
+    T, r_dro, instance_name = load_hydro_data('PRIMAL' , 'DW')
     options['cut_selector'] = LAST_CUTS_SELECTOR
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
                 dro_solver_params = {'norm': 1 , 'radius':r_dro})

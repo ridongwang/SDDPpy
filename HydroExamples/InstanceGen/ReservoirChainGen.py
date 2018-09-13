@@ -110,7 +110,6 @@ def read_instance(file_name = 'hydro_rnd_instance_R200_UD1_T120_LAG1_OUT10K_AR.p
     file_name_path = hydro_path+'/data/'+file_name
     if lag == None:
         file_name_path = hydro_path+'/data/'+'hydro_rnd_instance_R1000_UD1_T120_LAG%i_OUT30_AR.pkl' %(lag)
-    print('hola' , file_name)
     with open(file_name_path, 'rb') as input:
         instance = pickle.load(input)
         return instance
