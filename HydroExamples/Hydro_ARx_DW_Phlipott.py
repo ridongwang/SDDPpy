@@ -7,15 +7,14 @@ from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
 from Utils.file_savers import write_object_results
-import HydroModel
 from HydroModel import load_hydro_data, model_builder, random_builder, valley_chain_oos, random_builder_out_of_sample
-from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #N
+from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
     
 if __name__ == '__main__':
     '''
-    Single-cut implementation of Wasserstein uncertainty set.
-    Based on Philpotts' implementation to build a policy and the
-    inner problem is solved in the backward pass (transportation problem).
+    Implementation of Wasserstein uncertainty set based on Philpott et al.
+    Inner worst-case expectation problem is solved in the backward pass to
+    compute the cuts. This approach is regarded as Primal.
     '''
     load_algorithm_options()
     T, r_dro, instance_name = load_hydro_data()
