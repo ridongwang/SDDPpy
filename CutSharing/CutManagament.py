@@ -161,14 +161,14 @@ class LastCutsSelector(CutSelector):
     '''
     def __init__(self):
         super().__init__()
+        self.cut_capacity = options['max_cuts_last_cuts_selector']
         
     def select_cuts(self, model, pool, pool_order):
-        N_max = options['max_cuts_last_cuts_selector']
-        if len(self.active)<= N_max or len(self.active)==0:
+        if len(self.active)<= self.cut_capacity or len(self.active)==0:
             pass
         else:
             iters = 0
-            while len(self.active)> N_max:
+            while len(self.active)> self.cut_capacity:
                 a = self.active[0]
                 if pool[a].lhs.getValue() > pool[a].rhs + 1E-6: #todo: use other parameter
                     pool[a].is_active = False
@@ -184,8 +184,9 @@ class LastCutsSelector(CutSelector):
                     Cardinality of selected cuts can't be satisfied.
                     Augmenting the maximum number of cuts
                     '''
-                    options['max_cuts_last_cuts_selector'] = int(1.5*options['max_cuts_last_cuts_selector'])
-                    print('max_cuts_last_cuts_selector -- > ' , options['max_cuts_last_cuts_selector'])
+                    self.cut_capacity = int(1.5*self.cut_capacity)
+                    #options['max_cuts_last_cuts_selector'] = int(1.5*options['max_cuts_last_cuts_selector'])
+                    #print('max_cuts_last_cuts_selector -- > ' , self.cut_capacity , a)
                     break
                 
                 
@@ -205,6 +206,7 @@ class  SlackBasedCutSelector(CutSelector):
     def __init__(self):
         super().__init__()
         self.active_stats = {}
+        self.cut_capacity = options['max_cuts_slack_based']
         self.track_ini=0
         self.track_end=0
 
@@ -229,8 +231,7 @@ class  SlackBasedCutSelector(CutSelector):
                     self.active_stats[a] = 0 
                 
             
-        N_max = options['max_cuts_slack_based']
-        if len(self.active)<= N_max or len(self.active)==0:
+        if len(self.active)<= self.cut_capacity or len(self.active)==0:
             pass #Not cut management requiered
         else:
             #Check active cuts (removing cuts from subproblems)
@@ -260,8 +261,9 @@ class  SlackBasedCutSelector(CutSelector):
                     new_unactive.append(u)
             self.unactive = new_unactive
             self.track_ini=0
-            print(self.active[0], hay_cut, len(self.active))
-            if len(self.active)>N_max:
-                options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
-                print('max_cuts_slack_based -- > ' , options['max_cuts_slack_based'])
+            #print(self.active[0], hay_cut, len(self.active))
+            if len(self.active)>self.cut_capacity:
+                self.cut_capacity = int(1.5*self.cut_capacity)
+                #options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
+                #print('max_cuts_slack_based -- > ' , self.cut_capacity ,a)
             

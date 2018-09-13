@@ -20,7 +20,7 @@ if __name__ == '__main__':
     '''
     load_algorithm_options()
     T, r_dro, instance_name, out_of_sample_rnd_cont = load_hydro_data('DUAL', 'DW')
-    options['cut_selector'] = LAST_CUTS_SELECTOR#SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
+    options['cut_selector'] = SLACK_BASED_CUT_SELECTOR#SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = r_dro)
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])                                                              
     
