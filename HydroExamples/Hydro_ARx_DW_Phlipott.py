@@ -3,7 +3,8 @@ Created on Sep 12, 2018
 
 @author: dduque
 '''
-from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options
+from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
+    SLACK_BASED_CUT_SELECTOR
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
 from Utils.file_savers import write_object_results
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     '''
     load_algorithm_options()
     T, r_dro, instance_name, out_of_sample_rnd_cont = load_hydro_data('PRIMAL' , 'DW')
-    #options['cut_selector'] = LAST_CUTS_SELECTOR
+    options['cut_selector'] = SLACK_BASED_CUT_SELECTOR
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
                 dro_solver_params = {'norm': 1 , 'radius':r_dro})
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])
