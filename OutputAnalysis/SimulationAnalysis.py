@@ -117,7 +117,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             #print([lbs_data[i][1] for i in range(lb_points)])
             #print([lbs_data[i][0] for i in range(lb_points)])
             axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[200][0])
+            min_val = np.minimum(min_val,lbs_data[50][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
             max_time = np.minimum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
@@ -402,8 +402,8 @@ if __name__ == '__main__':
         lbs_by_r = {}
         for f in experiment_files:
             try:
-                exp_name = 'Primal' if 'Primal' in f else 'Dual'
-                #print('%s%s' %(path_to_files,f))
+                exp_name = 'Primal' if ('Primal' in f or 'PRIMAL' in f) else 'Dual'
+                print('%s%s' %(path_to_files,f) , exp_name)
                 instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 exp_name = exp_name + ('_DS' if instance['alg_options']['dynamic_sampling'] else '_ES')
                 exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')
@@ -421,12 +421,14 @@ if __name__ == '__main__':
                 else:
                     print(instance)
                     raise 'Unknown dro params'
+                print(exp_name)
                 if r_instance not in lbs_by_r:
                     lbs_by_r[r_instance] = [(exp_name, lb_data)]
                 else:
                     lbs_by_r[r_instance].append((exp_name,lb_data))
+                
             except:
-                print('Something wring with %s' %(f))
+                print('Something wrong with %s' %(f))
 
         plot_path = path_to_files + file_n + "_DW_LBS"
         plot_lbs_comp(lbs_by_r, plot_path)   

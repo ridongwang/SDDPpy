@@ -1,21 +1,23 @@
 #!/bin/bash
 
-###scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N* ./DisceteWassersteinSingleCut/
-###scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N* ./DW_Dual/
+scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Primal/Hydro_R10_AR1_T12_N* ./DW_Primal/
+scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N* ./DW_Dual/
 
+
+### Hydro_R10_AR1_T12_N30_I100000ESS_DUAL_MC_DW_25.000000_ES_OOS.pickle
 rootdirPrimal=DW_Primal/
 rootdirDual=DW_Dual/
-rootname=Hydro_R10_AR1_T10_N
-midnamePrimSC=_I10000ESS_PRIMAL_SC_DW_
-midnamePrimMC=_I10000ESS_PPRIMAL_MC_DW_
-midnameDual=_I10000ESS_DUAL_MC_DW_
-Hydro_R10_AR1_T12_N5_I1000ESS_MC_DW_0.500000_ES
+rootname=Hydro_R10_AR1_T12_N
+midnamePrimSC=_I100000ESS_PRIMAL_SC_DW_
+midnamePrimMC=_I100000ESS_PRIMAL_MC_DW_
+midnameDual=_I100000ESS_DUAL_MC_DW_
+### Hydro_R10_AR1_T12_N5_I1000ESS_MC_DW_0.500000_ES
 endnameDS=_DS_LBS.pickle
 endnameES=_ES_LBS.pickle
 DSONLY=DSOnly
 for n in {3,5,10,20,30}
 do
-	for r in 0.100000
+	for r in {0.100000,1.000000,5.000000,10.000000,15.000000,20.000000,25.000000}
 	do
 		### {0.100000,1.000000,5.000000,10.000000,15.000000,20.000000,25.000000}
 		echo $n $r
