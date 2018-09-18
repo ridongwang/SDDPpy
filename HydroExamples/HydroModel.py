@@ -251,7 +251,7 @@ def load_hydro_data(approach, dus_type):
     cut_type = 'MC' if options['multicut'] else 'SC'
     sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
     instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_%s_%s_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  options['max_iter'],  approach, cut_type, dus_type, rr,sampling_type)
-    sddp_log.addHandler(logging.FileHandler("./Output/log/%s.log" %(instance_name), mode='w'))
+    sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
     
     return T, rr, instance_name, random_builder_out_of_sample(valley_chain_oos)
     
