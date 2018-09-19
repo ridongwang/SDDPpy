@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Copy file from crunch
 scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Primal/Hydro_R10_AR1_T12_N* ./DW_Primal/
 scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N* ./DW_Dual/
 
@@ -15,6 +15,28 @@ midnameDual=_I100000ESS_DUAL_MC_DW_
 endnameDS=_DS_LBS.pickle
 endnameES=_ES_LBS.pickle
 DSONLY=DSOnly
+
+# 0: OOS, 1: LBS
+plot_type=0 
+
+
+
+if [ $plot_type -eq 0 ]
+then
+iters=_I100000ESS
+for n in {10,20}
+do
+	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$iters --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Primal/ --plot_type=OOS --sampling=DS --cut_type=MC --N=$n
+	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$iters --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Primal/ --plot_type=OOS --sampling=ES --cut_type=MC --N=$n
+	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$iters --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Primal/ --plot_type=OOS --sampling=DS --cut_type=SC --N=$n
+	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$iters --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Primal/ --plot_type=OOS --sampling=ES --cut_type=SC --N=$n
+	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$iters --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/ --plot_type=OOS --sampling=DS --cut_type=MC --N=$n
+	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$iters --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/ --plot_type=OOS --sampling=ES --cut_type=MC --N=$n
+done
+fi
+
+if [ $plot_type -eq 1 ]
+then
 for n in {3,5,10,20,30}
 do
 	for r in {0.100000,1.000000,5.000000,10.000000,15.000000,20.000000,25.000000}
@@ -25,5 +47,4 @@ do
 		python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py $rootdirPrimal$rootname$n$midnamePrimSC$r$endnameDS $rootdirPrimal$rootname$n$midnamePrimMC$r$endnameDS $rootdirDual$rootname$n$midnameDual$r$endnameDS --exp_file=$rootname$n$DSONLY --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/ --plot_type=LBS
 	done
 done
-
-###python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_MC_DW_10.000000_DS_LBS.pickle DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_MC_DW_10.000000_ES_LBS.pickle DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_SC_DW_10.000000_DS_LBS.pickle DisceteWassersteinSingleCut/Hydro_R10_AR1_T12_N5_I500ESS_Primal_SC_DW_10.000000_ES_LBS.pickle DW_Dual/Hydro_R10_AR1_T12_N5_I500ESS_Dual_MC_DW_10.000000_DS_LBS.pickle DW_Dual/Hydro_R10_AR1_T12_N5_I500ESS_Dual_MC_DW_10.000000_ES_LBS.pickle --exp_file=PrimalLBS --path_to_files=/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/ --plot_type=LBS
+fi

@@ -53,7 +53,7 @@ class StageProblem():
         # Optimizer parameters
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
-        #self.model.params.Method = 2
+        self.model.params.Method = 1
         #self.model.params.FeasibilityTol = 1E-9
         
         

@@ -12,7 +12,6 @@ from CutSharing.SDDP_utils import print_model
 from CutSharing import logger as sddp_log, options
 from gurobipy import Model, GRB, quicksum
 from Utils.argv_parser import sys,parse_args
-from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 import numpy as np
 import logging
 
@@ -210,7 +209,7 @@ def load_hydro_data(approach, dus_type):
         dro_radius = kwargs['dro_r']
     if 'N' in kwargs:
         N = kwargs['N']
-        
+    from InstanceGen.ReservoirChainGen import read_instance
     prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices

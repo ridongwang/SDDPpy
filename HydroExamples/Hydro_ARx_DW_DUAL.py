@@ -3,14 +3,28 @@ Created on Sep 13, 2018
 
 @author: dduque
 '''
+#===============================================================================
+# import os
+# import sys
+# #Include all modules of the project when running on shell
+# this_path = os.path.dirname(os.path.abspath(__file__))
+# parent_path= os.path.abspath(os.path.join(this_path, os.pardir))
+# cwd = os.getcwd()
+# print(__file__, this_path, parent_path, cwd, os.path.abspath(os.pardir))
+# sys.path.append(parent_path)
+#===============================================================================
+from __init__ import import_SDDP
+import_SDDP()
+
 from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
     SLACK_BASED_CUT_SELECTOR
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing.RiskMeasures import DistRobustWasserstein
 from Utils.file_savers import write_object_results
-from HydroModel import load_hydro_data, model_builder, random_builder, valley_chain_oos, random_builder_out_of_sample
+from HydroModel import load_hydro_data, model_builder, random_builder, hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
-from __init__ import hydro_path
+
+
 
 if __name__ == '__main__':
     '''
@@ -20,7 +34,7 @@ if __name__ == '__main__':
     '''
     load_algorithm_options()
     T, r_dro, instance_name, out_of_sample_rnd_cont = load_hydro_data('DUAL', 'DW')
-    options['cut_selector'] = SLACK_BASED_CUT_SELECTOR#SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
+    #options['cut_selector'] = SLACK_BASED_CUT_SELECTOR#SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = r_dro)
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])                                                              
     

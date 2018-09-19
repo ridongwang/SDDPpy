@@ -62,9 +62,9 @@ options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
 options['dynamic_sampling_beta'] = 0.95
-options['max_cuts_last_cuts_selector'] = 1000
+options['max_cuts_last_cuts_selector'] = 2000
 options['slack_cut_selector'] = 1E-4
-options['slack_num_iters_cut_selector'] = 100
+options['slack_num_iters_cut_selector'] = 200
 options['max_cuts_slack_based'] = options['max_cuts_last_cuts_selector']
 options['cut_selector'] = None
 
