@@ -100,8 +100,10 @@ class Cut():
         # self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
         # self.is_active  = True
         #=======================================================================
+        
         #Reference to the constraint
-        if self.lhs.getValue() > self.rhs - ZERO_TOL:
+        
+        if self.lhs.getValue() > self.rhs + ZERO_TOL:
             self.is_active  = False
         else:
             #print('New cuts: ' , self.name)
@@ -265,5 +267,5 @@ class  SlackBasedCutSelector(CutSelector):
             if len(self.active)>self.cut_capacity:
                 self.cut_capacity = int(1.5*self.cut_capacity)
                 #options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
-                #print('max_cuts_slack_based -- > ' , self.cut_capacity ,a)
+                print('max_cuts_slack_based -- > ' , self.cut_capacity ,a)
             

@@ -18,6 +18,7 @@ import sys
 if __name__ == '__main__':
     from os import path
     sys.path.append(path.abspath('/Users/dduque/Dropbox/WORKSPACE/SDDP'))
+
 from Utils.argv_parser import parse_args
 
 
@@ -164,6 +165,7 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
     '''
     Plot out-of-sample simulation results
     '''
+    f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=300)
     r = None
     try:
         r = [sr.instance['risk_measure_params']['radius']  for sr in sim_results]
@@ -172,6 +174,9 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
+    if r[0]==0:
+        ev = [np.mean(sim_results[0].sims_ub) for _ in r]
+        axarr.semilogx(r,ev, color='blue', label='SP')
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
     p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
@@ -182,16 +187,16 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
     p5 = [np.percentile(sr.sims_ub, q=5)   for sr in sim_results]
     p99 = [np.percentile(sr.sims_ub, q=99)   for sr in sim_results]
     p1 = [np.percentile(sr.sims_ub, q=1)   for sr in sim_results]
-    f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=300)
+    
     axarr.semilogx(r,mean, color='black', label='Mean')
-    #axarr.semilogx(r,median, color='black',linestyle='--', label='Median')
+    axarr.semilogx(r,median, color='black',linestyle='--', label='Median')
     axarr.semilogx(r,p20, color='red', linestyle='--', dashes=(1, 1),label='20-80')
     axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
     axarr.semilogx(r,p10, color='red', linestyle='--', dashes=(3, 1),label='10-90')
     axarr.semilogx(r,p90, color='red', linestyle='--', dashes=(3, 1))
     #===========================================================================
-    axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
-    axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
+    #axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
+    #axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
     #axarr.semilogx(r,p1, color='red', label=' 1 - 99')
     #axarr.semilogx(r,p99, color='red', )
     #===========================================================================
@@ -364,7 +369,7 @@ if __name__ == '__main__':
         plot_type = kwargs['plot_type']
         assert plot_type in ['LBS', 'OOS'], 'Plot type is either lbs or oos %s' %(plot_type)
     else:
-        raise "Parameter  N is necessary."
+        raise "Parameter  plot_type is necessary."
     
     if 'exp_file' in  kwargs:
             file_n = kwargs['exp_file']
@@ -373,10 +378,13 @@ if __name__ == '__main__':
         
     if plot_type == 'OOS':
         print(path_to_files,file_n)
+        sampling = kwargs['sampling']
+        cut_type = kwargs['cut_type']
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
-            if file_n in f and f[-6:]=='pickle' and ('OOS'in f or 'OSS' in f):
+            if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(sampling) in f and  cut_type in f:
+                print(f)
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
         
@@ -394,8 +402,9 @@ if __name__ == '__main__':
         else:
             print(sim_results[0].instance)
             raise 'Unknown dro params'
-
-        plot_path = path_to_files + file_n + ".pdf"
+        alg_type = 'Primal' if 'Primal' in path_to_files else 'Dual'
+        plot_path = '%s%s_%s_%s_%s.pdf' %(path_to_files,file_n ,alg_type,cut_type,sampling)
+        N = kwargs['N']
         plot_sim_results(sim_results, plot_path, N)
     elif plot_type == 'LBS':
         experiment_files = list(positional_args)

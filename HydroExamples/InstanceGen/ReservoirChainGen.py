@@ -8,11 +8,16 @@ Generates an instance of the hydro scheduling problem for a chain of reservoirs.
 Outputs:
 Autoregressive matrix for each time period
 '''
+if __name__ == '__main__':
+    from os import path
+    import sys
+    sys.path.append(path.abspath('/Users/dduque/Dropbox/WORKSPACE/SDDP'))
+    sys.path.append(path.abspath('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples'))
 import numpy as np
 import scipy.sparse as sp
 import matplotlib.pyplot as plt
 import pickle
-from HydroExamples import  hydro_path
+from HydroModel import hydro_path
 
 def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num_outcomes = 30 , simulate  = False):
     '''
@@ -22,14 +27,14 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
         - Innovations of the autoregressive process
     '''
     np.random.seed(0)
-    
+    season = 12
     R_matrices = {t:{l:{i:{} for i in range(num_reservoirs)} for l in range(1,lag+1)} for t in range(0,T)}
     for t in range(T):
         for l in range(1,lag+1):
             for i in range(num_reservoirs):
                 for j in range(up_stream_dep+1):
                     if i-j>=0:
-                        if (t<12):
+                        if (t<season):
                             var = 0.2 if i>num_reservoirs/2 else 0.6
                             R_matrices[t][l][i][i-j]=np.random.normal(0, var)
                             #R_matrices[t][l][i][i-j]=np.random.normal(0.1, (1.0/(lag*up_stream_dep+1)))
@@ -43,8 +48,8 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                             #     R_matrices[t][l][i][i-j]=np.random.normal(0.01, (1.0/(lag*up_stream_dep+1)))
                             #===================================================
                         else:
-                            R_matrices[t][l][i][i-j]=R_matrices[t-12][l][i][i-j]
-    
+                            R_matrices[t][l][i][i-j]=R_matrices[t-season][l][i][i-j]
+    print(R_matrices[2][1])
     np.random.seed(1234)
     inflow_t0 = [[np.random.uniform(0,15) for i in range(num_reservoirs)] for l in range(lag+1)] 
     
@@ -61,8 +66,8 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
     print(np.max(RHS_noise, 1))
     if simulate:
         plt.figure(1)
-        num_reps = 500
-        res_ref  = [0,2,4,6,7,9]
+        num_reps = 5
+        res_ref  = [0,1,2]
         np.random.seed(res_ref)
         mean_res_ref = {rr:np.zeros((T+1)) for rr in res_ref}
         for replica in range(num_reps):
@@ -76,7 +81,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                     for i in range(num_reservoirs):
                         for j in range(num_reservoirs):
                             if(j in R_matrices[t][l][i]):
-                                new_inflows[i]+=R_matrices[t][l][i][j]*inflows[-l][j]+np.random.choice(RHS_noise[i])
+                                new_inflows[i]+=R_matrices[t][l][i][j]*inflows[-l][j]+ np.random.choice(RHS_noise[i])
                 inflows.append(new_inflows)
                 inflows.pop(0)     
                 for rr in res_ref:                                   
@@ -116,9 +121,9 @@ def read_instance(file_name = 'hydro_rnd_instance_R200_UD1_T120_LAG1_OUT10K_AR.p
        
 
 if __name__ == '__main__':
-    for lag in range(1,2):
-        file_name_path = hydro_path+'/data/hydro_rnd_instance_R10_UD1_T120_LAG%i_OUT10K_AR.pkl' %(lag)
+    for lag in []:#range(1,2):
+        file_name_path = hydro_path+'/data/hydro_rnd_instance_R10_UD1_T120_LAG%i_OUT10K_AR22.pkl' %(lag)
         with open(file_name_path, 'wb') as output:
             instance = gen_instance(num_reservoirs=10, up_stream_dep=2, T=24, lag = lag, num_outcomes=10000,  simulate= False)   
             pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
-    #instance = gen_instance(num_reservoirs=10, up_stream_dep=2, T=24, lag = 1, num_outcomes= 10000,  simulate= True)   
+    instance = gen_instance(num_reservoirs=10, up_stream_dep=1, T=24, lag = 1, num_outcomes= 10000,  simulate= True)   
