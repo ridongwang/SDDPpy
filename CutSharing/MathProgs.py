@@ -126,8 +126,15 @@ class StageProblem():
             setuptime = time()
             assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
             for in_s_name in in_state_vals:
-                self.model.getVarByName(self.states_map[in_s_name]).lb = np.maximum(in_state_vals[in_s_name], self.model.getVarByName(in_s_name).lb)
-                self.model.getVarByName(self.states_map[in_s_name]).ub = np.minimum(in_state_vals[in_s_name], self.model.getVarByName(in_s_name).ub)
+                in_s_val = in_state_vals[in_s_name]
+                s_lb = self.model.getVarByName(in_s_name).lb
+                s_ub = self.model.getVarByName(in_s_name).ub
+                if in_s_val < s_lb:
+                    in_s_val = s_lb
+                elif in_s_val > s_ub: 
+                    in_s_val = s_ub
+                self.model.getVarByName(self.states_map[in_s_name]).lb = in_s_val
+                self.model.getVarByName(self.states_map[in_s_name]).ub = in_s_val
             
             assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars))
             for rr in random_realization:
