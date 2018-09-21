@@ -154,13 +154,6 @@ class StageProblem():
         output['status'] = status
         if status ==  SP_OPTIMAL or status == SP_UNKNOWN:
             output['objval'] = self.model.objVal
-            try:
-                output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
-            except:
-                print('No duals')
-                self.model.params.Outputflag = 1
-                self.model.optimize()
-                self.model.write('subprob%i.mps' % self.stage)
                 
             if forwardpass == True:
                 resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
@@ -171,9 +164,10 @@ class StageProblem():
                 #if resolve == True and self.stage<=3:
                 #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
-                
-            output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
-            output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
+            else:
+                output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+                output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
+                output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
             #if self.stage == 0:
@@ -226,9 +220,15 @@ class StageProblem():
     #===========================================================================
     def gen_states_map(self, in_states):
         for in_state in in_states:
-            sindex = in_state.index('[')
-            self.states_map[in_state] = in_state[:sindex-1]+in_state[sindex:]
-            self.states_map[in_state[:sindex-1]+in_state[sindex:]] = in_state
+            if '[' in in_state:
+                sindex = in_state.index('[')
+                self.states_map[in_state] = in_state[:sindex-1]+in_state[sindex:]
+                self.states_map[in_state[:sindex-1]+in_state[sindex:]] = in_state
+            else:
+                sindex = in_state.index('0')
+                self.states_map[in_state] = in_state[:sindex]+in_state[sindex+1:]
+                self.states_map[in_state[:sindex]+in_state[sindex+1:]] = in_state
+                
         
     def get_out_state_var(self, in_state):
         '''
