@@ -1,0 +1,8 @@
+\ Model MilkPowder_1_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+  0 W0
+Subject To
+Bounds
+ 150 <= W0 <= 0
+End
