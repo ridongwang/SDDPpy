@@ -1,0 +1,531 @@
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:43:20 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:44:26 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:44:45 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:45:28 2018
+
+Optimize a model with 11 rows, 21 columns and 30 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 11 rows and 21 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:49:00 2018
+
+Optimize a model with 11 rows, 21 columns and 30 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 11 rows and 21 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:49:26 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:49:43 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:49:59 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:50:49 2018
+
+Optimize a model with 11 rows, 21 columns and 30 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 11 rows and 21 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:57:37 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:58:36 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 15:59:02 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:00:24 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:00:43 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:01:47 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+03]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:02:00 2018
+
+Optimize a model with 13 rows, 23 columns and 37 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 9e+02]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [0e+00, 0e+00]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+02, 9e+02]
+Presolve removed 13 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective 0.00000000e+00
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:18:11 2018
+
+Optimize a model with 17 rows, 23 columns and 44 nonzeros
+Model has 175 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 9e+02]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+01, 9e+02]
+Presolve removed 17 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective -1.50000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:18:47 2018
+
+Optimize a model with 17 rows, 23 columns and 44 nonzeros
+Coefficient statistics:
+  Matrix range     [1e-02, 9e+02]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+01, 9e+02]
+Presolve removed 14 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.039315e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:19:13 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:30:02 2018
+
+Optimize a model with 17 rows, 23 columns and 44 nonzeros
+Model has 20 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 9e+02]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+01, 9e+02]
+Presolve removed 17 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective -1.50000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:31:00 2018
+
+Optimize a model with 17 rows, 23 columns and 44 nonzeros
+Model has 20 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 9e+02]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+01, 9e+02]
+Presolve removed 17 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective -1.50000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:31:22 2018
+
+Optimize a model with 17 rows, 23 columns and 44 nonzeros
+Model has 20 quadratic constraints
+Coefficient statistics:
+  Matrix range     [1e-02, 9e+02]
+  QMatrix range    [1e+00, 1e+00]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [2e+01, 9e+02]
+Presolve removed 17 rows and 23 columns
+Presolve time: 0.00s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.00 seconds
+Optimal objective -1.50000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:32:09 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:33:02 2018
+
+Optimize a model with 37 rows, 23 columns and 84 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 9e+02]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 9e+02]
+Presolve removed 34 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.039315e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:33:23 2018
+
+Optimize a model with 37 rows, 23 columns and 84 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 1e+03]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 1e+03]
+Presolve removed 34 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.156290e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:33:33 2018
+
+Optimize a model with 37 rows, 23 columns and 84 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 1e+03]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 1e+03]
+Presolve removed 34 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.156290e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:34:30 2018
+
+Optimize a model with 39 rows, 23 columns and 87 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 8e+02]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [6e-01, 1e+04]
+  RHS range        [7e-04, 3e+03]
+Presolve removed 34 rows and 15 columns
+Presolve time: 0.00s
+Presolved: 5 rows, 8 columns, 13 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    5.9999985e+04   3.105086e+03   0.000000e+00      0s
+       5    6.0150041e+04   0.000000e+00   0.000000e+00      0s
+
+Solved in 5 iterations and 0.00 seconds
+Optimal objective  6.015004134e+04
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:36:30 2018
+
+Optimize a model with 40 rows, 23 columns and 90 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 8e+02]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [6e-01, 1e+04]
+  RHS range        [7e-04, 3e+03]
+Presolve removed 35 rows and 15 columns
+Presolve time: 0.00s
+Presolved: 5 rows, 8 columns, 13 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    5.9999985e+04   3.105086e+03   0.000000e+00      0s
+       5    6.0150041e+04   0.000000e+00   0.000000e+00      0s
+
+Solved in 5 iterations and 0.00 seconds
+Optimal objective  6.015004134e+04
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:36:39 2018
+
+Optimize a model with 38 rows, 23 columns and 87 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 1e+03]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 1e+03]
+Presolve removed 35 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.142898e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:42:26 2018
+
+Optimize a model with 38 rows, 23 columns and 87 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 1e+03]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 9e+02]
+Presolve removed 35 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.089751e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:47:22 2018
+
+Optimize a model with 38 rows, 23 columns and 87 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 1e+03]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 9e+02]
+Presolve removed 35 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.089751e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:49:29 2018
+
+Optimize a model with 38 rows, 23 columns and 87 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 9e+02]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 9e+02]
+Presolve removed 35 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.039315e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:49:37 2018
+
+Optimize a model with 38 rows, 23 columns and 87 nonzeros
+Coefficient statistics:
+  Matrix range     [4e-03, 9e+02]
+  Objective range  [1e-04, 1e+02]
+  Bounds range     [3e+00, 1e+04]
+  RHS range        [7e-04, 9e+02]
+Presolve removed 35 rows and 18 columns
+Presolve time: 0.00s
+Presolved: 3 rows, 5 columns, 8 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -1.5000000e-02   5.039315e+02   0.000000e+00      0s
+       1   -1.5000000e-02   0.000000e+00   0.000000e+00      0s
+
+Solved in 1 iterations and 0.00 seconds
+Optimal objective -1.500000000e-02
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:49:50 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:52:04 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:52:51 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 16:55:27 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:04:06 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:05:50 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:09:30 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:10:17 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:10:49 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:11:27 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:16:11 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:17:09 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:18:45 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:29:55 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:33:22 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:37:23 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:38:07 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:39:55 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:40:44 2018
+
+
+Gurobi 7.0.2 (mac64, Python) logging started Fri Sep 21 17:41:41 2018
+
