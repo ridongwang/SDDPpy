@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import sys
+from statsmodels.tsa.arima_model import ARIMA
 if __name__ == '__main__':
     from os import path
     sys.path.append(path.abspath('/Users/dduque/Dropbox/WORKSPACE/SDDP'))
@@ -118,7 +119,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             #print([lbs_data[i][1] for i in range(lb_points)])
             #print([lbs_data[i][0] for i in range(lb_points)])
             axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[50][0])
+            min_val = np.minimum(min_val,lbs_data[100][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
             max_time = np.minimum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
@@ -177,6 +178,10 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
     if r[0]==0:
         ev = [np.mean(sim_results[0].sims_ub) for _ in r]
         axarr.semilogx(r,ev, color='blue', label='SP')
+        ev90 = [np.percentile(sim_results[0].sims_ub,q=90) for _ in r]
+        axarr.semilogx(r,ev90, color='blue', linestyle='--', label='SP')
+        ev10 = [np.percentile(sim_results[0].sims_ub,q=10) for _ in r]
+        axarr.semilogx(r,ev10, color='blue', linestyle='--', label='SP')
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
     p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
@@ -346,6 +351,66 @@ def plot_metrics_comparison(sim_results_metrics, plot_path):
     pp.savefig(f)
     pp.close()
 
+def get_dro_radius(instance):
+    '''
+    Extracts the DRO radius from the distance
+    Args:
+        instance (dict): dictionary containing the instance information
+    '''
+    r_instance = None
+    if 'radius' in instance['risk_measure_params']:
+        r_instance =instance['risk_measure_params']['radius']
+    elif 'dro_solver_params' in  instance['risk_measure_params']:
+        if 'radius' in instance['risk_measure_params']['dro_solver_params']:
+            r_instance = instance['risk_measure_params']['dro_solver_params']['radius']
+        elif 'DUS_radius' in instance['risk_measure_params']['dro_solver_params']:
+            r_instance = instance['risk_measure_params']['dro_solver_params']['DUS_radius']
+        else:
+            print(instance)
+            raise 'Unknown dro params'
+    else:
+        print(instance)
+        raise 'Unknown dro params'
+    return r_instance
+    
+
+def plot_oos_alg_gaps(sddp_algs, sim_results):
+    font = {'family' : 'normal',
+        'weight' : 'normal',
+        'size'   : 5}
+    matplotlib.rc('font', **font)
+    f, axarr = plt.subplots(3, 2, figsize=(4,4), dpi=300)
+    plot_pos = {0:(0,0),1:(0,1),2:(1,0),3:(1,1),4:(2,0),5:(2,1)}
+    for i in range(len(sddp_algs)):
+        alg_i = sddp_algs[i]
+        best_sim_i = min(sim_results[alg_i], key=lambda x:np.mean(x.sims_ub))
+        for j in range(0,len(sddp_algs)):
+            alg_j = sddp_algs[j]
+            best_sim_j = min(sim_results[alg_j], key=lambda x:np.mean(x.sims_ub))
+            assert len(best_sim_i.sims_ub) == len(best_sim_j.sims_ub)
+            gaps_ij = np.array(best_sim_i.sims_ub)-np.array(best_sim_j.sims_ub)
+            meangap = np.mean(gaps_ij)
+            stdgap = np.std(gaps_ij)
+            sqrt_n = np.sqrt(len(gaps_ij))
+            lb = meangap - 2*stdgap/sqrt_n
+            ub = meangap + 2*stdgap/sqrt_n
+            print( '%13s %13s %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f' %(alg_i,alg_j,meangap,stdgap, lb,ub, np.mean(best_sim_i.sims_ub), np.std(best_sim_i.sims_ub) ))
+        
+        data_i = best_sim_i.sims_ub
+        #data_i = np.clip(data_i, data_i[0], np.percentile(data_i,q=80))
+        bin_step=1000
+        bins = [-65000+i*bin_step for i in range(20)]
+        bins.append(np.max(data_i))
+        heights, bins = np.histogram(data_i , bins=bins)
+        heights = heights / sum(heights)
+        ax = axarr[plot_pos[i]]
+        ax.set_title(alg_i, size = 8.0)
+        ax.bar(bins[:-1],heights,width=bin_step*0.9, color="blue", alpha=0.8)
+        ax.set_ylabel('Frequency', fontsize = 6.0) # Y label
+        ax.set_xlabel('Cost', fontsize = 6.0) # X label
+        ax.set_ylim(0, 0.3)
+    f.subplots_adjust(hspace=1.0)
+    plt.show()
 
 if __name__ == '__main__':
     argv = sys.argv
@@ -367,7 +432,7 @@ if __name__ == '__main__':
 
     if 'plot_type' in  kwargs:
         plot_type = kwargs['plot_type']
-        assert plot_type in ['LBS', 'OOS'], 'Plot type is either lbs or oos %s' %(plot_type)
+        assert plot_type in ['LBS', 'OOS','OOSGAP'], 'Plot type is either lbs or oos %s' %(plot_type)
     else:
         raise "Parameter  plot_type is necessary."
     
@@ -383,11 +448,11 @@ if __name__ == '__main__':
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
+            #print(file_n in f ,  f[-6:]=='pickle' , '%s_OOS' %(sampling) ,  cut_type in f)
             if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(sampling) in f and  cut_type in f:
                 print(f)
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
-        
         #Sort experiments
         if 'radius' in sim_results[0].instance['risk_measure_params']:
             sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
@@ -441,6 +506,39 @@ if __name__ == '__main__':
 
         plot_path = path_to_files + file_n + "_DW_LBS"
         plot_lbs_comp(lbs_by_r, plot_path)   
+    elif plot_type == "OOSGAP":
+        #compare out of sample performance as gaps
+        N = kwargs['N']
+        algorithms = ['Dual_MC_DS','Primal_MC_DS','Primal_SC_DS','Dual_MC_ES','Primal_MC_ES','Primal_SC_ES']
+        dual_files = os.path.join(path_to_files, 'DW_Dual/')
+        primal_files = os.path.join(path_to_files, 'DW_Primal/')
+        file_paths = [dual_files + df for df in os.listdir(dual_files)]
+        file_paths.extend([primal_files + df for df in os.listdir(primal_files)])
+        sim_results = {alg_name:[] for alg_name in algorithms}
+        for f in file_paths:
+            if file_n in f and f[-6:]=='pickle' and 'OOS' in f:
+                new_sim = pickle.load(open('%s' %(f), 'rb'))
+                alg_type = 'Primal' if ('Primal' in f or 'PRIMAL' in f) else 'Dual'
+                if alg_type == 'Primal':
+                    if 'DS_OOS' in f:
+                        if 'MC' in f:
+                            sim_results['Primal_MC_DS'].append(new_sim)
+                        else:
+                            sim_results['Primal_SC_DS'].append(new_sim)
+                    else:
+                        if 'MC' in f:
+                            sim_results['Primal_MC_ES'].append(new_sim)
+                        else:
+                            sim_results['Primal_SC_ES'].append(new_sim)
+                        
+                else:
+                    if 'DS_OOS' in f:
+                        sim_results['Dual_MC_DS'].append(new_sim)
+                    else:
+                        sim_results['Dual_MC_ES'].append(new_sim)
+                    
+        plot_oos_alg_gaps(algorithms,sim_results)
+        
     else:
         raise 'Not identified plot'
     

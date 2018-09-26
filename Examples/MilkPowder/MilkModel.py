@@ -16,11 +16,13 @@ from gurobipy import Model, GRB
 from CutSharing.SDDP_utils import print_model
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing import options, load_algorithm_options
+from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
 milk_path = os.path.dirname(os.path.realpath(__file__))
 
 parameters = json.load(open('%s/model.parameters.json' % (milk_path)))
+O = parameters["niwa_data"]
 T = None
-
+print(parameters["maximum_milk_production"])
 
 def random_builder():
     #evapotranspiration  rainfall
@@ -113,7 +115,7 @@ def model_builder(stage):
     m.addConstr((mlk <= parameters["max_milk_energy"][stage] * C0), 'maximum milk')
     m.addConstr((milk >= parameters["min_milk_production"] * C0), 'minimum milk')
     m.addConstr((gr <= kappa[stage] * ev / 7), 'pasture growth constraints1')
-    for pbar in numpy.linspace(0,Pm,Pn):
+    for pbar in numpy.linspace(0,Pm,3):#Pn
         m.addConstr((gr <= g(pbar) + dgdt(pbar) * (P0 - pbar + 1e-2)), 'growth_aprox%f' %(pbar))
     m.addConstr((i <= parameters["maximum_irrigation"]), 'max_irrigation')
     
@@ -131,8 +133,8 @@ def model_builder(stage):
     cow_per_day = parameters["stocking_rate"] * 7
     m.addConstr((delta[1]>=0 ), 'max_rate_d1_1')
     m.addConstr((delta[1] >= cow_per_day * (0.00 + 0.25 * (b / cow_per_day - 3)) ), 'max_rate_d1_2')
-    m.addConstr((delta[1] >= cow_per_day * (0.00 + 0.25 * (b / cow_per_day - 3)) ), 'max_rate_d1_3')
-    m.addConstr((delta[1] >= cow_per_day * (0.00 + 0.25 * (b / cow_per_day - 3)) ), 'max_rate_d1_4')
+    m.addConstr((delta[1] >= cow_per_day * (0.25 + 0.75 * (b / cow_per_day - 4)) ), 'max_rate_d1_3')
+    m.addConstr((delta[1] >= cow_per_day * (0.75 + 1.00 * (b / cow_per_day - 5)) ), 'max_rate_d1_4')
     price  = 6 #parameters["prices"][stage][price]
     objfunc = parameters["supplement_price"] * b + parameters["cost_irrigation"] * i + parameters["harvest_cost"] * h  + delta[1] + 100 * delta[2] - 0.0001*W 
     if stage == 51: #LAST WEEK
@@ -151,7 +153,8 @@ def model_builder(stage):
 if __name__ == '__main__':
     load_algorithm_options()
     T=52
-    algo = SDDP(T, model_builder, random_builder)
+    algo = SDDP(T, model_builder, random_builder,  risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
+                dro_solver_params = {'norm': 1 , 'radius':100})
     lbs = algo.run(instance_name='MILK_52')
     out_of_sample_rnd_cont = random_builder()
     sim_result = algo.simulate_policy(5000, out_of_sample_rnd_cont)

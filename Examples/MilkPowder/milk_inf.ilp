@@ -1,0 +1,22 @@
+\ Model MilkPowder_17_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ Pasture_Cover: P - P0 + h + fp - 7 gr <= 0
+ Supplement_Storage: Q - Q0 - 0.9 h + fs <= 0
+ CowsAmount: C - C0 <= 0
+ growth_aprox0.000000: - 0.0742857142857143 P0 + gr
+   <= 7.4285714285714287e-04
+ cut[17,0,8]: 1.5229371777307802e+08 P + 52.69222911911336 C
+   + oracle[17][8] >= -1.2088372681859583e+06
+Bounds
+ P free
+ C free
+ -infinity <= P0 <= 0
+ -infinity <= Q0 <= 0
+ -infinity <= C0 <= 0
+ h free
+ gr free
+ oracle[17][8] free
+End
