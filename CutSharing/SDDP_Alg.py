@@ -198,6 +198,9 @@ class SDDP(object):
                                      random_container=self.random_container, 
                                      sample_path = sample_path)
                 
+                if sp_output['status'] != cs.SP_OPTIMAL:
+                    self.debrief_infeasible_sub(sample_path, t, sp_output, sp)
+                
                 #sp.printPostSolutionInformation()
                 outputs_per_outcome.append(sp_output)
                 self.stats.updateStats(cs.BACKWARD_PASS, lp_time=sp_output['lptime'], 
@@ -381,10 +384,11 @@ class SDDP(object):
     
     def simulate_policy(self, n_samples, out_of_sample_random_container):
         self.upper_bounds = []
-        for i in range(0,n_samples):
+        for i in range(0,alg_options['sim_iter']):
             s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)
             if i in [2,60]:
-                    print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
+                pass
+                #print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
             if alg_options['outputlevel']>=3:
                 sddp_log.debug('Simulation %i:' %(i))
                 sddp_log.debug(s_path)
