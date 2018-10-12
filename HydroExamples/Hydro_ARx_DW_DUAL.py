@@ -21,7 +21,7 @@ from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing.RiskMeasures import DistRobustWasserstein
 from Utils.file_savers import write_object_results
-from HydroModel import load_hydro_data, model_builder, random_builder, hydro_path
+from HydroModel import load_hydro_data, hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
 
 
@@ -33,15 +33,16 @@ if __name__ == '__main__':
     worst-case expectation.
     '''
     load_algorithm_options()
-    T, r_dro, instance_name, out_of_sample_rnd_cont = load_hydro_data('DUAL', 'DW')
+ 
+    T, model_builder, random_builder, rnd_container_data, rnd_container_oos, r_dro, instance_name = load_hydro_data('DUAL', 'DW')
     #options['cut_selector'] = SLACK_BASED_CUT_SELECTOR#SLACK_BASED_CUT_SELECTOR#LAST_CUTS_SELECTOR
-    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = r_dro)
+    algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = r_dro, data_random_container=rnd_container_data)
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])                                                              
     
     save_path = hydro_path+'/Output/DW_Dual/%s_LBS.pickle' %(instance_name)
     write_object_results(save_path, (algo.instance, lbs))
     
-    sim_result = algo.simulate_policy(options['sim_iter'], out_of_sample_rnd_cont)
+    sim_result = algo.simulate_policy(rnd_container_oos)
     save_path = hydro_path+'/Output/DW_Dual/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
     

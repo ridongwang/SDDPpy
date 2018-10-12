@@ -382,13 +382,15 @@ class SDDP(object):
         return lbs
     
     
-    def simulate_policy(self, n_samples, out_of_sample_random_container):
+    def simulate_policy(self, out_of_sample_random_container):
         self.upper_bounds = []
         for i in range(0,alg_options['sim_iter']):
             s_path, _ =  out_of_sample_random_container.getSamplePath(out_sample_gen)
-            if i in [2,60]:
-                pass
-                #print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
+            #===================================================================
+            # if i in [2,60]:
+            #     #pass
+            #     print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
+            #===================================================================
             if alg_options['outputlevel']>=3:
                 sddp_log.debug('Simulation %i:' %(i))
                 sddp_log.debug(s_path)

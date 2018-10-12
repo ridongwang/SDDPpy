@@ -90,7 +90,7 @@ def load_algorithm_options():
     for kword in kwargs:
         if kword in options:
             options[kword] = kwargs[kword]
-            print('Loading %s' %(kword))
+            logger.info('Loading %s' %(kword))
         else:
             if len(kword)>5:
                 logger.warning('Parameter %s is not in the algorithm options. Check algorithm parameters wiki.' %(kword))

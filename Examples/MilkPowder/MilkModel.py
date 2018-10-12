@@ -16,7 +16,8 @@ from gurobipy import Model, GRB
 from CutSharing.SDDP_utils import print_model
 from CutSharing.SDDP_Alg import SDDP
 from CutSharing import options, load_algorithm_options
-from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
+from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver,\
+    DistRobustWasserstein
 milk_path = os.path.dirname(os.path.realpath(__file__))
 
 parameters = json.load(open('%s/model.parameters.json' % (milk_path)))
@@ -26,7 +27,7 @@ print(parameters["maximum_milk_production"])
 
 def random_builder():
     #evapotranspiration  rainfall
-    O = parameters["niwa_data"]
+    #O = parameters["niwa_data"]
     rc = RandomContainer()
     for w in range(0, T):
         rv_t = StageRandomVector(w)
@@ -37,6 +38,22 @@ def random_builder():
         else:
             rv_t.addRandomElememnt('evapotranspiration' , [numpy.mean([ow['evapotranspiration'] for ow in O[w]])])
             rv_t.addRandomElememnt('rainfall' ,  [numpy.mean([ow['rainfall'] for ow in O[w]])])
+
+    rc.preprocess_randomness()
+    return rc
+
+def random_builder_oos(data_OOS):
+    #evapotranspiration  rainfall
+    rc = RandomContainer()
+    for w in range(0, T):
+        rv_t = StageRandomVector(w)
+        rc.append(rv_t)
+        if w > 0:
+            rv_t.addRandomElememnt('evapotranspiration' , [ow['evapotranspiration'] for ow in data_OOS[w]])
+            rv_t.addRandomElememnt('rainfall' ,  [ow['rainfall'] for ow in data_OOS[w]])
+        else:
+            rv_t.addRandomElememnt('evapotranspiration' , [numpy.mean([ow['evapotranspiration'] for ow in data_OOS[w]])])
+            rv_t.addRandomElememnt('rainfall' ,  [numpy.mean([ow['rainfall'] for ow in data_OOS[w]])])
 
     rc.preprocess_randomness()
     return rc
@@ -115,7 +132,7 @@ def model_builder(stage):
     m.addConstr((mlk <= parameters["max_milk_energy"][stage] * C0), 'maximum milk')
     m.addConstr((milk >= parameters["min_milk_production"] * C0), 'minimum milk')
     m.addConstr((gr <= kappa[stage] * ev / 7), 'pasture growth constraints1')
-    for pbar in numpy.linspace(0,Pm,3):#Pn
+    for pbar in numpy.linspace(0,Pm,Pn):#Pn
         m.addConstr((gr <= g(pbar) + dgdt(pbar) * (P0 - pbar + 1e-2)), 'growth_aprox%f' %(pbar))
     m.addConstr((i <= parameters["maximum_irrigation"]), 'max_irrigation')
     
@@ -153,8 +170,14 @@ def model_builder(stage):
 if __name__ == '__main__':
     load_algorithm_options()
     T=52
-    algo = SDDP(T, model_builder, random_builder,  risk_measure = DistRobust, dro_solver = DiscreteWassersteinInnerSolver,\
-                dro_solver_params = {'norm': 1 , 'radius':100})
+    N_train = 20
+    N_test = len(parameters["niwa_data"][0]) - N_train
+    W = len(parameters["niwa_data"])
+    Y = len(parameters["niwa_data"][0])
+    O = [[parameters["niwa_data"][w][y] for y in range(N_train)]for w in range(W)]
+    data_OOS  = [[parameters["niwa_data"][w][y] for y in range(N_train, Y)]for w in range(W)]
+    algo = SDDP(T, model_builder, random_builder,  risk_measure =DistRobust, dro_solver = DiscreteWassersteinInnerSolver, dro_solver_params = {'norm': 1 , 'radius':0})
+    #algo = SDDP(T, model_builder, random_builder,  risk_measure =DistRobustWasserstein,  radius = 10)
     lbs = algo.run(instance_name='MILK_52')
-    out_of_sample_rnd_cont = random_builder()
+    out_of_sample_rnd_cont = random_builder_oos(data_OOS)
     sim_result = algo.simulate_policy(5000, out_of_sample_rnd_cont)

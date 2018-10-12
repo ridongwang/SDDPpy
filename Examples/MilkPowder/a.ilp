@@ -1,4 +1,4 @@
-\ Model MilkPowder_17_copy
+\ Model MilkPowder_22_copy
 \ LP format - for model browsing. Use MPS format to capture full model detail.
 Minimize
  
@@ -8,8 +8,8 @@ Subject To
  CowsAmount: C - C0 <= 0
  growth_aprox0.000000: - 0.0742857142857143 P0 + gr
    <= 7.4285714285714287e-04
- cut[17,0,8]: 1.5229371777307802e+08 P + 52.69222911911336 C
-   + oracle[17][8] >= -1.2088372681859583e+06
+ cut[22,0,1]: 1.8769990370922558e+07 P + 50.10649635350118 C
+   + oracle[22][1] >= 126009.6073456314
 Bounds
  P free
  C free
@@ -18,5 +18,5 @@ Bounds
  -infinity <= C0 <= 0
  h free
  gr free
- oracle[17][8] free
+ oracle[22][1] free
 End

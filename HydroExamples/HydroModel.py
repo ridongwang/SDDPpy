@@ -11,6 +11,7 @@ from CutSharing.RandomManager import reset_experiment_desing_gen, experiment_des
 from CutSharing.SDDP_utils import print_model
 from CutSharing import logger as sddp_log, options
 from gurobipy import Model, GRB, quicksum
+from scipy.spatial import ConvexHull
 from Utils.argv_parser import sys,parse_args
 import numpy as np
 import logging
@@ -50,12 +51,12 @@ dro_radius = None
 Rmatrix = None
 RHSnoise = None
 initial_inflow = None 
-valley_chain = None
-valley_chain_oos = None
+#valley_chain = None
+#valley_chain_oos = None
 prices = None
 Water_Penalty = 10000
 
-def random_builder():
+def random_builder(valley_chain):
     rc = RandomContainer()
     rndVectors = []
     for t in range(0,T):
@@ -70,27 +71,10 @@ def random_builder():
     rc.preprocess_randomness()
     return rc
 
-def random_builder_out_of_sample(vally_chain_sample):
-    '''
-    Generates a random container for out-of-sample performance.
-    '''
-    rc = RandomContainer()
-    rndVectors = []
-    for t in range(0,T):
-        rv_t = StageRandomVector(t)
-        rc.append(rv_t)
-        for (i,r) in enumerate(vally_chain_sample):
-            if t>0:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), r.inflows)
-            else:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), [0.0])
-            rndVectors.append(rv_t)
-    rc.preprocess_randomness()
-    return rc
 
 
 
-def model_builder(stage):
+def model_builder(stage, valley_chain):
     '''
     Builds a particular instance of a multistage problem
     '''
@@ -186,6 +170,41 @@ def model_builder(stage):
         print_model(m)
     return m, in_state, out_state, rhs_vars
 
+
+def generate_extra_data(rvs, n, method='cvx_hull'):
+    '''
+    Generates additional samples of the random vectors.
+    Random vectors are assumed to be in R^d
+    Args:
+        rvs (ndarray): array of random vectors (Nxd)
+        n (int): number of samples to generate
+    Returns
+        gen_data (ndarray): new data points (nxd)
+    '''
+    
+    if method == 'cvx_hull':
+        #Get convex hull first to generate inside if dimensions allow
+        ch_points = rvs
+        if len(rvs)>len(rvs[0]):
+            ch=ConvexHull(rvs)
+            ch_points = rvs[ch.vertices]
+        #Generate exponential numbers and then normalize to perform the cvx combinations
+        cvx_com = experiment_desing_gen.exponential(1,size=(n,len(ch_points)))
+        cvx_com = (cvx_com.transpose()/np.sum(cvx_com,1)).transpose()
+        #Generated points
+        gen = cvx_com.dot(ch_points)
+        return gen
+    elif method == 'cube':
+        d = len(rvs[0])
+        min_vals = rvs.min(0)
+        max_vals = rvs.max(0)
+        u = experiment_desing_gen.uniform(size=(n,d))
+        gen = np.zeros((n,d))
+        for i in range(n):
+            for k in range(d):
+                gen[i,k] = u[i,k]*min_vals[k] + (1-u[i,k])*max_vals[k]
+        return gen
+
 def load_hydro_data(approach, dus_type):
     global T 
     global nr 
@@ -193,11 +212,11 @@ def load_hydro_data(approach, dus_type):
     global dro_radius 
     global Rmatrix 
     global RHSnoise 
-    global initial_inflow 
-    global valley_chain 
-    global valley_chain_oos 
+    global initial_inflow
     global prices 
     argv = sys.argv
+    DW_extended = 1
+    DW_sampling = None
     positional_args,kwargs = parse_args(argv[1:])
     if 'R' in kwargs:
         nr = kwargs['R']
@@ -209,48 +228,77 @@ def load_hydro_data(approach, dus_type):
         dro_radius = kwargs['dro_r']
     if 'N' in kwargs:
         N = kwargs['N']
+    if 'DW_extended' in kwargs:
+        #N*DW_extended would be the number of oracles
+        DW_extended = kwargs['DW_extended']
+    if 'DW_sampling' in kwargs:
+        DW_sampling = kwargs['DW_sampling']
+        
+        
     from InstanceGen.ReservoirChainGen import read_instance
     prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
-    RHSnoise_density = hydro_instance.RHS_noise[0:nr]
-    N_training = N
-    #Reset experiment design stream 
-    reset_experiment_desing_gen()
-    train_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=N_training, replace = False))
-    test_indeces = set(range(len(RHSnoise_density[0]))) - train_indeces
-    assert len(train_indeces.intersection(test_indeces))==0,  'Not disjoint'
-    
-    l_train = list(train_indeces)
-    l_train.sort()
-    RHSnoise = RHSnoise_density[:,l_train]
-    dim_p = len(RHSnoise[0]) 
-    q_prob = 1/len(RHSnoise[0])
-    
+    RHSnoise_density = hydro_instance.RHS_noise[0:nr] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
     valley_turbines  = Turbine([50, 60, 70], [55, 65, 70])
     
+    N_data = N
+    #Reset experiment design stream 
+    reset_experiment_desing_gen()
     
     #For out of sample performance measure
+    test_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])),size=9000, replace = False))
     l_test = list(test_indeces) 
     l_test.sort()
-    RHSnoise_oos = RHSnoise_density#[:,l_test]
+    RHSnoise_oos = RHSnoise_density[:,l_test]
     valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_oos]
-
-
-    '''
-    Single-cut implementation of Wasserstein uncertanty set.
-    Based on Philpotts' implementation to build a policy and the
-    inner problem is solved in the backward pass (transportation problem).
-    '''
-    valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
     
+    #Train indices for Wasserstein distance
+    available_indices = set(range(len(RHSnoise_density[0]))) - test_indeces
+    data_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_data, replace=False))
+    l_data = list(data_indeces)
+    l_data.sort()
+    RHSnoise_data = RHSnoise_density[:,l_data]
+    valley_chain_data = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_data]
     
+    if DW_extended > 1:
+        #Generate additional data points from the data
+        if DW_sampling==None or DW_sampling=='None':
+            available_indices = available_indices - data_indeces
+            N_wasserstein = N_data * DW_extended - N_data
+            train_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False)) 
+            train_indeces = train_indeces.union(data_indeces)
+            N_training = len(train_indeces)
+            l_train = list(train_indeces)
+            l_train.sort()
+            RHSnoise = RHSnoise_density[:,l_train]
+        else:
+            N_wasserstein = N_data * DW_extended - N_data
+            gen_data = generate_extra_data(RHSnoise_data.transpose(), N_wasserstein, method=DW_sampling )
+            RHSnoise = np.hstack((RHSnoise_data,gen_data.transpose()))
+            N_training = len(RHSnoise[0])
+    else:
+        train_indeces = data_indeces
+        N_training = N_data
+        RHSnoise = np.copy(RHSnoise_data)    
+
     rr = dro_radius
     cut_type = 'MC' if options['multicut'] else 'SC'
     sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_%s_%s_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  options['max_iter'],  approach, cut_type, dus_type, rr,sampling_type)
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_%s_%s_%s_%s_%f" % (nr, lag, T, N_data, N_training,  options['max_iter'], dus_type, approach, cut_type,  sampling_type , rr)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
     
-    return T, rr, instance_name, random_builder_out_of_sample(valley_chain_oos)
+    valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
+    def rnd_builder_n_train():
+        return random_builder(valley_chain)
+    
+    def model_builder_n_tran(stage):
+        return model_builder(stage, valley_chain)
+    
+    rnd_container_oos = random_builder(valley_chain_oos)
+    rnd_container_data = random_builder(valley_chain_data)
+    
+    
+    return T, model_builder_n_tran, rnd_builder_n_train, rnd_container_data, rnd_container_oos, rr, instance_name
     
