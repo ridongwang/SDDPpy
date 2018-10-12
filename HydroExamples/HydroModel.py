@@ -264,7 +264,7 @@ def load_hydro_data(approach, dus_type):
     
     if DW_extended > 1:
         #Generate additional data points from the data
-        if DW_sampling==None or DW_sampling=='None':
+        if DW_sampling==None or DW_sampling=='none'  or DW_sampling=='None':
             available_indices = available_indices - data_indeces
             N_wasserstein = N_data * DW_extended - N_data
             train_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False)) 
@@ -286,7 +286,7 @@ def load_hydro_data(approach, dus_type):
     rr = dro_radius
     cut_type = 'MC' if options['multicut'] else 'SC'
     sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_%s_%s_%s_%s_%f" % (nr, lag, T, N_data, N_training,  options['max_iter'], dus_type, approach, cut_type,  sampling_type , rr)
+    instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.4f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
     
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
