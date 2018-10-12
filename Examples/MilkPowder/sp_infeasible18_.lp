@@ -1,20 +1,21 @@
-\ Model MilkPowder_1
+\ Model MilkPowder_18
 \ LP format - for model browsing. Use MPS format to capture full model detail.
 Minimize
-  - 0.0001 W + 0.5 b + 0.275 h + 0.5 i + C19 + 100 C20 + oracle[1][0]
+  - 0.0001 W + 0.5 b + 0.275 h + 0.5 i + C19 + 100 C20 + 20 gamma[18]
+   + 0.5 nu[18][0] + 0.5 nu[18][1]
 Subject To
  Pasture_Cover: P - P0 + h + fp - 7 gr <= 0
  Supplement_Storage: Q - Q0 - 0.9 h + fs <= 0
  Supplement_Storage: Q - Q0 - 0.9 h + fs <= 0
  CowsAmount: C - C0 <= 0
  Soil_Limit: W <= 150
- milkRel: - 0.0125328812581811 mlk + milk <= 0
+ milkRel: - 0.0122360501055756 mlk + milk <= 0
  milk_BALANCE: M - M0 - milk <= 0
- EnergyBalance: 15.79410927822722 C0 + 11 b + 11 fs + 11 fp - mlk
-   >= 930.9328807085071
- maximum_milk: - 1049.151448725157 C0 + mlk <= 0
+ EnergyBalance: 3.523269419982503 C0 + 11 b + 11 fs + 11 fp - mlk
+   >= 1181.029975391504
+ maximum_milk: - 1057.631214988625 C0 + mlk <= 0
  minimum_milk: - 6.3 C0 + milk >= 0
- pasture_growth_constraints1: - 4.30856674205954 ev + gr <= 0
+ pasture_growth_constraints1: - 1.488939695327892 ev + gr <= 0
  growth_aprox0.000000: - 0.0742857142857143 P0 + gr
    <= 7.4285714285714287e-04
  growth_aprox184.210526: - 0.0664661654135338 P0 + gr
@@ -45,16 +46,27 @@ Subject To
  soil-mosture-balance: W - W0 - i + ev - rainfall <= 0
  max_rate_d1_1: C19 >= 0
  max_rate_d1_2: - 0.25 b + C19 >= -15.75
- max_rate_d1_3: - 0.25 b + C19 >= -15.75
- max_rate_d1_4: - 0.25 b + C19 >= -15.75
+ max_rate_d1_3: - 0.75 b + C19 >= -57.75
+ max_rate_d1_4: - b + C19 >= -89.25
+ dro_dual_ctr[00]: - oracle[18][0] + nu[18][0] >= 0
+ dro_dual_ctr[01]: - oracle[18][1] + 4.9 gamma[18] + nu[18][0] >= 0
+ dro_dual_ctr[10]: - oracle[18][0] + 4.9 gamma[18] + nu[18][1] >= 0
+ dro_dual_ctr[11]: - oracle[18][1] + nu[18][1] >= 0
+ cut[18,0,0]: 1.0019323569533771e+08 P + 52.29185759411531 C
+   + oracle[18][0] >= -687908.8903603047
+ cut[18,0,1]: 1.0019323569533771e+08 P + 52.29185759411531 C
+   + oracle[18][1] >= -687908.8903603047
 Bounds
  M = -10000
  P0 = 0
  Q0 = 0
- 150 <= W0 <= 0
+ W0 = 150
  C0 = 0
  M0 = -10000
- evapotranspiration = 6
- rainfall = 50.8
- oracle[1][0] >= -1e+08
+ evapotranspiration = 22.3
+ rainfall = 26.23333333333333
+ oracle[18][0] >= -1e+08
+ oracle[18][1] >= -1e+08
+ nu[18][0] free
+ nu[18][1] free
 End

@@ -54,9 +54,12 @@ class StageProblem():
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
         self.model.params.Method = 1
+        #self.model.params.PreDual = 1
+        #self.model.params.Presolve = 0
+        #self.model.params.DualReductions = 0
         #self.model.params.FeasibilityTol = 1E-9
         
-        
+       
         # Add oracle var(s) and include it in the objective
         self.cx = self.model.getObjective() #Get objective before adding oracle variable
         if last_stage == False:
@@ -140,7 +143,7 @@ class StageProblem():
             for rr in random_realization:
                 self.model.getVarByName(rr).lb = random_realization[rr]
                 self.model.getVarByName(rr).ub = random_realization[rr]   
-            #self.model.update()
+            self.model.update()
             setuptime = time()  - setuptime 
             
             cutupdatetime = time()   
@@ -150,7 +153,9 @@ class StageProblem():
         
         #Solve LP
         lp_time = time()
+        
         self.model.optimize()
+      
         lp_time = time() - lp_time
         
         data_mgt_time = time()
@@ -174,7 +179,8 @@ class StageProblem():
                 output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
                 output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
-            
+        else:
+            print('Not optimal sub')
             #if self.stage == 0:
                 #self.print_theta()
             

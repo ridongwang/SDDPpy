@@ -902,7 +902,7 @@ class DRO_CuttingPlanes():
 
 class DistRobust(AbstracRiskMeasure):
     '''
-        Distributionally robust risk measure based on primal problem (Philpott et al.). 
+        Distributionally robust risk measure based on primal formulation (Philpott et al.). 
     '''
     
     #Constants to identify the type of distance being used.
@@ -1176,8 +1176,8 @@ class DiscreteWassersteinInnerSolver(DistRobusInnerSolver):
         
         model = Model()
         model.params.OutputFlag = 0 
-        p = model.addVars(n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='p[t_%i]' % (t))
-        z = model.addVars(n_org, n_des, lb=0, up=1, obj=0, vtype=GRB.CONTINUOUS, name='z[t_%i]' % (t))
+        p = model.addVars(n_des, lb=0, ub=1, obj=0, vtype=GRB.CONTINUOUS, name='p[t_%i]' % (t))
+        z = model.addVars(n_org, n_des, lb=0, ub=1, obj=0, vtype=GRB.CONTINUOUS, name='z[t_%i]' % (t))
         model.update()
         model.addConstrs((z.sum(o, '*')==nsrv_org.p_copy[o] for o in range(n_org)), name='org[t_%i]' % (t))
         model.addConstrs((z.sum('*', d)==p[d] for d in range(n_des)), name='des[t_%i]' % (t))
