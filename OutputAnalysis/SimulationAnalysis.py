@@ -177,11 +177,14 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
     if r[0]==0:
         ev = [np.mean(sim_results[0].sims_ub) for _ in r]
-        axarr.semilogx(r,ev, color='blue', label='SP')
+        axarr.semilogx(r,ev, color='blue', label='SP Mean')
+        ev_median = [np.median(sim_results[0].sims_ub) for _ in r]
+        axarr.semilogx(r,ev_median, color='blue',linestyle='--', label='SP Median')
         ev90 = [np.percentile(sim_results[0].sims_ub,q=90) for _ in r]
-        axarr.semilogx(r,ev90, color='blue', linestyle='--', label='SP')
+        axarr.semilogx(r,ev90, color='blue', linestyle='--', dashes=(3, 1),  label='SP 10-90')
         ev10 = [np.percentile(sim_results[0].sims_ub,q=10) for _ in r]
-        axarr.semilogx(r,ev10, color='blue', linestyle='--', label='SP')
+        axarr.semilogx(r,ev10, color='blue', linestyle='--', dashes=(3, 1))
+        
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
     p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
