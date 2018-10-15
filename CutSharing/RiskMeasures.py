@@ -306,10 +306,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         #Mix with nominal distribution
         p_w = ds_beta*p_w + (1-ds_beta)*desc_rnd_vec.p_copy
         desc_rnd_vec.modifyOutcomesProbabilities(p_w)
-        #=======================================================================
-        # if t<= 3:
-        #     print(t, p_w)
-        #=======================================================================
+  
         
         
     def define_scenario_tree_uncertainty_set(self, stage, outcome,  model, srv, phi, branch_name):
@@ -656,14 +653,19 @@ class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
     L2_NORM = 'L2_norm'
+    '''
+    Attributes:
+        dro_ctrs (dic of GRBCtr): dictionary storing the constraints whose dual variables relates to worst-case probs.  
+    '''
     def __init__(self, set_type=L1_NORM, radius=0, nominal=None, cutting_planes=False, data_random_container=None):
+        
         super().__init__()
         self.cutting_planes_approx =  cutting_planes
         self.set_type = set_type
         self.radius = radius
         self.q = nominal
         self.data_random_container = data_random_container
-        
+        self.dro_ctrs = {}
         if self.cutting_planes_approx == True:
             self.cuts_handler = None 
             self.cut_index = 0
@@ -749,7 +751,7 @@ class DistRobustDuality(AbstracRiskMeasure):
         if type(self.q) == type(None):
             self.q = next_stage_rnd_vector.p_copy
         set_type = self.set_type
-        if set_type in [DistRobustDuality.L1_NORM, DistRobustDuality.L2_NORM,DistRobustDuality.INF_NORM]:
+        if set_type in [DistRobustDuality.L1_NORM, DistRobustDuality.L2_NORM]:
             r = self.radius
             q = self.q
         
@@ -760,7 +762,8 @@ class DistRobustDuality(AbstracRiskMeasure):
             #Update objective function
             new_objective = sp.cx  + lambda_var + r*gamma_var - quicksum(q[i]*nu_var[i] for i in range(n_outcomes))
             model.setObjective(new_objective, GRB.MINIMIZE)
-            model.addConstrs( (lambda_var - nu_var[i] - sp.oracle[i]>= 0 for i in range(n_outcomes)), 'dro_dual_ctr')
+            self.dro_ctrs = model.addConstrs( (lambda_var - nu_var[i] - sp.oracle[i]>= 0 for i in range(n_outcomes)), 'dro_dual_ctr')
+            
             if self.cutting_planes_approx == False:
                     
                 if set_type == DistRobustDuality.L2_NORM:
@@ -829,9 +832,29 @@ class DistRobustDuality(AbstracRiskMeasure):
             return False, vio
         return False, 0
     
-    def forward_prob_update(self, *args, **kwargs):
-        '''No probability modifications for this risk measure'''
-        pass     
+    def forward_prob_update(self, t, sp, next_sp, fp_out_states , sample_path,  rnd_container ):
+        '''
+        Updates the probability distribution for the descendants of the current stage.
+        The update sets the probability use to sample new outcomes to the worst case prob
+        distribution for the particular sample path being explored.
+        Args:
+            t (int): current stage (just solved in forward pass)
+            rnd_container (RandomContainer): object that contains all the randomness in the problem.
+            
+        This method modifies the probabilities of the random vector for stage t+1.
+        '''
+        if t  == len(rnd_container.stage_vectors)-1:
+            #Last stage needs no update
+            return 
+        desc_rnd_vec = rnd_container[t+1] #Descendant outcomes
+        p_w = np.zeros(desc_rnd_vec.outcomes_dim)
+        for i in self.dro_ctrs:
+            p_w[i]  += self.dro_ctrs[i].Pi
+        p_w = np.around(np.abs(p_w), 8)
+        p_w = p_w/p_w.sum()
+        #Mix with nominal distribution
+        p_w = ds_beta*p_w + (1-ds_beta)*desc_rnd_vec.p_copy
+        desc_rnd_vec.modifyOutcomesProbabilities(p_w)
 
 class DRO_CuttingPlanes():
     '''
