@@ -656,10 +656,13 @@ class DistRobustDuality(AbstracRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
     L2_NORM = 'L2_norm'
-    def __init__(self, dro_solver, dro_solver_params):
+    def __init__(self, set_type=L1_NORM, radius=0, nominal=None, cutting_planes=False, data_random_container=None):
         super().__init__()
-        self.cutting_planes_approx =  dro_solver_params['cutting_planes']
-        self._dro_params = dro_solver_params
+        self.cutting_planes_approx =  cutting_planes
+        self.set_type = set_type
+        self.radius = radius
+        self.q = nominal
+        self.data_random_container = data_random_container
         
         if self.cutting_planes_approx == True:
             self.cuts_handler = None 
@@ -740,12 +743,15 @@ class DistRobustDuality(AbstracRiskMeasure):
         t = sp.stage
         if sp._last_stage:
             return
+        n_outcomes = len(next_stage_rnd_vector.outcomes)
+        assert n_outcomes == len(self.data_random_container[t+1].outcomes), 'Inconsistent data was passed to the risk measure. Verify that the random builder function provided to build the SDDP model uses the same random container object.'
         
-        n_outcomes  = next_stage_rnd_vector.outcomes_dim
-        set_type = self._dro_params['set_type']
-        if set_type in [DistRobustDuality.L1_NORM, DistRobustDuality.L2_NORM]:
-            r = self._dro_params['DUS_radius']
-            q = self._dro_params['nominal_p']
+        if type(self.q) == type(None):
+            self.q = next_stage_rnd_vector.p_copy
+        set_type = self.set_type
+        if set_type in [DistRobustDuality.L1_NORM, DistRobustDuality.L2_NORM,DistRobustDuality.INF_NORM]:
+            r = self.radius
+            q = self.q
         
             lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
             gamma_var =  model.addVar(lb=0,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='gamma[%i]' %(t))
@@ -762,12 +768,12 @@ class DistRobustDuality(AbstracRiskMeasure):
                     model.params.BarQCPConvTol = 1E-8
                     model.addConstr( quicksum(nu_var[i]*nu_var[i] for i in range(n_outcomes)) <= gamma_var*gamma_var    , 'norm_dro_ctr')
                 elif set_type == DistRobustDuality.L1_NORM:
-                    model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
-                    model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+                    model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr_pos')
+                    model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr_neg')
             else: #Using cutting planes
                 #Add max norm to bound
-                model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
-                model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr')
+                model.addConstrs((nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr_pos')
+                model.addConstrs((-nu_var[i] + gamma_var>=0 for i in range(n_outcomes)) , 'norm_dro_ctr_neg')
                 
                 if set_type == DistRobustDuality.L2_NORM:
                     def g(x,order):
@@ -814,7 +820,7 @@ class DistRobustDuality(AbstracRiskMeasure):
                 model_vars = [sp.model.getVarByName(vn)  for vn in cph.dual_set_var] 
                 cut_lhs = cph.refine_set(var_vals, model_vars,  ctr, vio)
                 #print(sp.stage, '__>' , vio, cut_lhs)
-                sp.model.addConstr(cut_lhs, GRB.LESS_EQUAL, 0, 'cut_dro_%i' %(self.cut_index))
+                sp.model.addConstr(cut_lhs, GRB.LESS_EQUAL, 0, 'dus_cut_%i' %(self.cut_index))
                 self.cut_index =  self.cut_index + 1
                 resolve = False
                 if vio >tol:
@@ -911,14 +917,14 @@ class DistRobust(AbstracRiskMeasure):
     L2_NORM = 'L2_norm'
     D_Wasserstein = 'Discrete_Wasserstein'
     
-    def __init__(self, dro_solver, dro_solver_params):
+    def __init__(self, dro_inner_solver, **dro_solver_params):
         '''
-        inner_solver (DRO_solver): a class that computes the worst distribution on the 
+        inner_solver (dro_inner_solver): a class that computes the worst distribution on the 
             backward pass of the algorithm given descendants objective values. In particular
             it solves the inner max problem of a particular stage to where it belongs.
         '''
         super().__init__()
-        self.inner_solver = dro_solver(**dro_solver_params)
+        self.inner_solver = dro_inner_solver(**dro_solver_params)
         
         #For multi-cut version
         self.global_oracle = None
@@ -1001,7 +1007,7 @@ class DistRobust(AbstracRiskMeasure):
         pass  
     def modify_stage_problem(self,  sp,  model, next_stage_rnd_vector):
         '''
-        Modify the stage problem to accomadtes additional variables and constraints
+        Modify the stage problem to accommodate additional variables and constraints
         defined in the DRO appoach
         '''
         self.inner_solver.build_model(t=sp.stage,next_stage_rnd_vec = next_stage_rnd_vector)
@@ -1015,7 +1021,7 @@ class DistRobust(AbstracRiskMeasure):
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0   
-    def forward_prob_update(self, t, sp, next_sp, forward_out_states, sample_path, rnd_cnt):
+    def forward_prob_update(self, t, sp, next_sp, forward_out_states, sample_path, rnd_container):
         '''
             Computes a proxy of the worst case distribution by solving the inner max problem
             with the value of the oracles as objective function.
@@ -1023,19 +1029,19 @@ class DistRobust(AbstracRiskMeasure):
         if next_sp == None:
             #No change in probabilities
             return
-        
-        next_rnd_vector = rnd_cnt[t+1]
+        next_rnd_vector = rnd_container[t+1]  #Descendant outcomes
         omega_t = next_rnd_vector.getOutcomes(sample_path, ev=False)
         zs = np.zeros(len(omega_t))
         for (i,outcome) in enumerate(omega_t):
             next_sp_output = next_sp.solve(in_state_vals=forward_out_states[t-1], 
                                  random_realization=outcome, 
                                  forwardpass=False, 
-                                 random_container=rnd_cnt, 
+                                 random_container=rnd_container, 
                                  sample_path = sample_path)
             zs[i] = next_sp_output['objval']
     
         p_worst = self.inner_solver.compute_worst_case_distribution(zs)
+        p_w = ds_beta*p_worst + (1-ds_beta)*next_rnd_vector.p_copy
         next_rnd_vector.modifyOutcomesProbabilities(p_worst)
         
         
@@ -1086,15 +1092,18 @@ class InnerDROSolverX2(DistRobusInnerSolver):
     
     
 class PhilpottInnerDROSolver(DistRobusInnerSolver):
-    def __init__(self, nominal_p, DUS_radius, set_type):
-        self.nominal_p = nominal_p
-        self.uncertanty_radius = DUS_radius
+    def __init__(self,  radius, set_type, data_random_container):
+        self.data_random_container = data_random_container
+        self.uncertanty_radius = radius
         self._one_time_warning = True
         self.set_type = set_type
-        
+        self.nominal_p = None
     
     def build_model(self, **kwargs):
-        q = self.nominal_p
+        t = kwargs['t']
+        nsrv = kwargs['next_stage_rnd_vec']
+        assert len(self.data_random_container[t+1].outcomes)==len(nsrv.outcomes)
+        q = nsrv.p_copy
         DUS_radius = self.uncertanty_radius
         set_type = self.set_type
         m = Model('DRO_solver')
@@ -1110,10 +1119,13 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
             d_minus = m.addVars(len(q) , lb = 0, ub = 1, obj=0, vtype=GRB.CONTINUOUS, name='dm')
             m.addConstr(quicksum(d_plus[i] + d_minus[i] for i in p), GRB.LESS_EQUAL, DUS_radius, 'DUS')
             m.addConstrs((d_plus[i] - d_minus[i] == p[i]- q[i] for i in p), 'ABS_liner')
+        else:
+            raise 'Not supported norm for this solver.'
         m.setObjective(m.getObjective(), GRB.MAXIMIZE)
         m.update()
         self.model = m
-        self.p_var = m
+        self.p_var = p
+        self.nominal_p = q
     
     
     
@@ -1127,7 +1139,7 @@ class PhilpottInnerDROSolver(DistRobusInnerSolver):
         Returns:
             new_p (ndarray): array with the worse case probabilities in DRO
         '''
-        vars = self.model.getVars()
+        vars = self.p_var
         for (i,z) in enumerate(outcomes_objs):
             vars[i].obj = z
         self.model.update()
@@ -1145,7 +1157,7 @@ class DiscreteWassersteinInnerSolver(DistRobusInnerSolver):
     Implements the linear program to obtain the worst-case
     distribution in the discrete setting, i.e., there is a finite
     number of support points that will ship probability mass to 
-    a finite (potentially) larger set of support points.
+    a finite (potentially larger) set of support points.
     '''
     
     def __init__(self, norm = 1, radius = 1, dist_func = norm_fun, data_random_container = None):

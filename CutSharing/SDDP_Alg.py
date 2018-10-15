@@ -88,7 +88,7 @@ class SDDP(object):
                                  forwardpass = True, 
                                  random_container=self.random_container, 
                                  sample_path = sample_path,
-                                 num_cuts = self.num_cuts)
+                                 num_cuts = self.num_cuts[i])
             
             if sp_output['status'] != cs.SP_OPTIMAL:
                 self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
@@ -134,7 +134,7 @@ class SDDP(object):
                                  forwardpass = True, 
                                  random_container=self.random_container, 
                                  sample_path = sample_path,
-                                 num_cuts = self.num_cuts)
+                                 num_cuts = self.num_cuts[i])
             
             if sp_output['status'] != cs.SP_OPTIMAL:
                 self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
@@ -337,7 +337,7 @@ class SDDP(object):
             self.stats.updateStats(cs.FORWARD_PASS, total_time = fp_time)
             
             lbs.append((self.lb,self.get_wall_time()))
-            
+           
             '''
             ==================================================
             Compute statistical upper bounds
