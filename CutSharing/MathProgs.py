@@ -166,11 +166,20 @@ class StageProblem():
             output['objval'] = self.model.objVal
                 
             if forwardpass == True:
-                resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-6)
+                resolves = 0
+                resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-2)
+                while resolve and resolves<2 :
+                    #print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
+                    lp_time_resolve = time()
+                    self.model.optimize()
+                    lp_time+= time() - lp_time_resolve
+                    resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-2)
+                    resolves+=1
+                    
                 output['risk_measure_info'] = violation
-                if resolve == True and self.stage<=0 and num_cuts > 50:
-                    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
-                    return self.solve(in_state_vals, random_realization, forwardpass, random_container, sample_path, num_cuts)
+                #if resolve == True and self.stage<=10000 and num_cuts > 50:
+                    
+                #    return self.solve(in_state_vals, random_realization, forwardpass, random_container, sample_path, num_cuts)
                 #if resolve == True and self.stage<=3:
                 #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
                 output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
