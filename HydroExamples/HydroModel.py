@@ -13,8 +13,10 @@ from CutSharing import logger as sddp_log, options
 from gurobipy import Model, GRB, quicksum
 from scipy.spatial import ConvexHull
 from Utils.argv_parser import sys,parse_args
+from scipy.optimize import linprog
 import numpy as np
 import logging
+
 
 
 '''
@@ -171,7 +173,7 @@ def model_builder(stage, valley_chain):
     return m, in_state, out_state, rhs_vars
 
 
-def generate_extra_data(rvs, n, method='cvx_hull'):
+def generate_extra_data(rvs, n, method='cvx_hull', realizations=None):
     '''
     Generates additional samples of the random vectors.
     Random vectors are assumed to be in R^d
@@ -194,6 +196,26 @@ def generate_extra_data(rvs, n, method='cvx_hull'):
         #Generated points
         gen = cvx_com.dot(ch_points)
         return gen
+    elif method == 'cvx_hull2':
+        assert len(rvs)>len(rvs[0]), "Need at least %i points" %(len(rvs[0])+1)
+        points_out =[]
+        ch=ConvexHull(rvs)
+        ch_points = rvs[ch.vertices]
+        n_ch = len(ch_points)
+        A = np.vstack((ch_points.transpose(), np.ones(n_ch)))
+        for b in realizations:
+           
+            b_e =np.reshape(np.hstack((b,1)),(len(b)+1,1))
+            sol = linprog(c=np.zeros(n_ch), A_eq=A, b_eq = b_e, bounds=[(0,1) for _ in range(n_ch)])
+            if sol.status == 2 : #infeasible:
+                points_out.append(b)
+            else:
+                assert sol.status == 0, 'Linear system is not infeasible nor optimal.'
+                pass #Point is inside
+            
+            if len(points_out)==n:
+                break
+        return np.array(points_out)
     elif method == 'cube':
         d = len(rvs[0])
         min_vals = rvs.min(0)
@@ -262,7 +284,7 @@ def load_hydro_data(approach, dus_type):
     RHSnoise_data = RHSnoise_density[:,l_data]
     valley_chain_data = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_data]
     
-    if DW_extended > 1:
+    if DW_extended > 1 and dus_type=='DW':
         #Generate additional data points from the data
         if DW_sampling==None or DW_sampling=='none'  or DW_sampling=='None':
             available_indices = available_indices - data_indeces
@@ -275,7 +297,9 @@ def load_hydro_data(approach, dus_type):
             RHSnoise = RHSnoise_density[:,l_train]
         else:
             N_wasserstein = N_data * DW_extended - N_data
-            gen_data = generate_extra_data(RHSnoise_data.transpose(), N_wasserstein, method=DW_sampling )
+            available_indices = available_indices - data_indeces
+            avail_realizations = RHSnoise_density[:,list(available_indices)]
+            gen_data = generate_extra_data(RHSnoise_data.transpose(), N_wasserstein, method=DW_sampling, realizations=avail_realizations.transpose())
             RHSnoise = np.hstack((RHSnoise_data,gen_data.transpose()))
             N_training = len(RHSnoise[0])
     else:
@@ -286,7 +310,11 @@ def load_hydro_data(approach, dus_type):
     rr = dro_radius
     cut_type = 'MC' if options['multicut'] else 'SC'
     sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
-    instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.4f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
+    instance_name = None
+    if approach == "SP":
+        instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], approach, cut_type,  sampling_type)
+    else:
+        instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.4f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
     
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]

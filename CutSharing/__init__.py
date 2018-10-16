@@ -3,7 +3,7 @@ from Utils.argv_parser import sys,parse_args
 import numpy as np
 import os
 import logging
-
+np.set_printoptions(linewidth=90)
 
 sddp_dir_path = os.path.dirname(os.path.realpath(__file__))
 cwd = os.getcwd()
