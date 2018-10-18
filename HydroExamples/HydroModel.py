@@ -211,20 +211,49 @@ def generate_extra_data(rvs, n, method='cvx_hull', realizations=None):
                 points_out.append(b)
             else:
                 assert sol.status == 0, 'Linear system is not infeasible nor optimal.'
+                print("interior point")
                 pass #Point is inside
             
             if len(points_out)==n:
                 break
         return np.array(points_out)
-    elif method == 'cube':
+    elif method == 'box':
+        
+        #cube operations
         d = len(rvs[0])
         min_vals = rvs.min(0)
         max_vals = rvs.max(0)
-        u = experiment_desing_gen.uniform(size=(n,d))
+        #u = experiment_desing_gen.uniform(size=(n,d))
         gen = np.zeros((n,d))
-        for i in range(n):
-            for k in range(d):
-                gen[i,k] = u[i,k]*min_vals[k] + (1-u[i,k])*max_vals[k]
+        
+        #convex hull operations
+        ch=ConvexHull(rvs)
+        ch_points = rvs[ch.vertices]
+        n_ch = len(ch_points)
+        A = np.vstack((ch_points.transpose(), np.ones(n_ch)))
+        
+        #generate outside the cupe but inside the box
+        i = 0
+        while i < n:
+            u = experiment_desing_gen.uniform(size=(d))
+            new_p = u*min_vals + (1-u)*max_vals
+            #check if it is insde the cvx hull
+            b_e =np.reshape(np.hstack((new_p,1)),(len(new_p)+1,1))
+            sol = linprog(c=np.zeros(n_ch), A_eq=A, b_eq = b_e, bounds=[(0,1) for _ in range(n_ch)])
+            if sol.status == 2 : #infeasible:
+                gen[i] = np.copy(new_p)
+                i+=1
+            else:
+                assert sol.status == 0, 'Linear system is not infeasible nor optimal.'
+                print("interior point")
+                pass #Point is inside
+            
+        #=======================================================================
+        # for i in range(n):
+        #     for k in range(d):
+        #         gen[i,k] = u[i,k]*min_vals[k] + (1-u[i,k])*max_vals[k]
+        #=======================================================================
+        
         return gen
 
 def load_hydro_data(approach, dus_type):
@@ -259,7 +288,7 @@ def load_hydro_data(approach, dus_type):
         
     from InstanceGen.ReservoirChainGen import read_instance
     prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
-    hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
+    hydro_instance = read_instance('hydro_rnd_instance_R100_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
@@ -278,27 +307,28 @@ def load_hydro_data(approach, dus_type):
     
     #Train indices for Wasserstein distance
     available_indices = set(range(len(RHSnoise_density[0]))) - test_indeces
-    data_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_data, replace=False))
-    l_data = list(data_indeces)
-    l_data.sort()
-    RHSnoise_data = RHSnoise_density[:,l_data]
+    available_indices = np.array(list(available_indices))
+    #data_indeces=set(experiment_desing_gen.choice(list(available_indices), size=N_data, replace=False))
+    data_indeces = available_indices[0:N_data]
+    RHSnoise_data = RHSnoise_density[:,data_indeces]
     valley_chain_data = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_data]
-    
+    print(data_indeces)
     if DW_extended > 1 and dus_type=='DW':
         #Generate additional data points from the data
         if DW_sampling==None or DW_sampling=='none'  or DW_sampling=='None':
-            available_indices = available_indices - data_indeces
-            N_wasserstein = N_data * DW_extended - N_data
-            train_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False)) 
-            train_indeces = train_indeces.union(data_indeces)
+            #available_indices = set(available_indices) - set(data_indeces)
+            N_wasserstein = N_data * DW_extended 
+            #train_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False)) 
+            train_indeces = available_indices[0:N_wasserstein]
+            assert set(data_indeces).issubset(train_indeces)
             N_training = len(train_indeces)
             l_train = list(train_indeces)
             l_train.sort()
             RHSnoise = RHSnoise_density[:,l_train]
         else:
             N_wasserstein = N_data * DW_extended - N_data
-            available_indices = available_indices - data_indeces
-            avail_realizations = RHSnoise_density[:,list(available_indices)]
+            available_indices = available_indices[N_data:]
+            avail_realizations = RHSnoise_density[:,available_indices]
             gen_data = generate_extra_data(RHSnoise_data.transpose(), N_wasserstein, method=DW_sampling, realizations=avail_realizations.transpose())
             RHSnoise = np.hstack((RHSnoise_data,gen_data.transpose()))
             N_training = len(RHSnoise[0])

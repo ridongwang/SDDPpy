@@ -14,8 +14,8 @@ import numpy as np
 alg_rnd_gen = np.random.RandomState(0)
 in_sample_gen = np.random.RandomState(1234)
 out_sample_gen = np.random.RandomState(1111)
-experiment_desing_gen = np.random.RandomState(19280)
-seeds = {alg_rnd_gen:0, in_sample_gen:1234, out_sample_gen:1111, experiment_desing_gen:19280}
+experiment_desing_gen = np.random.RandomState(1928)
+seeds = {alg_rnd_gen:0, in_sample_gen:1234, out_sample_gen:1111, experiment_desing_gen:1928}
 
 def reset_alg_rnd_gen():
     alg_rnd_gen.seed(seeds[alg_rnd_gen])
