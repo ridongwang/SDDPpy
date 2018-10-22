@@ -22,6 +22,7 @@ from CutSharing.SDDP_Alg import SDDP
 from Utils.file_savers import write_object_results
 from HydroModel import load_hydro_data, hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
+from CutSharing.SDDP_utils import report_stats
 
 
 
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     sim_result = algo.simulate_policy(rnd_container_oos)
     save_path = hydro_path+'/Output/DW_Dual/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
-    
+    report_stats(sim_result.sims_ub)
     del(algo)
     
     
