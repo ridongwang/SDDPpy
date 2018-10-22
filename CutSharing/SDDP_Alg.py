@@ -447,8 +447,9 @@ class SDDP(object):
                 
                 fp_out_states.append(sp_output['out_state'])
                 fp_ub_value += sp.get_stage_objective_value()
+                next_sp = self.stage_problems[t+1] if t+1<len(self.stage_problems) else None
+                sp.risk_measure.forward_prob_update(t,sp, next_sp , fp_out_states , sample_path , self.random_container)
                 
-                sp.risk_measure.forward_prob_update(t,self.random_container)   
             self.upper_bounds.append(fp_ub_value)     
         self.ub = np.mean(self.upper_bounds)
         self.ub_hw = 2*np.std(self.upper_bounds)/np.sqrt(len(self.upper_bounds))
