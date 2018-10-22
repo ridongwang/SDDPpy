@@ -288,7 +288,7 @@ def load_hydro_data(approach, dus_type):
         
     from InstanceGen.ReservoirChainGen import read_instance
     prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
-    hydro_instance = read_instance('hydro_rnd_instance_R100_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
+    hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
