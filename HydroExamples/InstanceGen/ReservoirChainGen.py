@@ -27,7 +27,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
         - Innovations of the autoregressive process
     '''
     np.random.seed(0)
-    season = 12
+    season = 52
     R_matrices = {t:{l:{i:{} for i in range(num_reservoirs)} for l in range(1,lag+1)} for t in range(0,T)}
     for t in range(T):
         for l in range(1,lag+1):
@@ -37,7 +37,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                         if (t<season):
                             #var = 0.2 if i>num_reservoirs/2 else 0.6
                             #R_matrices[t][l][i][i-j]=np.random.normal(0, var) #for nr=10  experiments
-                            R_matrices[t][l][i][i-j]=np.random.normal(0, 0.6) #for nr=30  experiments
+                            R_matrices[t][l][i][i-j]=np.random.normal(0, 0.5) #for nr=30  experiments
                             #R_matrices[t][l][i][i-j]=np.random.normal(0.1, (1.0/(lag*up_stream_dep+1)))
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-var,var)
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-1/(up_stream_dep+lag),1/(up_stream_dep+lag)) #for nr=100
@@ -133,11 +133,11 @@ def read_instance(file_name = 'hydro_rnd_instance_R200_UD1_T120_LAG1_OUT10K_AR.p
 
 if __name__ == '__main__':
     #===========================================================================
-    # hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T24_LAG1_OUT10K_AR.pkl' , lag=1)
+    # hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR.pkl' , lag=1)
     # matrix = hydro_instance.ar_matrices
     # RHSnoise_density = hydro_instance.RHS_noise
     # inflow_t0 = hydro_instance.inital_inflows
-    # simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 24, 10, 1)
+    # simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 52, 10, 1)
     #===========================================================================
     
     nr = 30
