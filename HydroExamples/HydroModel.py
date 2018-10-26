@@ -56,7 +56,7 @@ initial_inflow = None
 #valley_chain = None
 #valley_chain_oos = None
 prices = None
-Water_Penalty = 100000
+Water_Penalty = 50000
 
 def random_builder(valley_chain):
     rc = RandomContainer()
@@ -344,7 +344,7 @@ def load_hydro_data(approach, dus_type):
     if approach == "SP":
         instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], approach, cut_type,  sampling_type)
     else:
-        instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.4f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
+        instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.7f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
     
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
