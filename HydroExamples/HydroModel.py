@@ -56,7 +56,7 @@ initial_inflow = None
 #valley_chain = None
 #valley_chain_oos = None
 prices = None
-Water_Penalty = 50000
+Water_Penalty = 1000
 
 def random_builder(valley_chain):
     rc = RandomContainer()
