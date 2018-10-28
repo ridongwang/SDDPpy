@@ -378,7 +378,7 @@ class SDDP(object):
             self.pass_iteration+=1
             
             
-        #self.stats.print_report(instance_name, self.stage_problems)
+        self.stats.print_report(instance_name, self.stage_problems)
         return lbs
     
     

@@ -3,7 +3,7 @@ Created on Nov 17, 2017
 
 @author: dduque
 '''
-from gurobipy import GRB, Model
+from gurobipy import GRB, Model, tupledict
 from CutSharing.CutManagament import Cut
 from CutSharing.CutManagament import CutPool
 import CutSharing 
@@ -39,16 +39,18 @@ class StageProblem():
         self.model_stats = MathProgStats()
         model, in_states, out_states, rhs_vars = model_builder(stage)
         
-        self.states_map = {}  
-        self.in_state = [x for x in in_states]
-        self.out_state = [x for x in out_states]
-        self.gen_states_map(self.in_state)
-        self.rhs_vars = [x for x in rhs_vars]
-        
         self.model = model
         self.risk_measure = risk_measure
         self.cut_pool = CutPool(stage)
         self.multicut = multicut
+        
+        self.states_map = {}  
+        self.in_state = [x for x in in_states]
+        self.out_state = [x for x in out_states]
+        self.out_state_var  = {x:model.getVarByName(x) for x in out_states}
+        self.gen_states_map(self.in_state)
+        self.rhs_vars = [x for x in rhs_vars]
+        self.rhs_vars_var  = {x:model.getVarByName(x) for x in rhs_vars}
         
         # Optimizer parameters
         self.model.params.OutputFlag = 0
@@ -76,7 +78,8 @@ class StageProblem():
                 
         
         #Construct dictionaries of (constraints,variables) key where duals are needed
-        self.ctrsForDuals = set()
+        self.ctrsForDuals = set() #Set of names
+        self.ctrsForDualsRef = {} #Dict containing the reference to the constraints
         self.ctrInStateMatrix = {}
         for vname in self.in_state:
             var = self.model.getVarByName(vname)
@@ -85,6 +88,7 @@ class StageProblem():
                 ctr = col.getConstr(j)
                 ctr_coeff = col.getCoeff(j)
                 self.ctrsForDuals.add(ctr.ConstrName)
+                self.ctrsForDualsRef[ctr.ConstrName]=ctr
                 self.ctrInStateMatrix[ctr.ConstrName, vname] = -ctr_coeff
                 
         self.ctrRHSvName = {}
@@ -97,6 +101,7 @@ class StageProblem():
                 assert ctr.ConstrName not in self.ctrRHSvName, "Duplicated RHS noise variable in the a single constraint."
                 self.ctrRHSvName[ctr.ConstrName] = vname
                 self.ctrsForDuals.add(ctr.ConstrName)
+                self.ctrsForDualsRef[ctr.ConstrName]=ctr
         
            
                 
@@ -130,19 +135,19 @@ class StageProblem():
             assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
             for in_s_name in in_state_vals:
                 in_s_val = in_state_vals[in_s_name]
-                s_lb = self.model.getVarByName(in_s_name).lb
-                s_ub = self.model.getVarByName(in_s_name).ub
+                s_lb = self.out_state_var[in_s_name].lb
+                s_ub = self.out_state_var[in_s_name].ub
                 if in_s_val < s_lb:
                     in_s_val = s_lb
                 elif in_s_val > s_ub: 
                     in_s_val = s_ub
-                self.model.getVarByName(self.states_map[in_s_name]).lb = in_s_val
-                self.model.getVarByName(self.states_map[in_s_name]).ub = in_s_val
+                self.states_map[in_s_name].lb = in_s_val
+                self.states_map[in_s_name].ub = in_s_val
             
             assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars))
             for rr in random_realization:
-                self.model.getVarByName(rr).lb = random_realization[rr]
-                self.model.getVarByName(rr).ub = random_realization[rr]   
+                self.rhs_vars_var[rr].lb = random_realization[rr]
+                self.rhs_vars_var[rr].ub = random_realization[rr]   
             self.model.update()
             setuptime = time()  - setuptime 
             
@@ -182,11 +187,11 @@ class StageProblem():
                 #    return self.solve(in_state_vals, random_realization, forwardpass, random_container, sample_path, num_cuts)
                 #if resolve == True and self.stage<=3:
                 #    print('Pass %i: resolving %i for violation %f' %(num_cuts, self.stage,violation))
-                output['out_state'] = {vname:self.model.getVarByName(vname).X for vname in self.out_state}
+                output['out_state'] = {vname:self.out_state_var[vname].X for vname in self.out_state_var}
             else:
-                output['duals'] = {cname:self.model.getConstrByName(cname).Pi for cname in self.ctrsForDuals}
+                output['duals'] = {cname:self.ctrsForDualsRef[cname].Pi for cname in self.ctrsForDuals}
                 output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
-                output['dual_obj_rhs_noice'] = sum(self.model.getVarByName(self.ctrRHSvName[ctr_name]).UB* output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
+                output['dual_obj_rhs_noice'] = sum(self.rhs_vars_var[self.ctrRHSvName[ctr_name]].UB*output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
         else:
             print('Not optimal sub')
@@ -242,12 +247,13 @@ class StageProblem():
         for in_state in in_states:
             if '[' in in_state:
                 sindex = in_state.index('[')
-                self.states_map[in_state] = in_state[:sindex-1]+in_state[sindex:]
-                self.states_map[in_state[:sindex-1]+in_state[sindex:]] = in_state
+                #self.model.getVarByName(
+                self.states_map[in_state] = self.model.getVarByName(in_state[:sindex-1]+in_state[sindex:])
+                self.states_map[in_state[:sindex-1]+in_state[sindex:]] = self.model.getVarByName(in_state)
             else:
                 sindex = in_state.index('0')
-                self.states_map[in_state] = in_state[:sindex]+in_state[sindex+1:]
-                self.states_map[in_state[:sindex]+in_state[sindex+1:]] = in_state
+                self.states_map[in_state] = self.model.getVarByName(in_state[:sindex]+in_state[sindex+1:])
+                self.states_map[in_state[:sindex]+in_state[sindex+1:]] = self.model.getVarByName(in_state)
                 
         
     def get_out_state_var(self, in_state):
@@ -256,7 +262,7 @@ class StageProblem():
         given a in state variable name of the next
         stage.
         '''
-        return self.states_map[in_state]
+        return self.states_map[in_state].VarName
         #=======================================================================
         # sindex = in_state.index('[')
         # newkey = in_state[:sindex-1]+in_state[sindex:]
