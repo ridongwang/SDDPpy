@@ -40,11 +40,11 @@ if __name__ == '__main__':
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_inner_solver=PhilpottInnerDROSolver, set_type = DistRobust.L1_NORM , radius = r_dro, data_random_container=rnd_container_data)
     lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])                                                              
     
-    save_path = hydro_path+'/Output/Phi_Dual/%s_LBS.pickle' %(instance_name)
+    save_path = hydro_path+'/Output/Phi_Primal/%s_LBS.pickle' %(instance_name)
     write_object_results(save_path, (algo.instance, lbs))
     
     sim_result = algo.simulate_policy(rnd_container_oos)
-    save_path = hydro_path+'/Output/Phi_Dual/%s_OOS.pickle' %(instance_name)
+    save_path = hydro_path+'/Output/Phi_Primal/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
     report_stats(sim_result.sims_ub)
     del(algo)
