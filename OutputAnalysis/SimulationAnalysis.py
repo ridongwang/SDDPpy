@@ -162,7 +162,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
     #===========================================================================
     
 
-def plot_sim_results(sim_results, plot_path, N, excel_file = True):
+def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     '''
     Plot out-of-sample simulation results
     '''
@@ -175,32 +175,32 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
-    if r[0]==0:
-        ev = [np.mean(sim_results[0].sims_ub) for _ in r]
-        axarr.semilogx(r,ev, color='blue', label='SP Mean')
-        ev_median = [np.median(sim_results[0].sims_ub) for _ in r]
-        axarr.semilogx(r,ev_median, color='blue',linestyle='--', label='SP Median')
-        ev90 = [np.percentile(sim_results[0].sims_ub,q=90) for _ in r]
-        axarr.semilogx(r,ev90, color='blue', linestyle='--', dashes=(3, 1),  label='SP 10-90')
-        ev10 = [np.percentile(sim_results[0].sims_ub,q=10) for _ in r]
-        axarr.semilogx(r,ev10, color='blue', linestyle='--', dashes=(3, 1))
+    q_plot = 99
+    ev = [np.mean(sp_sim.sims_ub) for _ in r]
+    axarr.semilogx(r,ev, color='blue', label='SP Mean')
+    ev_median = [np.median(sp_sim.sims_ub) for _ in r]
+    axarr.semilogx(r,ev_median, color='blue',linestyle='--', label='SP Median')
+    ev90 = [np.percentile(sp_sim.sims_ub,q=q_plot) for _ in r]
+    axarr.semilogx(r,ev90, color='blue', linestyle='--', dashes=(3, 1),  label='SP %i-%i' %(100-q_plot,q_plot))
+    ev10 = [np.percentile(sp_sim.sims_ub,q=100-q_plot) for _ in r]
+    axarr.semilogx(r,ev10, color='blue', linestyle='--', dashes=(3, 1))
         
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
     p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
     p80 = [np.percentile(sr.sims_ub, q=80)   for sr in sim_results]
-    p10 = [np.percentile(sr.sims_ub, q=10)   for sr in sim_results]
-    p90 = [np.percentile(sr.sims_ub, q=90)   for sr in sim_results]
+    p10 = [np.percentile(sr.sims_ub, q=q_plot)   for sr in sim_results]
+    p90 = [np.percentile(sr.sims_ub, q=100-q_plot)   for sr in sim_results]
     p95 = [np.percentile(sr.sims_ub, q=95)   for sr in sim_results]
     p5 = [np.percentile(sr.sims_ub, q=5)   for sr in sim_results]
     p99 = [np.percentile(sr.sims_ub, q=99)   for sr in sim_results]
     p1 = [np.percentile(sr.sims_ub, q=1)   for sr in sim_results]
     
-    axarr.semilogx(r,mean, color='black', label='Mean')
-    axarr.semilogx(r,median, color='black',linestyle='--', label='Median')
-    axarr.semilogx(r,p20, color='red', linestyle='--', dashes=(1, 1),label='20-80')
-    axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
-    axarr.semilogx(r,p10, color='red', linestyle='--', dashes=(3, 1),label='10-90')
+    axarr.semilogx(r,mean, color='black', label='DR Mean')
+    axarr.semilogx(r,median, color='black',linestyle='--', label='DR Median')
+    #axarr.semilogx(r,p20, color='red', linestyle='--', dashes=(1, 1),label='20-80')
+    #axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
+    axarr.semilogx(r,p10, color='red', linestyle='--', dashes=(3, 1),label='DR %i-%i' %(100-q_plot,q_plot))
     axarr.semilogx(r,p90, color='red', linestyle='--', dashes=(3, 1))
     #===========================================================================
     #axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
@@ -217,14 +217,14 @@ def plot_sim_results(sim_results, plot_path, N, excel_file = True):
     #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
     # Major ticks every 20, minor ticks every 5
-    min_val = -68000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
-    max_val = -60000#np.round(np.max(p99)+0.01*np.abs(np.max(p1))) + 100
+    min_val = -85000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
+    max_val = -40000    
     major_r = 1000#np.abs(max_val-min_val)/10
     minor_r = 100#np.abs(max_val-min_val)/50
     major_ticks = np.arange(min_val, max_val, major_r)
     minor_ticks = np.arange(min_val, max_val, minor_r)
     #===========================================================================
-    # axarr.set_ylim(min_val, max_val)
+    axarr.set_ylim(min_val, max_val)
     # axarr.set_yticks(major_ticks)
     # axarr.set_yticks(minor_ticks, minor=True)
     #===========================================================================
@@ -448,14 +448,20 @@ if __name__ == '__main__':
         print(path_to_files,file_n)
         sampling = kwargs['sampling']
         cut_type = kwargs['cut_type']
+        dw_sampling = 'None' if kwargs['dw_sam']==None else kwargs['dw_sam']
+        max_time = kwargs['max_time']
+        n =  kwargs['n']
+        print(path_to_files)
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
-            #print(file_n in f ,  f[-6:]=='pickle' , '%s_OOS' %(sampling) ,  cut_type in f)
-            if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(sampling) in f and  cut_type in f:
+            if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(dw_sampling) in f and  '%s_%s' %(cut_type,sampling) in f and 'Time%i' %(max_time) in f and dw_sampling in f:
                 print(f)
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
+        sp_file = 'Hydro_R10_AR1_T12_N%i_%i_I100001' %(n,n)
+        sp_sim = pickle.load(open('%s%s%s%i%s' %('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/',sp_file,'_Time',max_time,'_SP_MC_ES_OOS.pickle'), 'rb'))
+        
         #Sort experiments
         if 'radius' in sim_results[0].instance['risk_measure_params']:
             sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
@@ -471,9 +477,9 @@ if __name__ == '__main__':
             print(sim_results[0].instance)
             raise 'Unknown dro params'
         alg_type = 'Primal' if 'Primal' in path_to_files else 'Dual'
-        plot_path = '%s%s_%s_%s_%s.pdf' %(path_to_files,file_n ,alg_type,cut_type,sampling)
+        plot_path = '%s%s_%s_%s_%s_%s_Time%i.pdf' %(path_to_files,file_n ,alg_type,cut_type,sampling,dw_sampling,max_time)
         N = kwargs['N']
-        plot_sim_results(sim_results, plot_path, N)
+        plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file=False)
     elif plot_type == 'LBS':
         experiment_files = list(positional_args)
         lbs_by_r = {}
@@ -544,7 +550,3 @@ if __name__ == '__main__':
         
     else:
         raise 'Not identified plot'
-    
-    
-    
-    
