@@ -66,7 +66,7 @@ def random_builder(valley_chain):
         rc.append(rv_t)
         for (i,r) in enumerate(valley_chain):
             if t>0:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), r.inflows)
+                re = rv_t.addRandomElememnt('innovations[%i]' %(i), r.inflows[:,t])
             else:
                 re = rv_t.addRandomElememnt('innovations[%i]' %(i), [0.0])
             rndVectors.append(rv_t)
@@ -287,10 +287,10 @@ def load_hydro_data(approach, dus_type):
         
         
     from InstanceGen.ReservoirChainGen import read_instance
-    prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
-    hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
+    prices = [10+round(5*np.sin(1.14*(x-2)),2) for x in range(0,T)]
+    hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR0.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
-    RHSnoise_density = hydro_instance.RHS_noise[0:nr] #Total of 10,000 samples
+    RHSnoise_density = hydro_instance.RHS_noise[0:nr, : , 0:T] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
     valley_turbines  = Turbine([50, 60, 70], [55, 65, 70])
     
@@ -348,6 +348,7 @@ def load_hydro_data(approach, dus_type):
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
     
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
+
     def rnd_builder_n_train():
         return random_builder(valley_chain)
     
