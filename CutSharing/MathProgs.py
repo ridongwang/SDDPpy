@@ -211,9 +211,31 @@ class StageProblem():
     
     def print_stage_res_summary(self):
         strout = ''
-        for v in self.model.getVars():
-            if 'generation' in v.varname or 'inflow[1' in v.varname or 'reservoir_level[1' in v.varname:
-                strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
+        #=======================================================================
+        # for v in self.model.getVars():
+        #     if 'generation' in v.varname or 'inflow[1' in v.varname or 'reservoir_level[1' in v.varname:
+        #         strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
+        #=======================================================================
+        strout = '======== Stage %s , Gen: %10.2f=========\n' %(self.stage,self.model.getVarByName('generation').X)
+        for r in range(10):
+            v=self.model.getVarByName('inflow[%i,1]' %r)
+            strout = strout + '+%10.3f; ' %(v.X)
+        strout += '\n'
+        for r in range(10):
+            v=self.model.getVarByName('pour[%i]' %r)
+            strout = strout + '+%10.3f; ' %(v.X)
+        strout += '\n'
+        for r in range(10):
+            v=self.model.getVarByName('outflow[%i]' %r)
+            strout = strout + '-%10.3f; ' %(v.X)
+        strout += '\n'
+        for r in range(10):
+            v=self.model.getVarByName('spill[%i]' %r)
+            strout = strout + '-%10.3f; ' %(v.X)
+        strout += '\n'
+        for r in range(10):
+            v=self.model.getVarByName('reservoir_level[%i]' %r)
+            strout = strout + '=%10.3f; ' %(v.X)
         print(strout)
     
     def print_theta(self):
