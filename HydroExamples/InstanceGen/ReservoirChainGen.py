@@ -27,7 +27,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
         - Innovations of the autoregressive process
     '''
     np.random.seed(0)
-    season = 52
+    season = 12
     R_matrices = {t:{l:{i:{} for i in range(num_reservoirs)} for l in range(1,lag+1)} for t in range(0,T)}
     for t in range(T):
         for l in range(1,lag+1):
@@ -37,7 +37,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                         if (t<season):
                             #var = 0.2 if i>num_reservoirs/2 else 0.6
                             #R_matrices[t][l][i][i-j]=np.random.normal(0, var) #for nr=10  experiments
-                            R_matrices[t][l][i][i-j]=np.random.normal(0, 0.5) #for nr=30  experiments
+                            R_matrices[t][l][i][i-j]=0*np.random.normal(0, 0.5) #for nr=30  experiments
                             #R_matrices[t][l][i][i-j]=np.random.normal(0.1, (1.0/(lag*up_stream_dep+1)))
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-var,var)
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-1/(up_stream_dep+lag),1/(up_stream_dep+lag)) #for nr=100
@@ -142,10 +142,10 @@ if __name__ == '__main__':
     
     nr = 30
     ud = 1
-    for lag in [1]:#range(1,2):
+    for lag in []:#range(1,2):
         file_name_path = hydro_path+'/data/hydro_rnd_instance_R%i_UD%i_T120_LAG%i_OUT10K_AR.pkl' %(nr,ud,lag)
         print(file_name_path)
         with open(file_name_path, 'wb') as output:
             instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=120, lag = lag, num_outcomes=10000,  simulate=False)   
             pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
-    #instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=120, lag = 1, num_outcomes= 10000,  simulate= True)   
+    instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=48, lag = 1, num_outcomes= 10000,  simulate= True)   
