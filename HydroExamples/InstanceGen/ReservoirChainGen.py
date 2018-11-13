@@ -133,7 +133,7 @@ def read_instance(file_name = 'hydro_rnd_instance_R200_UD1_T120_LAG1_OUT10K_AR.p
 
 if __name__ == '__main__':
     #===========================================================================
-    # hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR.pkl' , lag=1)
+    # hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR0.pkl' , lag=1)
     # matrix = hydro_instance.ar_matrices
     # RHSnoise_density = hydro_instance.RHS_noise
     # inflow_t0 = hydro_instance.inital_inflows
