@@ -37,7 +37,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                         if (t<season):
                             #var = 0.2 if i>num_reservoirs/2 else 0.6
                             #R_matrices[t][l][i][i-j]=np.random.normal(0, var) #for nr=10  experiments
-                            R_matrices[t][l][i][i-j]=0*np.random.normal(0, 0.5) #for nr=30  experiments
+                            R_matrices[t][l][i][i-j]=np.random.normal(0, 0.5) #for nr=30  experiments
                             #R_matrices[t][l][i][i-j]=np.random.normal(0.1, (1.0/(lag*up_stream_dep+1)))
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-var,var)
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-1/(up_stream_dep+lag),1/(up_stream_dep+lag)) #for nr=100
@@ -71,11 +71,11 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
     #===========================================================================
     RHS_noise = np.zeros(shape=(num_reservoirs,num_outcomes,T))
     for t in range(T):
-        mean_t = np.array([1.5 - round(1.5 * np.sin(1.14 * (t - i)), 2) for i in range(num_reservoirs)])
-        sig_t = np.array([0.1 + round(0.1 * np.sin(1.14 * (t - i)), 2) for i in range(num_reservoirs)])
+        mean_t = np.array([1.0 - round(1.5 * np.sin(1.14 * (t - 2)), 2) for i in range(num_reservoirs)])
+        sig_t = np.array([0.3 + round(0.1 * np.sin(1.14 * (t - 2)), 2) for i in range(num_reservoirs)])
         
         mu_s = np.random.uniform(mean_t-0.5,mean_t+0.5,num_reservoirs)
-        sig_s = np.random.uniform(sig_t,sig_t+0.7,num_reservoirs)
+        sig_s = np.random.uniform(sig_t,sig_t+0.1,num_reservoirs)
         print(mu_s[:10])
         for i in range(num_reservoirs):
             if t<season:
@@ -163,6 +163,6 @@ if __name__ == '__main__':
         file_name_path = hydro_path+'/data/hydro_rnd_instance_R%i_UD%i_T120_LAG%i_OUT10K_AR0.pkl' %(nr,ud,lag)
         print(file_name_path)
         with open(file_name_path, 'wb') as output:
-            instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=120, lag = lag, num_outcomes=10000,  simulate=False)   
+            instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=24, lag = lag, num_outcomes=10000,  simulate=False)   
             pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
     #instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=48, lag = 1, num_outcomes= 10000,  simulate= True)   
