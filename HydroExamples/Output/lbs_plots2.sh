@@ -35,7 +35,7 @@ plot_type=0
 if [ $plot_type -eq 0 ]
 then
 iters=_I100001
-for n in 5
+for n in {5,10,30}
 do
 for tmax in 600
 do
@@ -45,20 +45,19 @@ do
 for dw_sam in None
 do
 	#Discrete Wasserstein
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=DS --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=ES --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=DS --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_primal --plot_type=OOS --sampling=ES --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
 	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_dual --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_dual --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_dual --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
 	#Phi divergence
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=DS --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=ES --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_dual --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_dual --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
-	
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=DS --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_primal --plot_type=OOS --sampling=ES --cut_type=SC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_dual --plot_type=OOS --sampling=DS --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
+#	python /Users/dduque/Dropbox/WORKSPACE/SDDP/OutputAnalysis/SimulationAnalysis.py  --exp_file=$rootname$n$dest_n$iters --path_to_files=$ptf_phi_dual --plot_type=OOS --sampling=ES --cut_type=MC --N=$n --max_time=$tmax --dw_sam=$dw_sam --n=$n
 done
 done
 done
