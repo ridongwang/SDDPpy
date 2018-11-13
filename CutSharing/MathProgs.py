@@ -216,7 +216,7 @@ class StageProblem():
         #     if 'generation' in v.varname or 'inflow[1' in v.varname or 'reservoir_level[1' in v.varname:
         #         strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
         #=======================================================================
-        strout = '======== Stage %s , Gen: %10.2f=========\n' %(self.stage,self.model.getVarByName('generation').X)
+        strout = '======== Stage %s , HydroGen: %10.2f,  Thermal Gen %10.2f =========\n' %(self.stage,self.model.getVarByName('generation').X, self.model.getVarByName('thermal_gen').X)
         for r in range(10):
             v=self.model.getVarByName('inflow[%i,1]' %r)
             strout = strout + '+%10.3f; ' %(v.X)
