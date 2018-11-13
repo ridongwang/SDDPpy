@@ -175,7 +175,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
-    q_plot = 99
+    q_plot = 90
     ev = [np.mean(sp_sim.sims_ub) for _ in r]
     axarr.semilogx(r,ev, color='blue', label='SP Mean')
     ev_median = [np.median(sp_sim.sims_ub) for _ in r]
