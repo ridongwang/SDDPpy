@@ -165,7 +165,7 @@ def model_builder(stage, valley_chain):
     #Dispatched
     for (i,r) in enumerate(valley_chain):
         m.addConstr(quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots)))<= 1, 'dispatchCtr[%i]' %(i))
-    #Objective
+    #Objective 
     objfun = -prices[stage]*generation + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + 10*thermal
     m.setObjective(objfun, GRB.MINIMIZE)
     m.update()
