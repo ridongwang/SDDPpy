@@ -113,6 +113,7 @@ def model_builder(stage, valley_chain):
     pour = m.addVars(nr, lb=0, obj=0, vtype=GRB.CONTINUOUS, name='pour')
     generation = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='generation')
     thermal = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='thermal_gen')
+    thermal_cost = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='thermal_gen')
     dispatch = m.addVars([(ri,tf)  for (ri,r) in enumerate(valley_chain) for tf in range(0,len(r.turbine.flowknots))],
                         lb=0,ub=1,obj=0,vtype= GRB.CONTINUOUS,name='dispatch')
     if stage == 0:
@@ -151,13 +152,14 @@ def model_builder(stage, valley_chain):
     #===========================================================================
          
     m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + inflow[0,1] - outflow[0] - spill[0] + pour[0], 'balance[0]')
-    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance') 
+    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in [0,5]), 'balance') 
+    m.addConstr(reservoir_level[5] ==  reservoir_level0[5] + inflow[5,1] - outflow[5] - spill[5] + pour[5], 'balance[5]')
     
     
     #Hydro generation
     m.addConstr(generation==quicksum(r.turbine.powerknots[level] * dispatch[i,level] for (i,r) in enumerate(valley_chain) for level in range(0,len(r.turbine.flowknots))), 'generationCtr')
     #Demand
-    m.addConstr(generation+thermal>=500)
+    m.addConstr(generation+thermal>=400)
     # Flow out
     for (i,r) in enumerate(valley_chain):
         m.addConstr(outflow[i] == quicksum(r.turbine.flowknots[level] * dispatch[i, level] for level in range(len(r.turbine.flowknots))), 'outflowCtr[%i]' %(i))
@@ -165,8 +167,13 @@ def model_builder(stage, valley_chain):
     #Dispatched
     for (i,r) in enumerate(valley_chain):
         m.addConstr(quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots)))<= 1, 'dispatchCtr[%i]' %(i))
+    #Thermal cost ctr
+    m.addConstr(thermal_cost >= 10*thermal)
+    m.addConstr(thermal_cost >= 20*thermal-500)
+    m.addConstr(thermal_cost >= 30*thermal-2500)
+    
     #Objective 
-    objfun = -prices[stage]*generation + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + 10*thermal
+    objfun = -prices[stage]*generation + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + thermal_cost
     m.setObjective(objfun, GRB.MINIMIZE)
     m.update()
     if stage == -1:
@@ -289,9 +296,9 @@ def load_hydro_data(approach, dus_type):
         
         
     from InstanceGen.ReservoirChainGen import read_instance
-    prices = [10+round(5*np.sin(1.14*(x-2)),2) for x in range(0,T)]
+    prices = [10+round(5*np.sin(0.5*(x-2)),2) for x in range(0,T)]
     print(prices)
-    hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T120_LAG1_OUT10K_AR0.pkl' , lag = lag)
+    hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T24_LAG1_OUT10K_AR1.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr, : , 0:T] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
@@ -349,7 +356,7 @@ def load_hydro_data(approach, dus_type):
     else:
         instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.7f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
-    
+    print(RHSnoise)
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
 
     def rnd_builder_n_train():
