@@ -218,6 +218,10 @@ class StageProblem():
         #=======================================================================
         strout = '======== Stage %s , HydroGen: %10.2f,  Thermal Gen %10.2f =========\n' %(self.stage,self.model.getVarByName('generation').X, self.model.getVarByName('thermal_gen').X)
         for r in range(10):
+            v=self.model.getVarByName('innovations[%i]' %r)
+            #strout = strout + '+%10.3f; ' %(v.X)
+        #strout += '\n'
+        for r in range(10):
             v=self.model.getVarByName('inflow[%i,1]' %r)
             strout = strout + '+%10.3f; ' %(v.X)
         strout += '\n'
