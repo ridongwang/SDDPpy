@@ -1,16 +1,16 @@
 #!/bin/bash
 # Copy file from crunch
-copy_files=0
+copy_files=1
 if [ $copy_files -eq 1 ]
 then
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Primal/Hydro_R10_AR1_T12_N*Time6*None_OOS.pickle ./DW_Primal/
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N*Time6*None_OOS.pickle ./DW_Dual/
-#scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Primal/Hydro_R10_AR1_T12_N*Time6*None_OOS.pickle ./Phi_Primal/
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Dual/Hydro_R10_AR1_T12_N*Time*None_OOS.pickle ./Phi_Dual/
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Dual/Hydro_R10_AR1_T12_N*Time*PRIMAL*None_OOS.pickle ./Phi_Primal/
+#scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Primal/Hydro_R10_AR1_T12_N*Time12*None_OOS.pickle ./DW_Primal/
+scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N*Time300*None_OOS.pickle ./DW_Dual/
+# scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Primal/Hydro_R10_AR1_T12_N*Time12*None_OOS.pickle ./Phi_Primal/
+# scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Dual/Hydro_R10_AR1_T12_N*Time*None_OOS.pickle ./Phi_Dual/
+# scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Dual/Hydro_R10_AR1_T12_N*Time*PRIMAL*None_OOS.pickle ./Phi_Primal/
 #scp Phi_Dual/Hydro_R*PhiVar_PRIMAL_* Phi_Primal/
 #rm Phi_Dual/Hydro_R*PhiVar_PRIMAL_*
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N*Time6*SP*_OOS.pickle ./DW_Dual/
+scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N*Time300*SP*_OOS.pickle ./DW_Dual/
 fi
 
 
@@ -35,9 +35,9 @@ plot_type=0
 if [ $plot_type -eq 0 ]
 then
 iters=_I100001
-for n in {5,10,30}
+for n in {5,10,20,30}
 do
-for tmax in 600
+for tmax in 300
 do
 for dw_ext in 1
 do
