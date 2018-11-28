@@ -53,7 +53,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                             R_matrices[t][l][i][i-j]=R_matrices[t-season][l][i][i-j]
     print(R_matrices[2][1])
     np.random.seed(1234)
-    inflow_t0 = [[np.random.uniform(5,20) for i in range(num_reservoirs)] for l in range(lag+1)] 
+    inflow_t0 = [[np.random.uniform(5,40) for i in range(num_reservoirs)] for l in range(lag+1)] 
     
     print(np.array(inflow_t0)[:,0:5])
     #===========================================================================
@@ -71,12 +71,12 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
     #===========================================================================
     RHS_noise = np.zeros(shape=(num_reservoirs,num_outcomes,T))
     for t in range(T):
-        mean_t = np.array([1.0 - round(0.5 * np.sin(0.5 * (t - 2)), 2) for i in range(num_reservoirs)])
-        sig_t = np.array([1 + round(0.7 * np.sin(0.5 * (t - 2-i)), 2) for i in range(num_reservoirs)])
+        mean_t =  np.array([1 - round(0.2 * np.sin(0.5 * (t - 2)), 2) for i in range(num_reservoirs)])
+        sig_t = np.array([1 - round(0.7 * np.sin(0.5 * (t - 2)), 2) for i in range(num_reservoirs)])
         
         
         print(mean_t[0], '  ' , sig_t[0])
-        mu_s = np.random.uniform(mean_t * 0, mean_t * 1.5, num_reservoirs)
+        mu_s = np.random.uniform(mean_t , mean_t, num_reservoirs)
         sig_s = np.random.uniform(sig_t*0.5 , sig_t, num_reservoirs)
         #loc_s = np.exp(mu_s+0.5*sig_s**2)
         for i in range(num_reservoirs):
@@ -102,7 +102,7 @@ def simulate_AR_model(R_matrices, inflow_t0, RHS_noise, T, nr, lag):
     num_reservoirs = nr
     plt.figure(1)
     num_reps = 200
-    res_ref  = [0, 2, 3, 5, 6,7, 9]
+    res_ref  = [0, 5, 8]
     np.random.seed(res_ref)
     mean_res_ref = {rr:np.zeros((T)) for rr in res_ref}
     for replica in range(num_reps):
@@ -161,11 +161,11 @@ if __name__ == '__main__':
     matrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise
     inflow_t0 = hydro_instance.inital_inflows
-    simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 12, 10, 1)
+    #simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 12, 10, 1)
     
     nr = 30
     ud = 1
-    for lag in []:#range(1,2):
+    for lag in [1]:#range(1,2):
         file_name_path = hydro_path+'/data/hydro_rnd_instance_R%i_UD%i_T24_LAG%i_OUT10K_AR1.pkl' %(nr,ud,lag)
         print(file_name_path)
         with open(file_name_path, 'wb') as output:
