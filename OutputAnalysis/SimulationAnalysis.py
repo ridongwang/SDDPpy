@@ -217,8 +217,8 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
     # Major ticks every 20, minor ticks every 5
-    min_val = -85000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
-    max_val = -40000    
+    min_val = -34000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
+    max_val = -20000    
     major_r = 1000#np.abs(max_val-min_val)/10
     minor_r = 100#np.abs(max_val-min_val)/50
     major_ticks = np.arange(min_val, max_val, major_r)
@@ -455,7 +455,7 @@ if __name__ == '__main__':
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
-            if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(dw_sampling) in f and  '%s_%s' %(cut_type,sampling) in f and 'Time%i' %(max_time) in f and dw_sampling in f:
+            if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(dw_sampling) in f and  '%s_%s' %(cut_type,sampling) in f and 'Time%i_' %(max_time) in f and dw_sampling in f:
                 print(f)
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
