@@ -224,7 +224,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     major_ticks = np.arange(min_val, max_val, major_r)
     minor_ticks = np.arange(min_val, max_val, minor_r)
     #===========================================================================
-    axarr.set_ylim(min_val, max_val)
+    #axarr.set_ylim(min_val, max_val)
     # axarr.set_yticks(major_ticks)
     # axarr.set_yticks(minor_ticks, minor=True)
     #===========================================================================
