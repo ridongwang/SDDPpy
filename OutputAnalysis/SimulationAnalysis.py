@@ -459,7 +459,7 @@ if __name__ == '__main__':
                 print(f)
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
-        sp_file = 'Hydro_R10_AR1_T12_N%i_%i_I100001' %(n,n)
+        sp_file = 'Hydro_R10_AR1_T24_N%i_%i_I100001' %(n,n)
         sp_sim = pickle.load(open('%s%s%s%i%s' %('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/',sp_file,'_Time',max_time,'_SP_MC_ES_OOS.pickle'), 'rb'))
         
         #Sort experiments

@@ -1,22 +1,22 @@
 #!/bin/bash
 # Copy file from crunch
-copy_files=1
+copy_files=0
 if [ $copy_files -eq 1 ]
 then
 #scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Primal/Hydro_R10_AR1_T12_N*Time12*None_OOS.pickle ./DW_Primal/
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N*Time300*None_OOS.pickle ./DW_Dual/
+scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T24_N*Time300*None_OOS.pickle ./DW_Dual/
 # scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Primal/Hydro_R10_AR1_T12_N*Time12*None_OOS.pickle ./Phi_Primal/
 # scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Dual/Hydro_R10_AR1_T12_N*Time*None_OOS.pickle ./Phi_Dual/
 # scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/Phi_Dual/Hydro_R10_AR1_T12_N*Time*PRIMAL*None_OOS.pickle ./Phi_Primal/
 #scp Phi_Dual/Hydro_R*PhiVar_PRIMAL_* Phi_Primal/
 #rm Phi_Dual/Hydro_R*PhiVar_PRIMAL_*
-scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T12_N*Time300*SP*_OOS.pickle ./DW_Dual/
+scp dduque@crunch.osl.northwestern.edu:/home/dduque/dduque_projects/SDDP/HydroExamples/Output/DW_Dual/Hydro_R10_AR1_T24_N*Time600*SP*_OOS.pickle ./DW_Dual/
 fi
 
 
 rootdirPrimal=DW_Primal/
 rootdirDual=DW_Dual/
-rootname=Hydro_R10_AR1_T12_N
+rootname=Hydro_R10_AR1_T24_N
 midnamePrimSC=_I100001ESS_PRIMAL_SC_DW_
 midnamePrimMC=_I100001ESS_PRIMAL_MC_DW_
 midnameDual=_I100001ESS_DUAL_MC_DW_
@@ -37,7 +37,7 @@ then
 iters=_I100001
 for n in {5,10,20,30}
 do
-for tmax in 300
+for tmax in 600
 do
 for dw_ext in 1
 do
