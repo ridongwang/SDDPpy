@@ -23,19 +23,7 @@ class CutPool():
             self.cut_selector = SlackBasedCutSelector()
         else:
             self.cut_selector = None
-            
         
-        
-    
-    def addCut1(self, model, new_cut):
-        if new_cut.recomputable_rhs:
-            self._requires_ajustment = True
-        assert new_cut.name not in self.pool
-        self.pool[new_cut.name] = new_cut
-        self.pool_order.append(new_cut.name)
-        if self.cut_selector != None:
-            self.cut_selector.select_cuts(model, self.pool, self.pool_order)
-    
     def addCuts(self, model, new_cuts):
         '''
         Add cut to the pool manager
@@ -117,8 +105,6 @@ class Cut():
         self.cut_id = cut_id
         self.outcome = outcome
 
-        
-
     def adjust_intercept(self, omega_last):
         '''
         omega_last (1D ndarray): current ancestor scenario.
@@ -181,6 +167,7 @@ class LastCutsSelector(CutSelector):
                 else:
                     iters +=1
                     self.active.append(self.active.pop(0))
+
                 if iters >= len(self.active):
                     '''
                     Cardinality of selected cuts can't be satisfied.
@@ -190,8 +177,6 @@ class LastCutsSelector(CutSelector):
                     #options['max_cuts_last_cuts_selector'] = int(1.5*options['max_cuts_last_cuts_selector'])
                     #print('max_cuts_last_cuts_selector -- > ' , self.cut_capacity , a)
                     break
-                
-                
         
 
 class  SlackBasedCutSelector(CutSelector):
@@ -200,10 +185,11 @@ class  SlackBasedCutSelector(CutSelector):
     statistics on the cuts are updated to keep track of the
     number of times a cut is non-binding and is removed from
     the problem after a threshold is exceeded. 
-    
+
     Attributes:
         active_stats (dict of (str,int)): count the number of times a cut 
             has been non-binding.
+
     '''
     def __init__(self):
         super().__init__()
@@ -268,4 +254,39 @@ class  SlackBasedCutSelector(CutSelector):
                 self.cut_capacity = int(1.5*self.cut_capacity)
                 #options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
                 print('max_cuts_slack_based -- > ' , self.cut_capacity ,a)
-            
+
+#    FLORIDA BRANCH - TODO: Delete this when version is stable again
+#===============================================================================
+# =======
+# 
+#     def select_cuts(self, model, pool, pool_order):
+#         #Check unactive cuts
+#         new_unactive = []
+#         for u in self.unactive:
+#             if pool[u].lhs.getValue()  < pool[u].rhs:
+#                 self.active.append(u)
+#                 pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
+#                 pool[u].is_active = True
+#                 self.active_stats[u] = 0
+#             else: 
+#                 new_unactive.append(u)
+#         self.unactive = new_unactive
+#         new_active = []
+#         for a in self.active:
+#             if (a in self.active_stats) == False:
+#                 self.active_stats[a]=0
+#             
+#             if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
+#                 self.active_stats[a] +=1
+#             
+#             if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
+#                 pool[a].is_active = False
+#                 model.remove(pool[a].ctrRef)
+#                 pool[a].ctrRef = None
+#                 self.unactive.append(a)
+#             else:
+#                 new_active.append(a)
+#         self.active = new_active
+#         
+# >>>>>>> SDDP_DSC_FLORIDA
+#===============================================================================

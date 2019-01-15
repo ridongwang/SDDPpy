@@ -66,8 +66,10 @@ options['max_cuts_last_cuts_selector'] = 2000
 options['slack_cut_selector'] = 1E-4
 options['slack_num_iters_cut_selector'] = 200
 options['max_cuts_slack_based'] = options['max_cuts_last_cuts_selector']
+options['max_stage_with_oracle'] = 10
+options['max_iters_oracle_ini'] = 10
+options['max_cuts_last_cuts_selector'] =1000
 options['cut_selector'] = None
-
 
 def gurobiStatusCodeToStr( intstatus ):
     if intstatus == 1:
