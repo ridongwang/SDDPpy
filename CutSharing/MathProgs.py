@@ -38,7 +38,12 @@ class StageProblem():
         self.stage = stage
         self._last_stage = last_stage 
         self.model_stats = MathProgStats()
-        model, in_states, out_states, rhs_vars = model_builder(stage)
+        model_setup =  model_builder(stage)
+        if len(model_setup) == 4:
+            model, in_states, out_states, rhs_vars =model_setup
+            out_in_map = None
+        else:
+            model, in_states, out_states, rhs_vars, out_in_map = model_setup
         
         self.model = model
         self.risk_measure = risk_measure
@@ -46,6 +51,7 @@ class StageProblem():
         self.multicut = multicut
         
         self.states_map = {}  
+        self.out_in_map = out_in_map
         self.in_state = [x for x in in_states]
         self.out_state = [x for x in out_states]
         self.out_state_var  = {x:model.getVarByName(x) for x in out_states}
