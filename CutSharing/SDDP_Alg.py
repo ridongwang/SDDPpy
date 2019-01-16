@@ -55,7 +55,13 @@ class SDDP(object):
         
         #Attributes to store oracle subproblems
         self.stage_oracle_subproblems = []
-        
+    
+    @classmethod
+    def create_SDDP(cls, t_ini, T_max, sddp_alg):
+        '''
+        Create an instance of SDDP based on a previews sddp_alg
+        '''
+        print(cls)    
         
     def createStageProblems(self, T, model_builder, lower_bound, risk_measure, **risk_measure_params):
         '''
@@ -82,7 +88,7 @@ class SDDP(object):
         oracle_model_builder (func): Function that builds an auxiliary problem that serves as 
             an oracle of the value function. The signature of the oracle builder is:
                 oracle_model_builder params:
-                    t (int): stage of the oracle (i.e., oracler represents cost from stage t to T).
+                    t (int): stage of the oracle (i.e., oracle represents cost from stage t to T).
                     T (int): number of stages
         '''
         T = len(self.stage_problems)
