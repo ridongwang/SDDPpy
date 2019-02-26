@@ -38,7 +38,6 @@ class SDDP(object):
         self.stage_problems = []
         self.random_container = random_builder()
         self.createStageProblems(T, model_builder, lower_bound, risk_measure, **risk_measure_params)
-        
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params, 'alg_options':alg_options}
         
         
@@ -80,6 +79,14 @@ class SDDP(object):
             sp = StageProblem(i,model_builder, next_stage_rnd_vector, lower_bound,  last_stage=(i==T-1), risk_measure=sp_risk_measure, multicut = alg_options['multicut'])
             self.stage_problems.append(sp)
 
+        #Setup RHS noise of the stage problem 0
+        rnd_vec_0 = self.random_container[0]
+        stage_problem_0 = self.stage_problems[0]
+        for vn in stage_problem_0.rhs_vars_var:
+            v = stage_problem_0.rhs_vars_var[vn]
+            v.lb = rnd_vec_0.outcomes[0][vn]
+            v.ub = rnd_vec_0.outcomes[0][vn]
+             
 
 
     def add_oracle_model(self, oracle_model_builder):
@@ -378,9 +385,9 @@ class SDDP(object):
             Compute statistical upper bounds
             ==================================================
             '''
-            if self.pass_iteration % 100 == 0 and self.pass_iteration>-1:
-                #pass
-                self.compute_statistical_bound(alg_options['in_sample_ub'])
+            if self.pass_iteration % 10 == 0 and self.pass_iteration>-1:
+                pass
+                #self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
                 # if self.pass_iteration>3:
                 #     self.compute_upper_bound_opt_sim_knitro(100)

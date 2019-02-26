@@ -161,14 +161,16 @@ if __name__ == '__main__':
     matrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise
     inflow_t0 = hydro_instance.inital_inflows
-    #simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 12, 10, 1)
+    simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 24, 10, 1)
     
-    nr = 30
-    ud = 1
-    for lag in []:#range(1,2):
-        file_name_path = hydro_path+'/data/hydro_rnd_instance_R%i_UD%i_T24_LAG%i_OUT10K_AR1.pkl' %(nr,ud,lag)
-        print(file_name_path)
-        with open(file_name_path, 'wb') as output:
-            instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=24, lag = lag, num_outcomes=10000,  simulate=False)   
-            pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
-    instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=24, lag = 1, num_outcomes= 10000,  simulate= True)   
+    #===========================================================================
+    # nr = 30
+    # ud = 1
+    # for lag in []:#range(1,2):
+    #     file_name_path = hydro_path+'/data/hydro_rnd_instance_R%i_UD%i_T24_LAG%i_OUT10K_AR1.pkl' %(nr,ud,lag)
+    #     print(file_name_path)
+    #     with open(file_name_path, 'wb') as output:
+    #         instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=24, lag = lag, num_outcomes=10000,  simulate=False)   
+    #         pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
+    # instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=24, lag = 1, num_outcomes= 10000,  simulate= True)   
+    #===========================================================================
