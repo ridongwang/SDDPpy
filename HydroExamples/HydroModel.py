@@ -139,8 +139,9 @@ def model_builder(stage, valley_chain):
     #Constraints
     #AR model for the stage
     R_t = Rmatrix[stage] #For lag 1 only!
-    m.addConstrs((inflow[i,1] == sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i]) + innovations[i] for i in range(0,len(valley_chain)) ), 'AR_model_%i' %(1))
-    m.addConstrs((inflow[i,l] == inflow0[i,l-1]  for l in range(2,lag+1) for i in range(0,len(valley_chain))), 'AR_model')
+    if stage > 0: #AR model starts from stage 2
+        m.addConstrs((inflow[i,1] == sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i]) + innovations[i] for i in range(0,len(valley_chain)) ), 'AR_model_%i' %(1))
+        m.addConstrs((inflow[i,l] == inflow0[i,l-1]  for l in range(2,lag+1) for i in range(0,len(valley_chain))), 'AR_model')
     
     
     #R_t = Rmatrix[stage] #For lag 1 only!
@@ -159,7 +160,7 @@ def model_builder(stage, valley_chain):
     #Hydro generation
     m.addConstr(generation==quicksum(r.turbine.powerknots[level] * dispatch[i,level] for (i,r) in enumerate(valley_chain) for level in range(0,len(r.turbine.flowknots))), 'generationCtr')
     #Demand
-    m.addConstr(generation+thermal>=400)
+    m.addConstr(generation+thermal>=500)
     # Flow out
     for (i,r) in enumerate(valley_chain):
         m.addConstr(outflow[i] == quicksum(r.turbine.flowknots[level] * dispatch[i, level] for level in range(len(r.turbine.flowknots))), 'outflowCtr[%i]' %(i))
