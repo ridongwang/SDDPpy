@@ -89,8 +89,9 @@ def model_builder(stage, valley_chain):
         - Inflows of previous time periods (according to the lag)
     '''
     #Reservoir level
+    lbs_res_lev = [0 for r in valley_chain] if 0<stage<T-1  else  [r.min for r in valley_chain]
     reservoir_level = m.addVars(nr, 
-                                lb = [r.min for r in valley_chain], 
+                                lb = lbs_res_lev, 
                                 ub = [r.max for r in valley_chain], 
                                 obj = 0,
                                 vtype=GRB.CONTINUOUS, 
@@ -151,10 +152,13 @@ def model_builder(stage, valley_chain):
     # m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + sum(R_t[l][0][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][0]) + innovations[0] - outflow[0] - spill[0] + pour[0], 'balance[0]')
     # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
     #===========================================================================
-         
-    m.addConstr(reservoir_level[0] ==  reservoir_level0[0] + inflow[0,1] - outflow[0] - spill[0] + pour[0], 'balance[0]')
-    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in [0,5]), 'balance') 
-    m.addConstr(reservoir_level[5] ==  reservoir_level0[5] + inflow[5,1] - outflow[5] - spill[5] + pour[5], 'balance[5]')
+    
+    Ini_group = [0,3,5]  #Reservoirs which are first in the chain 
+    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in [0,3,6]), 'balance') 
+    
+    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in [0,3,6]), 'balance') 
+    
+ 
     
     
     #Hydro generation
@@ -171,7 +175,7 @@ def model_builder(stage, valley_chain):
     #Thermal cost ctr
     m.addConstr(thermal_cost >= 10*thermal)
     m.addConstr(thermal_cost >= 20*thermal-500)
-    m.addConstr(thermal_cost >= 50*thermal-5000)
+    m.addConstr(thermal_cost >= 50*thermal-3500)
     
     #Objective 
     objfun = -prices[stage]*generation + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + thermal_cost
