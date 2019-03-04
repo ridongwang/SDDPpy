@@ -247,7 +247,7 @@ class SDDP(object):
             sp_cut = self.stage_problems[t-1]
             cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
-              
+            sp_cut.remove_oracle_bounds()
             #DELLETE OR FIX LATER
             try:
                 # TODO: ONLY ADD TYHE cuts for the corresponding original  support point form where the new support came. 
@@ -263,6 +263,9 @@ class SDDP(object):
                 pass
             # END EDITS
             #del(outputs_per_outcome)
+            
+            
+            
         
         #pool0 = self.stage_problems[0].cut_pool
         #print('% active cuts in 0: ',  (len(pool0.cut_selector.active)/len(pool0.pool)), ' of ' , len(pool0.pool))
@@ -341,9 +344,11 @@ class SDDP(object):
     def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default', dynamic_sampling = False):
         reset_all_rnd_gen()
         lbs = []
+        
         self.ini_time = time.time()
         self.init_out(instance_name)
-        
+        T = len(self.stage_problems)
+        bounded_problem = False
         '''
         ==================================================
             Initialization pass

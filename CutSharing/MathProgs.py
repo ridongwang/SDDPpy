@@ -22,7 +22,7 @@ class StageProblem():
     '''
 
 
-    def __init__(self, stage, model_builder, next_stage_rnd_vector, lower_bound=-1E8,  last_stage=False, risk_measure = Expectation(), multicut = False):
+    def __init__(self, stage, model_builder, next_stage_rnd_vector, lower_bound,  last_stage=False, risk_measure = Expectation(), multicut = False):
         '''
         Constructor
         
@@ -75,13 +75,13 @@ class StageProblem():
             num_outcomes = next_stage_rnd_vector.outcomes_dim 
             if multicut == False: #Gen single cut variable
                 self.oracle = self.model.addVars(1,lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                #self.orcale_bound  = self.model.addConstr((self.oracle[0]>=lower_bound), "oracle_bound")
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
                 self.oracle = self.model.addVars(num_outcomes, lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
-              
                 
         
         #Construct dictionaries of (constraints,variables) key where duals are needed
@@ -196,6 +196,10 @@ class StageProblem():
                 output['duals'] = {cname:self.ctrsForDualsRef[cname].Pi for cname in self.ctrsForDuals}
                 output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
                 output['dual_obj_rhs_noice'] = sum(self.rhs_vars_var[self.ctrRHSvName[ctr_name]].UB*output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
+                try: 
+                    print("%.25e" % (self.orcale_bound.Pi*self.oracle[0].lb))
+                except:
+                    pass
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
         else:
             print('Not optimal sub')
@@ -378,8 +382,11 @@ class StageProblem():
             print("ERROR IN get_stage_objective_value function")
             return 0
             
-            
-    
+    def remove_oracle_bounds(self):
+        for k in self.oracle:
+            self.oracle[k].lb = -GRB.INFINITY        
+        self.model.update()
+        
     def __repr__(self):
         return "SP(%i): #cuts:%i" %(self.stage,len(self.cut_pool.pool))
 

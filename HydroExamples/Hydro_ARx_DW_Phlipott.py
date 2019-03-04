@@ -3,6 +3,9 @@ Created on Sep 12, 2018
 
 @author: dduque
 '''
+from __init__ import import_SDDP
+import_SDDP() 
+
 from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
     SLACK_BASED_CUT_SELECTOR
 from CutSharing.SDDP_Alg import SDDP

@@ -175,7 +175,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
-    q_plot = 90
+    q_plot = 80
     ev = [np.mean(sp_sim.sims_ub) for _ in r]
     axarr.semilogx(r,ev, color='blue', label='SP Mean')
     ev_median = [np.median(sp_sim.sims_ub) for _ in r]
@@ -217,14 +217,14 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
     # Major ticks every 20, minor ticks every 5
-    min_val = -34000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
-    max_val = -20000    
+    min_val = -28000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
+    max_val = -27000    
     major_r = 1000#np.abs(max_val-min_val)/10
     minor_r = 100#np.abs(max_val-min_val)/50
     major_ticks = np.arange(min_val, max_val, major_r)
     minor_ticks = np.arange(min_val, max_val, minor_r)
     #===========================================================================
-    #axarr.set_ylim(min_val, max_val)
+    axarr.set_ylim(min_val, max_val)
     # axarr.set_yticks(major_ticks)
     # axarr.set_yticks(minor_ticks, minor=True)
     #===========================================================================
@@ -455,14 +455,14 @@ if __name__ == '__main__':
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
-            print(f)
-            print(file_n in f , f[-6:]=='pickle' , '%s_OOS' %(dw_sampling) in f ,  '%s_%s' %(cut_type,sampling) in f , 'Time%i_' %(max_time) in f , dw_sampling in f)
+            #print(f)
+            #print(file_n in f , f[-6:]=='pickle' , '%s_OOS' %(dw_sampling) in f ,  '%s_%s' %(cut_type,sampling) in f , 'Time%i_' %(max_time) in f , dw_sampling in f)
             if file_n in f and f[-6:]=='pickle' and '%s_OOS' %(dw_sampling) in f and  '%s_%s' %(cut_type,sampling) in f and 'Time%i_' %(max_time) in f and dw_sampling in f:
                 print(f)
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
 
-        sp_file = 'Hydro_R10_AR1_T24_N%i_%i_I100001' %(n,n)
+        sp_file = 'Hydro_R10_AR1_T3_N%i_%i_I100001' %(n,n)
         sp_sim = pickle.load(open('%s%s%s%i%s' %('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/',sp_file,'_Time',max_time,'_SP_MC_ES_OOS.pickle'), 'rb'))
         
         #Sort experiments

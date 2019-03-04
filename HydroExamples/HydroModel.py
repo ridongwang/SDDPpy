@@ -56,7 +56,7 @@ initial_inflow = None
 #valley_chain = None
 #valley_chain_oos = None
 prices = None
-Water_Penalty = 1000
+Water_Penalty = 10000
 
 def random_builder(valley_chain):
     rc = RandomContainer()
@@ -153,18 +153,15 @@ def model_builder(stage, valley_chain):
     # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
     #===========================================================================
     
-    Ini_group = [0,3,5]  #Reservoirs which are first in the chain 
-    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in [0,3,6]), 'balance') 
-    
-    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in [0,3,6]), 'balance') 
-    
- 
+    Ini_group = [0,3,6]  #Reservoirs which are first in the chain 
+    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in Ini_group), 'balance') 
+    m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in Ini_group), 'balance') 
     
     
     #Hydro generation
     m.addConstr(generation==quicksum(r.turbine.powerknots[level] * dispatch[i,level] for (i,r) in enumerate(valley_chain) for level in range(0,len(r.turbine.flowknots))), 'generationCtr')
     #Demand
-    m.addConstr(generation+thermal>=500)
+    m.addConstr(generation+thermal>=600)
     # Flow out
     for (i,r) in enumerate(valley_chain):
         m.addConstr(outflow[i] == quicksum(r.turbine.flowknots[level] * dispatch[i, level] for level in range(len(r.turbine.flowknots))), 'outflowCtr[%i]' %(i))
@@ -178,7 +175,7 @@ def model_builder(stage, valley_chain):
     m.addConstr(thermal_cost >= 50*thermal-3500)
     
     #Objective 
-    objfun = -prices[stage]*generation + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + thermal_cost
+    objfun = -prices[stage]*(generation+thermal) + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + thermal_cost
     m.setObjective(objfun, GRB.MINIMIZE)
     m.update()
     if stage == -1:
@@ -301,7 +298,7 @@ def load_hydro_data(approach, dus_type):
         
         
     from InstanceGen.ReservoirChainGen import read_instance
-    prices = [10+round(5*np.sin(0.5*(x-2)),2) for x in range(0,T)]
+    prices = [18+round(5*np.sin(0.5*(x-2)),2) for x in range(0,T)]
     print(prices)
     hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T24_LAG1_OUT10K_AR1.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
