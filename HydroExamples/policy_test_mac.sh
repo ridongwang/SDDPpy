@@ -1,8 +1,12 @@
-for c in {-2,-1,0,1}
+
+## python ./Hydro_ARx_SP.py --T=3 --R=10 --max_iter=100001 --max_time=20 --sim_iter=1000 --lines_freq=10 --dro_r=0 --lag=1 --N=3 --dynamic_sampling=False --multicut=True
+for c in {-2,-1,0,1,2}
 do
-		for b in {1,1.5,2,3,4,5,6,7,8,9}
+		for b in {1,5}
         do
 			r=$(bc -l <<< "$b*(10^$c)")
-			python ./Hydro_ARx_DW_DUAL.py --T=12 --R=10 --max_iter=10000 --max_time=301 --sim_iter=500 --lines_freq=10 --dro_r=$r --lag=1 --N=5 --dynamic_sampling=True --multicut=True
+			python ./Hydro_ARx_DW_Phlipott.py --T=3 --R=10 --max_iter=100001 --max_time=20 --sim_iter=1000 --lines_freq=10 --dro_r=$r --lag=1 --N=3 --dynamic_sampling=False --multicut=True
+			python ./Hydro_ARx_DW_DUAL.py --T=3 --R=10 --max_iter=100001 --max_time=20 --sim_iter=1000 --lines_freq=10 --dro_r=$r --lag=1 --N=3 --dynamic_sampling=False --multicut=True
+
         done
 done

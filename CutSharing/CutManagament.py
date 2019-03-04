@@ -90,15 +90,16 @@ class Cut():
         #=======================================================================
         
         #Reference to the constraint
-        
-        if self.lhs.getValue() > self.rhs + ZERO_TOL:
+        if self.lhs.getValue() > self.rhs:# + ZERO_TOL :
             self.is_active  = False
+            self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
         else:
             #print('New cuts: ' , self.name)
             self.is_active  = True
             #Reference to the constraint
             self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
-            #print(self.lhs.getValue()  , self.rhs)
+            
+            #print(self.name, self.lhs , '>='  , self.rhs)
         
         #==============================#
         # Extra information for dual retrieval

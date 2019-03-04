@@ -118,6 +118,7 @@ class Expectation(AbstracRiskMeasure):
         cut_gradiend_coeff = self._current_cut_gradient
         cut_intercepts = None
         if sp.multicut == False:
+            #print(sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)), ' ' , sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state))
             cut_intercepts = [sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
         else:
             cut_intercepts = [0  for _ in srv.outcomes]
@@ -265,7 +266,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
         model.update()
         #Update objective function
-        new_objective = sp.cx  + self.radius*gamma_var + quicksum(nsrv_org.p[i]*nu_var[i] for i in range(n_outcomes_org))
+        new_objective = sp.cx + self.radius*gamma_var + quicksum(nsrv_org.p[i]*nu_var[i] for i in range(n_outcomes_org))
         model.setObjective(new_objective, GRB.MINIMIZE)
         
         #Add extra constraints associated to the primal representation of the uncertainty set
@@ -574,7 +575,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         
         #Using the same notation as in Kuhn paper
         #lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
-        lambda_var =  model.addVar(lb=-1E10,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+        lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
         self.lambda_var = lambda_var 
         #nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
         # Oracle variables are used in placed of nu_var
@@ -1037,7 +1038,8 @@ class DistRobust(AbstracRiskMeasure):
         if sp.multicut == False:
             model.setObjective(sp.cx + sp.oracle.sum())
         else:
-            self.global_oracle =model.addVar(lb=-1E8, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='GlobalOracle[%i]' %(sp.stage))
+            self.global_oracle = model.addVar(lb=-GRB.INFINITY, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='GlobalOracle[%i]' %(sp.stage))
+            model.addConstr(lhs=self.global_oracle - quicksum(sp.oracle[i] for i in sp.oracle)/len(sp.oracle), sense=GRB.GREATER_EQUAL, rhs=0, name='unicut[ini]')
             model.setObjective(sp.cx + self.global_oracle)
             
 
