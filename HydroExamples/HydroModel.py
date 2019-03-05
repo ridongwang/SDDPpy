@@ -153,7 +153,7 @@ def model_builder(stage, valley_chain):
     # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
     #===========================================================================
     
-    Ini_group = [0,3,6]  #Reservoirs which are first in the chain 
+    Ini_group = [0]#,3,6]  #Reservoirs which are first in the chain 
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in Ini_group), 'balance') 
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in Ini_group), 'balance') 
     
