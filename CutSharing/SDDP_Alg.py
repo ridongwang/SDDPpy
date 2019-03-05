@@ -30,7 +30,7 @@ class SDDP(object):
     Implementation of Stochastic Dual Dynamic Programming algorithm.
     '''
     
-    def __init__(self, T, model_builder,  random_builder, lower_bound=-1E8, risk_measure = Expectation, **risk_measure_params):
+    def __init__(self, T, model_builder,  random_builder, lower_bound=-1E10, risk_measure = Expectation, **risk_measure_params):
         '''
         Constructor
         '''

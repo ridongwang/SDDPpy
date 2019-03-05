@@ -79,7 +79,7 @@ class StageProblem():
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
-                self.oracle = self.model.addVars(num_outcomes, lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(num_outcomes, lb=lower_bound*0.001, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
                 
@@ -194,12 +194,11 @@ class StageProblem():
                 output['out_state'] = {vname:self.out_state_var[vname].X for vname in self.out_state_var}
             else:
                 output['duals'] = {cname:self.ctrsForDualsRef[cname].Pi for cname in self.ctrsForDuals}
-                output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
                 output['dual_obj_rhs_noice'] = sum(self.rhs_vars_var[self.ctrRHSvName[ctr_name]].UB*output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
-                try: 
-                    print("%.25e" % (self.orcale_bound.Pi*self.oracle[0].lb))
-                except:
-                    pass
+                if random_container[self.stage].is_independent == False:
+                    #Cut duals are only used to recompute the cut 
+                    output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
+                
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
         else:
             print('Not optimal sub')
