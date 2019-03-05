@@ -97,8 +97,8 @@ class Expectation(AbstracRiskMeasure):
             cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
             for ctr in sp_next.ctrsForDuals:
                 for (i,o) in enumerate(srv.outcomes):
-                    #pi_bar[i][ctr] = srv.p[i]*soo[i]['duals'][ctr]
-                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
+                    pi_bar[i][ctr] = srv.p[i]*soo[i]['duals'][ctr]
+                    #pi_bar[i][ctr] = soo[i]['duals'][ctr]
             
             for (c,vi) in sp_next.ctrInStateMatrix:
                 vo = sp_next.get_out_state_var(vi)
@@ -124,15 +124,15 @@ class Expectation(AbstracRiskMeasure):
         else:
             cut_intercepts = [0  for _ in srv.outcomes]
             for (i,o) in enumerate(srv.outcomes):
-                #cut_intercepts[i] = srv.p[i]*soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
+                cut_intercepts[i] = srv.p[i]*soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
+                #cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
         return cut_intercepts
 
     
     def update_cut_intercept(self):
         pass
     def modify_stage_problem(self, sp,  model, n_outcomes):
-        model.setObjective(sp.cx + sp.oracle.sum()/len(sp.oracle))
+        model.setObjective(sp.cx + sp.oracle.sum())#/len(sp.oracle))
     def forward_pass_updates(self, *args, **kwargs):
         'Default is False for sub resolve and 0 for constraint violations'
         return False, 0 

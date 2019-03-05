@@ -304,6 +304,16 @@ def load_hydro_data(approach, dus_type):
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr, : , 0:T] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
+    
+    import codecs, json 
+    json_file_obj = {}
+    json_file_obj['ar_matrix'] = hydro_instance.ar_matrices
+    json_file_obj['RHS_noise'] = hydro_instance.RHS_noise[0:nr, [8192, 4098] , 0:T].tolist()
+    json_file_obj['initial_inflow'] = initial_inflow.tolist()
+    
+    file_path = "./HydroModelInput.json" ## your path variable
+    json.dump(json_file_obj, codecs.open(file_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4) ### this saves the array in .json format
+    
     valley_turbines  = Turbine([50, 60, 70], [55, 65, 70])
     
     N_data = N
