@@ -62,11 +62,12 @@ class StageProblem():
         # Optimizer parameters
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
-        self.model.params.Method = 1
+        self.model.params.Method = 3
+        #self.model.params.NumericFocus = 
         #self.model.params.PreDual = 1
         #self.model.params.Presolve = 0
         #self.model.params.DualReductions = 0
-        #self.model.params.FeasibilityTol = 1E-9
+        self.model.params.FeasibilityTol = 1E-9
         
        
         # Add oracle var(s) and include it in the objective
@@ -163,7 +164,19 @@ class StageProblem():
             cutupdatetime = time()  - cutupdatetime  
     
         #Solve LP
+        
+        #=======================================================================
+        if (forwardpass and num_cuts<10) or (forwardpass and num_cuts > 0 and num_cuts % 100 == 0):
+            print('Reset ', self.stage)
+            self.model.reset()
+        #=======================================================================
         lp_time = time()
+        
+        #=======================================================================
+        # if (self.stage == 3 and forwardpass and num_cuts == 300):
+        #     print('Hello')
+        #     self.model.write('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
+        #=======================================================================
         
         self.model.optimize()
       
