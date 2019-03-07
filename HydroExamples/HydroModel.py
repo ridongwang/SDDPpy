@@ -168,7 +168,7 @@ def model_builder(stage, valley_chain):
     
     #Dispatched
     for (i,r) in enumerate(valley_chain):
-        m.addConstr(quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots)))<= 1, 'dispatchCtr[%i]' %(i))
+        m.addConstr(quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots))) <= 1, 'dispatchCtr[%i]' %(i))
     #Thermal cost ctr
     m.addConstr(thermal_cost >= 10*thermal)
     m.addConstr(thermal_cost >= 20*thermal-500)
@@ -305,14 +305,16 @@ def load_hydro_data(approach, dus_type):
     RHSnoise_density = hydro_instance.RHS_noise[0:nr, : , 0:T] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]
     
-    import codecs, json 
-    json_file_obj = {}
-    json_file_obj['ar_matrix'] = hydro_instance.ar_matrices
-    json_file_obj['RHS_noise'] = hydro_instance.RHS_noise[0:nr, [8192, 4098] , 0:T].tolist()
-    json_file_obj['initial_inflow'] = initial_inflow.tolist()
-    
-    file_path = "./HydroModelInput.json" ## your path variable
-    json.dump(json_file_obj, codecs.open(file_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4) ### this saves the array in .json format
+    #===========================================================================
+    # import codecs, json 
+    # json_file_obj = {}
+    # json_file_obj['ar_matrix'] = hydro_instance.ar_matrices
+    # json_file_obj['RHS_noise'] = hydro_instance.RHS_noise[0:nr, [8192, 4098] , 0:T].tolist()
+    # json_file_obj['initial_inflow'] = initial_inflow.tolist()
+    # 
+    # file_path = "./HydroModelInput.json" ## your path variable
+    # json.dump(json_file_obj, codecs.open(file_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4) ### this saves the array in .json format
+    #===========================================================================
     
     valley_turbines  = Turbine([50, 60, 70], [55, 65, 70])
     
