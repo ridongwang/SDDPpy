@@ -3,7 +3,7 @@ Created on Nov 17, 2017
 
 @author: dduque
 '''
-from gurobipy import GRB, Model, tupledict
+from gurobipy import GRB, Model, tupledict, read
 from CutSharing.CutManagament import Cut
 from CutSharing.CutManagament import CutPool
 import CutSharing 
@@ -62,12 +62,15 @@ class StageProblem():
         # Optimizer parameters
         self.model.params.OutputFlag = 0
         self.model.params.Threads = CutSharing.options['grb_threads']
-        self.model.params.Method = 3
-        #self.model.params.NumericFocus = 
-        #self.model.params.PreDual = 1
+        self.model.params.Method = 1
+        #self.model.params.NumericFocus = 3
+        #self.model.params.PreDual = 0
         #self.model.params.Presolve = 0
+        #self.model.params.Crossover = 1
+        #self.model.params.CrossoverBasis = 1 
+        #self.model.params.NormAdjust = 2
         #self.model.params.DualReductions = 0
-        self.model.params.FeasibilityTol = 1E-9
+        #self.model.params.FeasibilityTol = 1E-9
         
        
         # Add oracle var(s) and include it in the objective
@@ -80,7 +83,7 @@ class StageProblem():
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
-                self.oracle = self.model.addVars(num_outcomes, lb=lower_bound*0.001, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(num_outcomes, lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
             self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
                 
@@ -157,7 +160,7 @@ class StageProblem():
                 self.rhs_vars_var[rr].lb = random_realization[rr]
                 self.rhs_vars_var[rr].ub = random_realization[rr]   
             self.model.update()
-            setuptime = time()  - setuptime 
+            setuptime = time() - setuptime 
             
             cutupdatetime = time()   
             self.update_cut_pool(random_container, random_realization)
@@ -166,20 +169,34 @@ class StageProblem():
         #Solve LP
         
         #=======================================================================
-        if (forwardpass and num_cuts<10) or (forwardpass and num_cuts > 0 and num_cuts % 100 == 0):
-            print('Reset ', self.stage)
-            self.model.reset()
+        #=======================================================================
+        # if (forwardpass and 0<num_cuts<10) or (forwardpass and num_cuts > 0 and num_cuts % 100 == 0):
+        #     #print('Reset ', self.stage)
+        #     #self.model.reset()
+        #     pass
+        #=======================================================================
         #=======================================================================
         lp_time = time()
         
-        #=======================================================================
-        # if (self.stage == 3 and forwardpass and num_cuts == 300):
-        #     print('Hello')
-        #     self.model.write('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
-        #=======================================================================
         
+        #self.model.optimize()
+        
+        #=======================================================================
+        # if (self.stage == 2 and forwardpass and num_cuts == 8):
+        #     self.model.reset()
+        #     self.model.params.OutputFlag = 1
+        #     self.model.optimize()
+        #     self.model.params.OutputFlag = 0
+        #     self.model.write('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
+        #     self.model.write('HydepModel_%i_%i.lp' %(self.stage,num_cuts))
+        #     print('Hello  ', self.model.ObjVal, '  ', GRB.VERSION_MAJOR, GRB.VERSION_MINOR) 
+        #=======================================================================
+        #self.model.write('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
+        #self.model = read('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
+        self.model.update()
+        #self.model.reset()
         self.model.optimize()
-      
+        
         lp_time = time() - lp_time
         data_mgt_time = time()
         output = {}
@@ -236,28 +253,33 @@ class StageProblem():
         #     if 'generation' in v.varname or 'inflow[1' in v.varname or 'reservoir_level[1' in v.varname:
         #         strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
         #=======================================================================
-        strout = '======== Stage %s , HydroGen: %10.2f,  Thermal Gen %10.2f =========\n' %(self.stage,self.model.getVarByName('generation').X, self.model.getVarByName('thermal_gen').X)
-        for r in range(10):
+        strout = '======== Stage %s %.3f, HydroGen: %10.2f,  Thermal Gen %10.2f =========\n' %(self.stage,self.cx.getValue(), self.model.getVarByName('generation').X, self.model.getVarByName('thermal_gen').X)
+        strout += 'oracle %16.3f; ' %(self.model.ObjVal-self.cx.getValue())
+        for r in range(3):
+            v=self.model.getVarByName('reservoir_level[%i]' %r)
+            strout = strout + '>%10.3f; ' %(v.X)
+        strout += '\n'
+        for r in range(2):
             v=self.model.getVarByName('innovations[%i]' %r)
             #strout = strout + '+%10.3f; ' %(v.X)
-        #strout += '\n'
-        for r in range(10):
+        strout += '\n'
+        for r in range(3):
             v=self.model.getVarByName('inflow[%i,1]' %r)
             strout = strout + '+%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(10):
+        for r in range(3):
             v=self.model.getVarByName('pour[%i]' %r)
             strout = strout + '+%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(10):
+        for r in range(3):
             v=self.model.getVarByName('outflow[%i]' %r)
             strout = strout + '-%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(10):
+        for r in range(3):
             v=self.model.getVarByName('spill[%i]' %r)
             strout = strout + '-%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(10):
+        for r in range(3):
             v=self.model.getVarByName('reservoir_level[%i]' %r)
             strout = strout + '=%10.3f; ' %(v.X)
         print(strout)

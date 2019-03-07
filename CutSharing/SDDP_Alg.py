@@ -131,7 +131,7 @@ class SDDP(object):
             '''
             IO and stats updates
             '''
-            if simulation and alg_options['outputlevel']>=3:
+            if not simulation and alg_options['outputlevel']>=3:
                 sp.print_stage_res_summary()
             if i == 0:       
                 self.lb = sp_output['objval']
@@ -391,8 +391,8 @@ class SDDP(object):
             ==================================================
             '''
             if self.pass_iteration % 10 == 0 and self.pass_iteration>-1:
-                pass
-                #self.compute_statistical_bound(alg_options['in_sample_ub'])
+                #pass
+                self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
                 # if self.pass_iteration>3:
                 #     self.compute_upper_bound_opt_sim_knitro(100)
