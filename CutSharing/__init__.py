@@ -58,6 +58,7 @@ options['lines_freq']  = 1
 options['n_sample_paths'] = 1
 options['grb_threads'] = 1
 options['multicut'] = False
+options['expected_value_problem'] = False
 options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
@@ -99,7 +100,13 @@ def load_algorithm_options():
     if 'lines_freq' not in kwargs:
         options['lines_freq'] = int(options['max_iter']/10)
     
-    
+
+def check_options_concitency():  
+    '''
+    Check consistency of the algorithm options. 
+    '''
+    if options['expected_value_problem']:
+        assert options['multicut']==False, 'Expected value problem assumes single cut algoirthm'
 
 class not_optimal_sp(Exception):
     def __init__(self, msg):

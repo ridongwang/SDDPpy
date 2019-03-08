@@ -70,7 +70,6 @@ def random_builder(valley_chain):
             else:
                 re = rv_t.addRandomElememnt('innovations[%i]' %(i), [0.0])
             rndVectors.append(rv_t)
-    rc.preprocess_randomness()
     return rc
 
 
