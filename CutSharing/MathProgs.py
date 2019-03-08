@@ -155,7 +155,7 @@ class StageProblem():
                 self.states_map[in_s_name].lb = in_s_val
                 self.states_map[in_s_name].ub = in_s_val
             
-            assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars))
+            assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars)) + random_realization +" "+ str(self.rhs_vars)
             for rr in random_realization:
                 self.rhs_vars_var[rr].lb = random_realization[rr]
                 self.rhs_vars_var[rr].ub = random_realization[rr]   

@@ -101,11 +101,22 @@ class RandomContainer:
             
         
         
-    def preprocess_randomness(self):
+    def _preprocess_randomness(self):
         for sv in self.stage_vectors:
-            sv.preproces_randomness() 
+            sv._preproces_randomness() 
     
-    
+    def _set_outcomes_for_run(self, ev):
+        '''
+        Sets the type of outcomes according to the problem type:
+            expected value problem (single outcome per random variables)
+            stochastic problem     (multiple outcomes per random variable)
+        '''
+        for sv in self.stage_vectors:
+            if ev:
+                sv.set_ev_problem()
+            else:
+                sv.set_stochastic_problem()
+            
     
     def enumerate_scenarios(self,):
         all_scenarios = []
@@ -170,13 +181,14 @@ class StageRandomVector:
         self.p_copy = None
         self.is_independent = True 
         self._first_element_added = False
+        self._is_expected_value_problem = False
       
     def addRandomElememnt(self, ele_name, ele_outcomes , ele_prob=None):
         if self._first_element_added == False:
             self.outcomes_dim = len(ele_outcomes)
             for e in ele_outcomes:
                 self.outcomes.append({})
-                self.ev_outcomes.append({})   
+            self.ev_outcomes = {}   
             self._first_element_added = True
             if type(ele_prob) == list or type(ele_prob) == np.ndarray:
                 self.p = np.array(ele_prob)
@@ -189,12 +201,19 @@ class StageRandomVector:
         
         self.vector_order[ele_name] = len(self.elements)#Defines order as it gets built. 
         self.elements[ele_name] = RandomElement(self.stage, ele_name , ele_outcomes)
-        e_mean = np.mean(ele_outcomes)
+        self.ev_outcomes[ele_name] = np.mean(ele_outcomes)
         for (i,e) in enumerate(ele_outcomes):
             self.outcomes[i][ele_name] = e
-            self.ev_outcomes[i][ele_name] = e_mean
+            
         return self.elements[ele_name]
     
+    def set_ev_problem(self):
+        self.outcomes = [self.ev_outcomes]
+        self._is_expected_value_problem = True
+    def set_stochastic_problem(self):
+        if self._is_expected_value_problem:
+            self.outcomes = self.outcomes_copy
+        
     def modifyOutcomesProbabilities(self, newp):
         assert len(newp)==len(self.outcomes)
         self.p = np.array(newp)
@@ -227,7 +246,7 @@ class StageRandomVector:
     def getOutcomes(self, sample_path, ev):
         if self.is_independent:
             if ev ==True:
-                return self.ev_outcomes
+                return [self.ev_outcomes]
             return self.outcomes
         else:
             if ev ==True:
@@ -255,7 +274,11 @@ class StageRandomVector:
             xi[self.vector_order[ele]] = self.outcomes[outcome_index][ele]
         return xi
         
-    def preproces_randomness(self):
+    def _preproces_randomness(self):
+        '''
+        Creates a copy of the input random vector and process autoregressive matrices
+        '''
+        self.outcomes_copy = copy.deepcopy(self.outcomes)
         vec_dim = len(self.elements)
         R_matrices = [] #Auto reg matrices
         created = False

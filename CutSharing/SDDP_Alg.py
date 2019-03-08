@@ -17,6 +17,7 @@ from OutputAnalysis.SimulationAnalysis import SimResult
 from CutSharing.RandomnessHandler import ScenarioTree
 from CutSharing.RiskMeasures import Expectation
 from CutSharing.WassersteinWorstCase import solve_worst_case_expectation
+from CutSharing import check_options_concitency
 
 
 
@@ -37,6 +38,7 @@ class SDDP(object):
         self.stats = Stats()
         self.stage_problems = []
         self.random_container = random_builder()
+        self.random_container._preprocess_randomness()
         self.createStageProblems(T, model_builder, lower_bound, risk_measure, **risk_measure_params)
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params, 'alg_options':alg_options}
         
@@ -247,7 +249,7 @@ class SDDP(object):
             sp_cut = self.stage_problems[t-1]
             cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
-            sp_cut.remove_oracle_bounds()
+            #sp_cut.remove_oracle_bounds()
             #DELLETE OR FIX LATER
             try:
                 # TODO: ONLY ADD TYHE cuts for the corresponding original  support point form where the new support came. 
@@ -341,11 +343,29 @@ class SDDP(object):
         return False
     
     
-    def run(self, pre_sample_paths = None, ev = False, instance_name = 'Default', dynamic_sampling = False):
-        reset_all_rnd_gen()
-        lbs = []
+    def run(self, pre_sample_paths = None, instance_name = 'Default'):
+        '''
+        Starts the optimization routine in SDDP
         
+        Args:
+            pre_sample_paths(list of dict): list that contains sample paths 
+                to run in the forward passes
+            instance_name (string): descriptive name of the problem
+        '''
+        
+        '''
+        ==================================================
+            Algorithm setup
+        ==================================================
+        '''
         self.ini_time = time.time()
+        reset_all_rnd_gen()
+        check_options_concitency()
+        ev = alg_options['expected_value_problem'] 
+        self.random_container._set_outcomes_for_run(ev)
+        dynamic_sampling = alg_options['dynamic_sampling']
+        
+        lbs = []
         self.init_out(instance_name)
         T = len(self.stage_problems)
         bounded_problem = False
