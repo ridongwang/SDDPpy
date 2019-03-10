@@ -250,6 +250,7 @@ class SDDP(object):
             cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
             #sp_cut.remove_oracle_bounds()
+            
             #DELLETE OR FIX LATER
             try:
                 # TODO: ONLY ADD TYHE cuts for the corresponding original  support point form where the new support came. 
@@ -366,6 +367,7 @@ class SDDP(object):
         dynamic_sampling = alg_options['dynamic_sampling']
         
         lbs = []
+        self.pass_iteration = 0
         self.init_out(instance_name)
         T = len(self.stage_problems)
         bounded_problem = False
@@ -375,7 +377,6 @@ class SDDP(object):
         ==================================================
         '''
         self.run_oracle_initialization(lbs)
-        print('INI END')
         fp_time = 0
         bp_time = 0
         termination = False
