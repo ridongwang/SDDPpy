@@ -92,6 +92,8 @@ class Expectation(AbstracRiskMeasure):
             for (c,vi) in sp_next.ctrInStateMatrix:
                 vo = sp_next.get_out_state_var(vi)
                 cut_gradiend_coeff[0][vo] += pi_bar[0][c]*sp_next.ctrInStateMatrix[c,vi]
+            #print(cut_gradiend_coeff)
+            #print({vn:sum(srv.p[i]*soo[i]['RC'][vn] for (i,o) in enumerate(srv.outcomes)) for vn in soo[0]['RC']})
         else:           #Multicut
             pi_bar = [{} for _ in srv.outcomes]
             cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]

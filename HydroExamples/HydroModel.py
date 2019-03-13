@@ -16,9 +16,9 @@ from Utils.argv_parser import sys,parse_args
 from scipy.optimize import linprog
 import numpy as np
 import logging
-
-
-
+import sys
+print(sys.version_info)
+print('Gurobi: ' , GRB.VERSION_MAJOR, GRB.VERSION_MINOR )
 '''
 Objects for Hydro scheduling examples
 '''

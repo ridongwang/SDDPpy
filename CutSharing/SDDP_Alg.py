@@ -249,7 +249,7 @@ class SDDP(object):
             sp_cut = self.stage_problems[t-1]
             cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
-            #sp_cut.remove_oracle_bounds()
+            sp_cut.remove_oracle_bounds()
             
             #DELLETE OR FIX LATER
             try:
@@ -412,8 +412,8 @@ class SDDP(object):
             ==================================================
             '''
             if self.pass_iteration % 10 == 0 and self.pass_iteration>-1:
-                #pass
-                self.compute_statistical_bound(alg_options['in_sample_ub'])
+                pass
+                #self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
                 # if self.pass_iteration>3:
                 #     self.compute_upper_bound_opt_sim_knitro(100)

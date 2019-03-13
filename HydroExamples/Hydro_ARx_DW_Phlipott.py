@@ -26,7 +26,7 @@ if __name__ == '__main__':
     #options['cut_selector'] = SLACK_BASED_CUT_SELECTOR
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_inner_solver = DiscreteWassersteinInnerSolver,  radius = r_dro, norm=1, data_random_container=rnd_container_data)
 
-    lbs = algo.run(instance_name=instance_name, dynamic_sampling=options['dynamic_sampling'])
+    lbs = algo.run(instance_name=instance_name)
     
     save_path = hydro_path+'/Output/DW_Primal/%s_LBS.pickle' %(instance_name)
     write_object_results(save_path, (algo.instance, lbs))      

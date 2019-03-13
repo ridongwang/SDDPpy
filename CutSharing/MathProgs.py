@@ -65,7 +65,7 @@ class StageProblem():
         self.model.params.Method = 1
         #self.model.params.NumericFocus = 3
         #self.model.params.PreDual = 0
-        #self.model.params.Presolve = 0
+        self.model.params.Presolve = 0
         #self.model.params.Crossover = 1
         #self.model.params.CrossoverBasis = 1 
         #self.model.params.NormAdjust = 2
@@ -224,6 +224,7 @@ class StageProblem():
                 output['out_state'] = {vname:self.out_state_var[vname].X for vname in self.out_state_var}
             else:
                 output['duals'] = {cname:self.ctrsForDualsRef[cname].Pi for cname in self.ctrsForDuals}
+                output['RC'] = {vname:self.model.getVarByName(vname).RC for vname in self.in_state}
                 output['dual_obj_rhs_noice'] = sum(self.rhs_vars_var[self.ctrRHSvName[ctr_name]].UB*output['duals'][ctr_name] for ctr_name in self.ctrRHSvName)
                 if random_container[self.stage].is_independent == False:
                     #Cut duals are only used to recompute the cut 
