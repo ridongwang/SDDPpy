@@ -14,7 +14,7 @@
 #Pickle files
 *.pickle
 *.p
-
+*.pkl
 
 # Folders
 /CutSharing/__pycache__/
