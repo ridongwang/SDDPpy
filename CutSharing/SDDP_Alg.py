@@ -412,8 +412,8 @@ class SDDP(object):
             ==================================================
             '''
             if self.pass_iteration % 10 == 0 and self.pass_iteration>-1:
-                #pass
-                self.compute_statistical_bound(alg_options['in_sample_ub'])
+                pass
+                #self.compute_statistical_bound(alg_options['in_sample_ub'])
                 #===============================================================
                 # if self.pass_iteration>3:
                 #     self.compute_upper_bound_opt_sim_knitro(100)

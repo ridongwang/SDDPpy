@@ -10,9 +10,21 @@ This module generates all the random numbers required to sample.
 import numpy as np
 
 
-
+'''
+Random stream to generate forward passes in the optimization phase
+'''
 alg_rnd_gen = np.random.RandomState(0)
+
+'''
+Random stream to simulate the policy with in sample, i.e., with the data that the model was train with
+'''
 in_sample_gen = np.random.RandomState(1234)
+
+
+'''
+Random stream to simulate the policy with in sample, i.e., with the data for out-of-sample testing
+'''
+
 out_sample_gen = np.random.RandomState(1111)
 experiment_desing_gen = np.random.RandomState(1928)
 seeds = {alg_rnd_gen:0, in_sample_gen:1234, out_sample_gen:1111, experiment_desing_gen:1928}
