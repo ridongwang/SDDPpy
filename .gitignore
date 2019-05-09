@@ -1,5 +1,6 @@
 # Folder view configuration files
-.DS_Store
+*.DS_Store
+*.pydevproject
 
 # Compiled Python files
 *.pyc
@@ -8,6 +9,7 @@
 *.log
 *.lp
 *.ilp
+*.mps
 
 #Pickle files
 *.pickle
@@ -15,4 +17,5 @@
 
 
 # Folders
-
+/CutSharing/__pycache__/
+.settings/
