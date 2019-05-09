@@ -6,6 +6,13 @@
 
 # Log files
 *.log
+*.lp
+*.ilp
+
+#Pickle files
+*.pickle
+*.p
+
 
 # Folders
 
