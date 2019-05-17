@@ -166,7 +166,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     '''
     Plot out-of-sample simulation results
     '''
-    f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=300)
+    f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=200)
     r = None
     try:
         r = [sr.instance['risk_measure_params']['radius']  for sr in sim_results]
@@ -175,15 +175,15 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
-    q_plot = 80
+    q_plot = 95
     ev = [np.mean(sp_sim.sims_ub) for _ in r]
-    axarr.semilogx(r,ev, color='blue', label='SP Mean')
+    axarr.semilogx(r,ev, color='r', label='SP Mean')
     ev_median = [np.median(sp_sim.sims_ub) for _ in r]
-    axarr.semilogx(r,ev_median, color='blue',linestyle='--', label='SP Median')
+    #axarr.semilogx(r,ev_median, color='r',linestyle='--', label='SP Median')
     ev90 = [np.percentile(sp_sim.sims_ub,q=q_plot) for _ in r]
-    axarr.semilogx(r,ev90, color='blue', linestyle='--', dashes=(3, 1),  label='SP %i-%i' %(100-q_plot,q_plot))
+    axarr.semilogx(r,ev90, color='r', linestyle='--', dashes=(3, 1),  label='SP %i-%i' %(100-q_plot,q_plot))
     ev10 = [np.percentile(sp_sim.sims_ub,q=100-q_plot) for _ in r]
-    axarr.semilogx(r,ev10, color='blue', linestyle='--', dashes=(3, 1))
+    axarr.semilogx(r,ev10, color='r', linestyle='--', dashes=(3, 1))
         
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
@@ -196,12 +196,12 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     p99 = [np.percentile(sr.sims_ub, q=99)   for sr in sim_results]
     p1 = [np.percentile(sr.sims_ub, q=1)   for sr in sim_results]
     
-    axarr.semilogx(r,mean, color='black', label='DR Mean')
-    axarr.semilogx(r,median, color='black',linestyle='--', label='DR Median')
+    axarr.semilogx(r,mean, color='k', label='DRO Mean')
+    #axarr.semilogx(r,median, color='black',linestyle='--', label='DR Median')
     #axarr.semilogx(r,p20, color='red', linestyle='--', dashes=(1, 1),label='20-80')
     #axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
-    axarr.semilogx(r,p10, color='red', linestyle='--', dashes=(3, 1),label='DR %i-%i' %(100-q_plot,q_plot))
-    axarr.semilogx(r,p90, color='red', linestyle='--', dashes=(3, 1))
+    axarr.semilogx(r,p10, color='k', linestyle='--', dashes=(3, 1),label='DRO %i-%i' %(100-q_plot,q_plot))
+    axarr.semilogx(r,p90, color='k', linestyle='--', dashes=(3, 1))
     #===========================================================================
     #axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
     #axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
@@ -213,12 +213,12 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     #axarr[0].set_ylim([algo_options['opt_tol']*0.95, np.max(train_loss)])
     #axarr[1].set_ylim([0, 1])
     
-    axarr.legend(loc='best', shadow=True, fontsize='small')
+    axarr.legend(loc=1, shadow=True, fontsize='small')
     #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
     # Major ticks every 20, minor ticks every 5
-    min_val = -28000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
-    max_val = -27000    
+    min_val = 70#-28000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
+    max_val = 150#-27000    
     major_r = 1000#np.abs(max_val-min_val)/10
     minor_r = 100#np.abs(max_val-min_val)/50
     major_ticks = np.arange(min_val, max_val, major_r)
@@ -236,7 +236,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     axarr.grid(which='minor', alpha=0.2)
     axarr.grid(which='major', alpha=0.5)
     
-    axarr.yaxis.set_minor_locator(MultipleLocator(500))
+    axarr.yaxis.set_minor_locator(MultipleLocator(5))
     axarr.set_xlabel('Radius')
     axarr.set_ylabel('Out-of-sample performance')
     axarr.grid(which='minor', alpha=0.2)

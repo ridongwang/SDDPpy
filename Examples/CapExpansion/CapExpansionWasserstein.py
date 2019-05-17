@@ -67,7 +67,7 @@ def stage_prob_factory(data):
     return stage_prob_builder
 
 if __name__ == '__main__':
-    CutSharing.options['max_iter'] = 300
+    CutSharing.options['max_iter'] = 500
     CutSharing.options['multicut'] = True
     CutSharing.options['lines_freq'] = 50
     T=2 # number of stages
@@ -75,29 +75,51 @@ if __name__ == '__main__':
     Test problem
     Parameters
     '''
-    m = 20      #number of facilities
-    n=100              # number of customers
-    scen= 30         # number of scenarios
-    B=7.5*n            # budget
-    rho=10             # shortfall penalty
-    '''
-        Data generation
-    '''
-    data = Datahandler(n, m, scen, B, rho, seed=0) 
-    data_oos = Datahandler(n, m, 1000, B, rho, seed=123456) 
-    model_builder = stage_prob_factory(data)
-    random_builder = random_bulder_factory(data)
-    dro_trials = [r for r in range(5,101,5)]
-    dro_trials.extend([r for r in range(200,5001,200)])
-    #dro_trials = [10000000]
-    print(dro_trials)
+    m = 20  # number of facilities
+    n = 100  # number of customers
+    B = 7.5 * n  # budget
+    rho = 10  # shortfall penalty
     
-    if False: #solve
-        for dro_r in dro_trials:
-            instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
-            #algo_sp = SDDP(T, model_builder, random_builder)
-            algo_dro = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = dro_r, data_random_container=random_builder())
-            algo = algo_dro
+    scen = None # number of scenarios
+    for scen in [20,100]:#[5,10,30,50,100]:
+        '''
+            Data generation
+        '''
+        data = Datahandler(n, m, scen, B, rho, seed=0) 
+        data_oos = Datahandler(n, m, 1000, B, rho, seed=123456, dh=data) 
+        model_builder = stage_prob_factory(data)
+        random_builder = random_bulder_factory(data)
+        dro_trials = [r for r in range(10,100,10)]
+        dro_trials.extend([r for r in range(100,200,10)])
+        #dro_trials.extend([r for r in range(200,1000,50)])
+        #dro_trials.extend([r for r in range(1000,2001,200)])
+        dro_trials.extend([0.5,1,2,5,200,300,400,500,1000,5000])
+        dro_trials.sort()
+        #dro_trials = [10000000]
+        print(dro_trials)
+      
+        if False: #solve
+            for dro_r in dro_trials:
+                instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
+                #algo_sp = SDDP(T, model_builder, random_builder)
+                algo_dro = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = dro_r, data_random_container=random_builder())
+                #algo_dro = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_inner_solver = DiscreteWassersteinInnerSolver,  radius = dro_r, norm=1, data_random_container=random_builder())
+                algo = algo_dro
+                lbs = algo.run(instance_name=instance_name)
+                
+                save_path = './Output/%s_LBS.pickle' %(instance_name)
+                write_object_results(save_path, (algo.instance, lbs))      
+                
+                random_builder_oos  = random_bulder_factory(data_oos)
+                sim_result = algo.simulate_policy(random_builder_oos())
+                save_path = './Output/%s_OOS.pickle' %(instance_name)
+                write_object_results(save_path, sim_result)
+                report_stats(sim_result.sims_ub) 
+    
+            # Run SP   
+            instance_name = 'SP_CapExp_N%i_m%i_n%i' %(scen,m,n)
+            algo_sp = SDDP(T, model_builder, random_builder)
+            algo = algo_sp
             lbs = algo.run(instance_name=instance_name)
             
             save_path = './Output/%s_LBS.pickle' %(instance_name)
@@ -107,51 +129,37 @@ if __name__ == '__main__':
             sim_result = algo.simulate_policy(random_builder_oos())
             save_path = './Output/%s_OOS.pickle' %(instance_name)
             write_object_results(save_path, sim_result)
-            report_stats(sim_result.sims_ub) 
+            report_stats(sim_result.sims_ub)   
+        
+        
+        if True: # Plot
+            ptf='/Users/dduque/Dropbox/WORKSPACE/SDDP/Examples/CapExpansion/Output/'
+            experiment_files = os.listdir(ptf)
+            print(experiment_files)
+            sim_results = []
+            for dro_r in dro_trials:
+                instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
+                new_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
+                sim_results.append(new_sim)
+        
+            instance_name = 'SP_CapExp_N%i_m%i_n%i' %(scen,m,n)
+            sp_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
             
-        instance_name = 'SP_CapExp_N%i_m%i_n%i' %(scen,m,n)
-        algo_sp = SDDP(T, model_builder, random_builder)
-        algo = algo_sp
-        lbs = algo.run(instance_name=instance_name)
-        
-        save_path = './Output/%s_LBS.pickle' %(instance_name)
-        write_object_results(save_path, (algo.instance, lbs))      
-        
-        random_builder_oos  = random_bulder_factory(data_oos)
-        sim_result = algo.simulate_policy(random_builder_oos())
-        save_path = './Output/%s_OOS.pickle' %(instance_name)
-        write_object_results(save_path, sim_result)
-        report_stats(sim_result.sims_ub)   
-    
-    
-    if True: # Plot
-        ptf='/Users/dduque/Dropbox/WORKSPACE/SDDP/Examples/CapExpansion/Output/'
-        experiment_files = os.listdir(ptf)
-        print(experiment_files)
-        sim_results = []
-        for dro_r in dro_trials:
-            instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
-            new_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
-            sim_results.append(new_sim)
-    
-        instance_name = 'SP_CapExp_N%i_m%i_n%i' %(scen,m,n)
-        sp_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
-        
-        #Sort experiments
-        if 'radius' in sim_results[0].instance['risk_measure_params']:
-            sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
-        elif 'dro_solver_params' in  sim_results[0].instance['risk_measure_params']:
-            if 'radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
-                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
-            elif 'DUS_radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
-                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['DUS_radius'])
+            #Sort experiments
+            if 'radius' in sim_results[0].instance['risk_measure_params']:
+                sim_results.sort(key= lambda x:x.instance['risk_measure_params']['radius'])
+            elif 'dro_solver_params' in  sim_results[0].instance['risk_measure_params']:
+                if 'radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
+                    sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['radius'])
+                elif 'DUS_radius' in sim_results[0].instance['risk_measure_params']['dro_solver_params']:
+                    sim_results.sort(key= lambda x:x.instance['risk_measure_params']['dro_solver_params']['DUS_radius'])
+                else:
+                    print(sim_results[0].instance)
+                    raise 'Unknown dro params'
             else:
                 print(sim_results[0].instance)
                 raise 'Unknown dro params'
-        else:
-            print(sim_results[0].instance)
-            raise 'Unknown dro params'
-        instance_name = 'CapExp_N%i_m%i_n%i' %(scen,m,n)
-        plot_path = '%s%s.pdf' %(ptf,instance_name)
-        N = scen
-        plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file=False)
+            instance_name = 'CapExp_N%i_m%i_n%i' %(scen,m,n)
+            plot_path = '%s%s.pdf' %(ptf,instance_name)
+            N = scen
+            plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file=False)
