@@ -113,7 +113,7 @@ def model_builder(stage, valley_chain):
     pour = m.addVars(nr, lb=0, obj=0, vtype=GRB.CONTINUOUS, name='pour')
     generation = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='generation')
     thermal = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='thermal_gen')
-    thermal_cost = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='thermal_gen')
+    thermal_cost = m.addVar(lb=0, obj=0, vtype=GRB.CONTINUOUS, name='thermal_gen_cost')
     dispatch = m.addVars([(ri,tf)  for (ri,r) in enumerate(valley_chain) for tf in range(0,len(r.turbine.flowknots))],
                         lb=0,ub=1,obj=0,vtype= GRB.CONTINUOUS,name='dispatch')
     if stage == 0:

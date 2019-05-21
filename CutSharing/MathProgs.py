@@ -47,20 +47,24 @@ class StageProblem():
         
         self.model = model
         self.risk_measure = risk_measure
+        self.lower_bounds = []
+        self._lower_bound_on = True
         self.cut_pool = CutPool(stage)
         self.multicut = multicut
         
         self.states_map = {}  
         self.out_in_map = out_in_map
-        self.in_state = [x for x in in_states]
-        self.out_state = [x for x in out_states]
+        self.in_state = [x for x in in_states] #Names of incoming states
+        self.out_state = [x for x in out_states] #Names of outgoing states
+        self.in_state_var  = {x:model.getVarByName(x) for x in in_states}
         self.out_state_var  = {x:model.getVarByName(x) for x in out_states}
         self.gen_states_map(self.in_state)
         self.rhs_vars = [x for x in rhs_vars]
         self.rhs_vars_var  = {x:model.getVarByName(x) for x in rhs_vars}
         
         # Optimizer parameters
-        self.model.params.OutputFlag = 0
+        self.model.params.OutputFlag = 0 # No optimization outpute
+        self.model.params.DualReductions = 0 # Give definite info on status (when inf or unbounded)
         self.model.params.Threads = CutSharing.options['grb_threads']
         self.model.params.Method = 1
         #self.model.params.NumericFocus = 3
@@ -69,7 +73,10 @@ class StageProblem():
         #self.model.params.Crossover = 1
         #self.model.params.CrossoverBasis = 1 
         #self.model.params.NormAdjust = 2
-        #self.model.params.DualReductions = 0
+        #self.model.params.ObjScale = 1
+        #self.model.params.Quad = 1
+        #self.model.params.ScaleFlag = 0
+        #self.model.params.SimplexPricing = 3
         #self.model.params.FeasibilityTol = 1E-9
         
        
@@ -78,12 +85,14 @@ class StageProblem():
         if last_stage == False:
             num_outcomes = next_stage_rnd_vector.outcomes_dim 
             if multicut == False: #Gen single cut variable
-                self.oracle = self.model.addVars(1,lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(1,lb=-lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.lower_bounds = [lower_bound]
                 #self.orcale_bound  = self.model.addConstr((self.oracle[0]>=lower_bound), "oracle_bound")
             else:
                 if num_outcomes == 0:
                     raise 'Multicut algorithm requires to define the number of outcomes in advance.'
-                self.oracle = self.model.addVars(num_outcomes, lb=lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.oracle = self.model.addVars(num_outcomes, lb=-lower_bound, vtype = GRB.CONTINUOUS, name = 'oracle[%i]' %(stage))
+                self.lower_bounds = [lower_bound for _ in range(num_outcomes)]
             self.model.update()
             risk_measure.modify_stage_problem(self, self.model, next_stage_rnd_vector)
                 
@@ -115,7 +124,45 @@ class StageProblem():
                 self.ctrsForDualsRef[ctr.ConstrName]=ctr
         
            
-                
+    def lower_bounding_solve(self, in_state_lb, in_state_ub, random_realization=None):
+        '''
+        Computes a lower bound on stage problem t to set lower bounds on the 
+        oracle(s) of stage t-1.
+        
+        Args:
+            in_state_lb (dict): A dictionary with the lower bound for the incoming 
+                state variables of stage problem t.
+        '''
+        assert self.stage > 0, "Initial lower bound computation is for stages t=2,...,T"
+        
+        #Setup stage problem t to get a lower bound
+        for (in_name, in_var) in self.in_state_var.items():
+            in_var.lb = in_state_lb[in_name]
+            in_var.ub = in_state_ub[in_name]
+        assert len(random_realization)==len(self.rhs_vars), "In random vector has different cardinality than expected %i" %(len(random_realization)-len(self.rhs_vars)) + random_realization +" "+ str(self.rhs_vars)
+        for rr in random_realization:
+            self.rhs_vars_var[rr].lb = random_realization[rr]
+            self.rhs_vars_var[rr].ub = random_realization[rr]   
+        
+        self.model.update()
+        self.model.optimize()
+        
+        #Cases handling   
+        status = self.model.status
+        if status == GRB.UNBOUNDED:
+            raise 'Original problem has unbounded objective for the given bounds on the states.'
+        elif status == GRB.INFEASIBLE:
+            raise 'Original problem is infeasible.'
+        elif status == GRB.OPTIMAL:
+            output = {}
+            output['objval'] = self.model.ObjVal
+            return output
+        else:
+            raise 'Problem fail in initial lower bounding phase'
+        
+           
+        
+        
      
     def solve(self, in_state_vals=None, random_realization=None, forwardpass = False, random_container=None, sample_path = None, num_cuts = 0):   
         '''
@@ -140,8 +187,20 @@ class StageProblem():
         tnow = time()  
         cutupdatetime = 0  
         setuptime = 0;
+        #self.model.update()
+        #self.model.reset()
+        #if forwardpass:
+            #self.model.reset()
+        #=======================================================================
+        # if self._lower_bound_on:
+        #     for o in self.oracle:
+        #         self.oracle[o].lb = -GRB.INFINITY
+        #     self._lower_bound_on = False
+        #=======================================================================
+            
         if self.stage > 0:
             #if forwardpass:
+            #
             setuptime = time()
             assert len(in_state_vals)==len(self.in_state), "In state vector has different cardinality than expected"
             for in_s_name in in_state_vals:
@@ -165,7 +224,7 @@ class StageProblem():
             cutupdatetime = time()   
             self.update_cut_pool(random_container, random_realization)
             cutupdatetime = time()  - cutupdatetime  
-    
+            self.model.update()
         #Solve LP
         
         #=======================================================================
@@ -176,6 +235,7 @@ class StageProblem():
         #     pass
         #=======================================================================
         #=======================================================================
+        
         lp_time = time()
         
         
@@ -193,17 +253,33 @@ class StageProblem():
         #=======================================================================
         #self.model.write('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
         #self.model = read('HydepModel_%i_%i.mps' %(self.stage,num_cuts))
+        '''
+        Solve model and handle possible outcomes
+        '''
         self.model.update()
         #self.model.reset()
         self.model.optimize()
+        #If unbounded, lower bound is set back on
+        if self.model.status == GRB.UNBOUNDED:
+            for o in self.oracle:
+                self.oracle[o].lb = self.lower_bound
+            self._lower_bound_on = True
+            self.model.update
+            self.model.optimize()
+
         
         lp_time = time() - lp_time
         data_mgt_time = time()
         output = {}
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
-        if status ==  SP_OPTIMAL or status == SP_UNKNOWN:
-            output['objval'] = self.model.objVal
+        
+        
+        
+        if status ==  SP_OPTIMAL:
+            print(self, '    ' , self.model.objVal)
+            #print(self.out_state_var)
+            output['objval'] = self.model.ObjVal
             if forwardpass == True:
                 resolves = 0
                 resolve, violation = self.risk_measure.forward_pass_updates(self, fea_tol = 1E-2)
@@ -231,6 +307,17 @@ class StageProblem():
                     output['cut_duals'] = {cut.name:cut.ctrRef.Pi for cut in self.cut_pool if cut.is_active}
                 
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
+            
+            if self._lower_bound_on and self._last_stage == False :
+                bound_count = 0 
+                for o in self.oracle:
+                    if self.oracle[o].X > self.oracle[o].LB:
+                        bound_count +=1
+                if bound_count == len(self.oracle):
+                    self._lower_bound_on = False
+                    for o in self.oracle:
+                        self.oracle[o].lb = -GRB.INFINITY
+                    self.model.update() 
         else:
             print('Not optimal sub')
             #if self.stage == 0:
@@ -316,17 +403,19 @@ class StageProblem():
     #     return newkey
     #===========================================================================
     def gen_states_map(self, in_states):
-        for in_state in in_states:
-            if '[' in in_state:
-                sindex = in_state.index('[')
-                #self.model.getVarByName(
-                self.states_map[in_state] = self.model.getVarByName(in_state[:sindex-1]+in_state[sindex:])
-                self.states_map[in_state[:sindex-1]+in_state[sindex:]] = self.model.getVarByName(in_state)
-            else:
-                sindex = in_state.index('0')
-                self.states_map[in_state] = self.model.getVarByName(in_state[:sindex]+in_state[sindex+1:])
-                self.states_map[in_state[:sindex]+in_state[sindex+1:]] = self.model.getVarByName(in_state)
-                
+        if self.out_in_map == None:
+            for in_state in in_states:
+                if '[' in in_state:
+                    sindex = in_state.index('[')
+                    #self.model.getVarByName(
+                    self.states_map[in_state] = self.model.getVarByName(in_state[:sindex-1]+in_state[sindex:])
+                    self.states_map[in_state[:sindex-1]+in_state[sindex:]] = self.model.getVarByName(in_state)
+                else:
+                    sindex = in_state.index('0')
+                    self.states_map[in_state] = self.model.getVarByName(in_state[:sindex]+in_state[sindex+1:])
+                    self.states_map[in_state[:sindex]+in_state[sindex+1:]] = self.model.getVarByName(in_state)
+        else:
+            self.states_map = self.out_in_map    
         
     def get_out_state_var(self, in_state):
         '''
@@ -376,7 +465,7 @@ class StageProblem():
         cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs, cut_id)
         
         stagewise_ind  = srv.is_independent
-        
+        #print(cut_gradiend_coeffs, cut_intercepts )
         if stagewise_ind:
             new_cuts = [Cut(self, cut_gradiend_coeffs[i],cut_intercepts[i], cut_id, outcome = i) for (i,grad) in enumerate(cut_gradiend_coeffs)]
             self.cut_pool.addCuts(self.model, new_cuts)

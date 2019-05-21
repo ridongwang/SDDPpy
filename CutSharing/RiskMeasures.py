@@ -89,9 +89,12 @@ class Expectation(AbstracRiskMeasure):
             for ctr in sp_next.ctrsForDuals:
                 pi_bar[0][ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
             
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                cut_gradiend_coeff[0][vo] += pi_bar[0][c]*sp_next.ctrInStateMatrix[c,vi]
+            #for (c,vi) in sp_next.ctrInStateMatrix:
+            #    vo = sp_next.get_out_state_var(vi)
+            #    cut_gradiend_coeff[0][vo] += pi_bar[0][c]*sp_next.ctrInStateMatrix[c,vi]
+            for v_in in sp_next.in_state:
+                vo = sp_next.get_out_state_var(v_in)
+                cut_gradiend_coeff[0][vo] = sum(srv.p[i]*soo[i]['RC'][v_in] for (i,o) in enumerate(srv.outcomes))
             #print(cut_gradiend_coeff)
             #print({vn:sum(srv.p[i]*soo[i]['RC'][vn] for (i,o) in enumerate(srv.outcomes)) for vn in soo[0]['RC']})
         else:           #Multicut
@@ -101,11 +104,18 @@ class Expectation(AbstracRiskMeasure):
                 for (i,o) in enumerate(srv.outcomes):
                     #pi_bar[i][ctr] = srv.p[i]*soo[i]['duals'][ctr]
                     pi_bar[i][ctr] = soo[i]['duals'][ctr]
+            for (i,o) in enumerate(srv.outcomes):
+                for v_in in sp_next.in_state:
+                    vo = sp_next.get_out_state_var(v_in)
+                    cut_gradiend_coeff[i][vo] = soo[i]['RC'][v_in]
             
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                for (i,o) in enumerate(srv.outcomes):
-                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
+            
+            #===================================================================
+            # for (c,vi) in sp_next.ctrInStateMatrix:
+            #     vo = sp_next.get_out_state_var(vi)
+            #     for (i,o) in enumerate(srv.outcomes):
+            #         cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
+            #===================================================================
         
         #=======================================================================
         # for cg in cut_gradiend_coeff:
@@ -127,7 +137,18 @@ class Expectation(AbstracRiskMeasure):
         cut_intercepts = None
         if sp.multicut == False:
             #print(sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)), ' ' , sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state))
-            cut_intercepts = [sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+            #cut_intercepts = [np.sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - np.sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+            cut_intercepts = [np.sum(srv.p[i]*(soo[i]['objval'] - np.sum(spfs[vn]*soo[i]['RC'][sp_next.get_out_state_var(vn)] for vn in sp.out_state)) for (i,o) in enumerate(srv.outcomes))]
+#===============================================================================
+#             
+#             if np.abs(cut_intercepts[0]-cut_intercepts1[0])>0:
+#                 print("diff intecep?")
+#                 print('%30.16f %30.16f' %(cut_intercepts[0],cut_intercepts1[0]))
+# 
+#             else:
+#                 print('%15.8f %15.8f' %(cut_intercepts[0],cut_intercepts1[0]))
+#===============================================================================
+            
         else:
             cut_intercepts = [0  for _ in srv.outcomes]
             for (i,o) in enumerate(srv.outcomes):

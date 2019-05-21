@@ -37,9 +37,17 @@ class SDDP(object):
         '''
         self.stats = Stats()
         self.stage_problems = []
+        
+        #Setup stochastics of the model
         self.random_container = random_builder()
         self.random_container._preprocess_randomness()
+        
+        #Setup math models
+        #In/Out states variables mapping
+        self.global_states_mapping = {}
         self.createStageProblems(T, model_builder, lower_bound, risk_measure, **risk_measure_params)
+        
+        #Save instance parameters
         self.instance = {'risk_measure':risk_measure, 'risk_measure_params':risk_measure_params, 'alg_options':alg_options}
         
         
@@ -56,6 +64,8 @@ class SDDP(object):
         
         #Attributes to store oracle subproblems
         self.stage_oracle_subproblems = []
+        
+        
     
     @classmethod
     def create_SDDP(cls, t_ini, T_max, sddp_alg):
@@ -75,12 +85,22 @@ class SDDP(object):
             out_states (list of str): list with the names of the variables that 
                 represent the next state.
         '''
+        
         for i in range(T):
             sp_risk_measure = risk_measure(**risk_measure_params)
             next_stage_rnd_vector = self.random_container[i+1] if i<T-1 else None
-            sp = StageProblem(i,model_builder, next_stage_rnd_vector, lower_bound,  last_stage=(i==T-1), risk_measure=sp_risk_measure, multicut = alg_options['multicut'])
-            self.stage_problems.append(sp)
+            sp_t = StageProblem(i,model_builder, next_stage_rnd_vector, lower_bound,  last_stage=(i==T-1), risk_measure=sp_risk_measure, multicut = alg_options['multicut'])
+            self.stage_problems.append(sp_t)
+            
+            if i > 0: 
+                sp_t_1 = self.stage_problems[i - 1]
+                for out_name in sp_t_1.out_state:
+                    self.global_states_mapping[(i-1,i), out_name] = sp_t_1.states_map[out_name]
+                for in_name in sp_t.in_state:
+                    self.global_states_mapping[(i-1,i), in_name] = sp_t.states_map[in_name]
 
+
+        
         #Setup RHS noise of the stage problem 0
         rnd_vec_0 = self.random_container[0]
         stage_problem_0 = self.stage_problems[0]
@@ -88,12 +108,14 @@ class SDDP(object):
             v = stage_problem_0.rhs_vars_var[vn]
             v.lb = rnd_vec_0.outcomes[0][vn]
             v.ub = rnd_vec_0.outcomes[0][vn]
-             
+        
+        #Pre-compute initial bounds on the oracles
+        self.compute_oracle_bounds()
 
 
     def add_oracle_model(self, oracle_model_builder):
         '''
-        Adds a handle on each subproblem to a  model that serves as an oracle. 
+        Adds a handle on each subproblem to a model that serves as an oracle. 
         oracle_model_builder (func): Function that builds an auxiliary problem that serves as 
             an oracle of the value function. The signature of the oracle builder is:
                 oracle_model_builder params:
@@ -105,6 +127,31 @@ class SDDP(object):
             if i<=alg_options['max_stage_with_oracle']:
                 osp = StageOracleProblem(i,T,oracle_model_builder)
                 self.stage_oracle_subproblems.append(osp)
+                
+    def compute_oracle_bounds(self):
+        '''
+            Computes lower bound for the oracle(s)  
+        '''
+        T = len(self.stage_problems)
+        for t in range(T-1, 0, -1):
+            sp_t = self.stage_problems[t]
+            sp_t_1 = self.stage_problems[t-1]
+            stage_rnd_vector = self.random_container[t]
+            omega_t = stage_rnd_vector.getOutcomes(sample_path= None, ev= False)
+            in_state_lb = {in_name:self.global_states_mapping[(t-1,t),in_name].lb for in_name in sp_t.in_state}
+            in_state_ub = {in_name:self.global_states_mapping[(t-1,t),in_name].ub for in_name in sp_t.in_state}
+            oracle_lbs = []
+            for outcome in omega_t:
+                sp_output = sp_t.lower_bounding_solve(in_state_lb, in_state_ub, random_realization = outcome)
+                oracle_lbs.append(sp_output['objval'])
+            
+            
+            for (i,lb_i) in enumerate(oracle_lbs):
+                sp_t_1.lower_bounds[i] = lb_i
+                sp_t_1.oracle[i].lb = lb_i
+            sp_t_1.model.update()   
+            
+        
 
     def forwardpass(self, sample_path, simulation = False):
         '''
@@ -249,7 +296,7 @@ class SDDP(object):
             sp_cut = self.stage_problems[t-1]
             cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
-            sp_cut.remove_oracle_bounds()
+            #sp_cut.remove_oracle_bounds()
             
             #DELLETE OR FIX LATER
             try:

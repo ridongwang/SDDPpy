@@ -33,6 +33,7 @@ SP_LOADED = 'Loaded'
 SP_OPTIMAL = 'sp_optimal'
 SP_INFEASIBLE = 'sp_infeasible'
 SP_UNKNOWN = 'sp_unknown'
+SP_UNBOUNDED = 'sp_unbounded'
 
 '''
 tolerances
@@ -73,12 +74,14 @@ options['max_cuts_last_cuts_selector'] =1000
 options['cut_selector'] = None
 
 def gurobiStatusCodeToStr( intstatus ):
-    if intstatus == 1:
+    if intstatus == GRB.LOADED:
         return SP_LOADED
-    elif intstatus ==2:
+    elif intstatus == GRB.OPTIMAL:
         return SP_OPTIMAL
-    elif intstatus in [3,4]:
+    elif intstatus in GRB.INFEASIBLE:
         return SP_INFEASIBLE
+    elif intstatus == GRB.UNBOUNDED:
+        return SP_UNBOUNDED
     else:
         return SP_UNKNOWN
 

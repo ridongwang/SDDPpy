@@ -89,6 +89,7 @@ class Cut():
         # self.is_active  = True
         #=======================================================================
         self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
+        m.update()
         #Reference to the constraint
         #=======================================================================
         # if self.lhs.getValue() >= self.rhs - ZERO_TOL :
