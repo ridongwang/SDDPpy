@@ -137,8 +137,8 @@ class Expectation(AbstracRiskMeasure):
         cut_intercepts = None
         if sp.multicut == False:
             #print(sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)), ' ' , sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state))
-            #cut_intercepts = [np.sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - np.sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
-            cut_intercepts = [np.sum(srv.p[i]*(soo[i]['objval'] - np.sum(spfs[vn]*soo[i]['RC'][sp_next.get_out_state_var(vn)] for vn in sp.out_state)) for (i,o) in enumerate(srv.outcomes))]
+            cut_intercepts = [np.sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - np.sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+            #cut_intercepts = [np.sum(srv.p[i]*(soo[i]['objval'] - np.sum(spfs[vn]*soo[i]['RC'][sp_next.get_out_state_var(vn)] for vn in sp.out_state)) for (i,o) in enumerate(srv.outcomes))]
 #===============================================================================
 #             
 #             if np.abs(cut_intercepts[0]-cut_intercepts1[0])>0:

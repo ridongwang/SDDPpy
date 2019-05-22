@@ -127,11 +127,16 @@ class StageProblem():
     def lower_bounding_solve(self, in_state_lb, in_state_ub, random_realization=None):
         '''
         Computes a lower bound on stage problem t to set lower bounds on the 
-        oracle(s) of stage t-1.
+        oracle(s) of stage t-1. To do this, the state variables of stage t-1
+        are allowed to change in the optimization problem of stage t. 
         
         Args:
             in_state_lb (dict): A dictionary with the lower bound for the incoming 
                 state variables of stage problem t.
+            in_state_ub (dict): A dictionary with the upper bound for the incoming 
+                state variables of stage problem t.
+            random_realization: A dictionary with the realization of the random vector
+                for which the lower bound is going to be computed.
         '''
         assert self.stage > 0, "Initial lower bound computation is for stages t=2,...,T"
         
@@ -197,7 +202,13 @@ class StageProblem():
         #         self.oracle[o].lb = -GRB.INFINITY
         #     self._lower_bound_on = False
         #=======================================================================
-            
+        if forwardpass:
+            #self.model.reset()
+            self.model.params.Crossover = 1
+            self.model.params.Method = 2 # Barrier in the FP 
+        else:
+            self.model.params.Method = 1 # Dual in the FP   
+        
         if self.stage > 0:
             #if forwardpass:
             #
@@ -207,10 +218,11 @@ class StageProblem():
                 in_s_val = in_state_vals[in_s_name]
                 s_lb = self.out_state_var[in_s_name].lb
                 s_ub = self.out_state_var[in_s_name].ub
-                if in_s_val < s_lb:
-                    in_s_val = s_lb
-                elif in_s_val > s_ub: 
-                    in_s_val = s_ub
+                #if in_s_val < s_lb:
+                #    in_s_val = s_lb
+                #elif in_s_val > s_ub: 
+                #    in_s_val = s_ub
+                #THe bug is that im using the wrong bounds, ie, from t and not from t-1!!!! BUGGGGGGGGG
                 self.states_map[in_s_name].lb = in_s_val
                 self.states_map[in_s_name].ub = in_s_val
             

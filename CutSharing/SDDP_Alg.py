@@ -146,9 +146,16 @@ class SDDP(object):
                 oracle_lbs.append(sp_output['objval'])
             
             
-            for (i,lb_i) in enumerate(oracle_lbs):
-                sp_t_1.lower_bounds[i] = lb_i
-                sp_t_1.oracle[i].lb = lb_i
+            if alg_options['multicut'] == True:
+                assert len(oracle_lbs) == len(sp_t_1.oracle), 'Number of bounds computed does not match.'
+                for (i,lb_i) in enumerate(oracle_lbs):
+                    sp_t_1.lower_bounds[i] = lb_i
+                    sp_t_1.oracle[i].lb = lb_i
+            else:
+                assert len(sp_t_1.oracle)==1, 'More oracle variables than expected.'
+                min_bound = np.min(oracle_lbs)
+                sp_t_1.lower_bounds[0] = min_bound
+                sp_t_1.oracle[0].lb = min_bound
             sp_t_1.model.update()   
             
         
@@ -184,7 +191,8 @@ class SDDP(object):
                 sp.print_stage_res_summary()
             if i == 0:       
                 self.lb = sp_output['objval']
-            fp_ub_value += sp.get_stage_objective_value()
+            if simulation:
+                fp_ub_value += sp.get_stage_objective_value()
             self.stats.updateStats(cs.FORWARD_PASS, lp_time=sp_output['lptime'], 
                                                          cut_update_time=sp_output['cutupdatetime'],
                                                          model_update_time=sp_output['setuptime'],
@@ -193,8 +201,8 @@ class SDDP(object):
                                                          iteration=self.pass_iteration)
             if sp_output['risk_measure_info']!=None and i==0:
                 self.cutting_plane_max_vio =  sp_output['risk_measure_info']
-                
-        self.upper_bounds.append(fp_ub_value)
+        if simulation:        
+            self.upper_bounds.append(fp_ub_value)
         if simulation and alg_options['outputlevel']>=3:
             print('---------------------------')
         return fp_out_states
@@ -296,7 +304,7 @@ class SDDP(object):
             sp_cut = self.stage_problems[t-1]
             cut_creation_time = self.createStageCut(t-1,sp_cut,sp, stage_rnd_vector, outputs_per_outcome, forward_out_states[t-1], sample_path)
             self.stats.updateStats(cs.BACKWARD_PASS, cut_gen_time=cut_creation_time)
-            #sp_cut.remove_oracle_bounds()
+            
             
             #DELLETE OR FIX LATER
             try:
