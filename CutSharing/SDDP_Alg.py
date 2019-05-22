@@ -65,6 +65,9 @@ class SDDP(object):
         #Attributes to store oracle subproblems
         self.stage_oracle_subproblems = []
         
+        #Save builders
+        self._model_builder = model_builder
+        self._random_builder = random_builder
         
     
     @classmethod

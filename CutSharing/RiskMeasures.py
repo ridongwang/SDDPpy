@@ -9,7 +9,6 @@ Modified on May 22, 2019:
 
 from abc import ABC, abstractmethod
 from gurobipy import *
-#from CutSharing import ZERO_TOL
 import CutSharing as cs
 import numpy as np
 
@@ -86,6 +85,7 @@ class AbstracRiskMeasure(ABC):
             for (i,o) in enumerate(srv.outcomes):
                 cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
         return cut_intercepts
+    
     @abstractmethod
     def update_cut_intercept(self):
         raise('Method not implemented in abstract class')
@@ -105,23 +105,11 @@ class AbstracRiskMeasure(ABC):
         '''
         return None
 
-def compute_gradients_from_RC():
-    '''
-        Computes the gradient of the cut from the
-        reduced costs (RC) of the state variables.
-        Args:
-            RC (dict): A dictionary of reduce c
-        Returns:
-            grad (dict): A dictionary with the gradient coefficients
-                for each state varaibles
-                
-    '''
-    
-
-    
 
 class Expectation(AbstracRiskMeasure):
-    
+    '''
+    Implements an expected value risk measure
+    '''
     def __init__(self):
         super().__init__()
         
@@ -907,13 +895,12 @@ class DistRobust(AbstracRiskMeasure):
         zs = np.array([soo[i]['objval'] for i in range(len(srv.outcomes))])
         p = self.inner_solver.compute_worst_case_distribution(zs)
         self._wors_case_dist = p
-        multicut = sp.multicut
         
         #Get cut_gradient
         cut_gradiend_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id, p)
         
         #Add extra constraints for multicut implementation
-        if multicut:
+        if sp.multicut:
             sp.model.addConstr(lhs=self.global_oracle - quicksum(p[i]*sp.oracle[i] for i in sp.oracle), sense=GRB.GREATER_EQUAL, rhs=0, name='unicut[%i]' %(cut_id))
             
         self._current_cut_gradient = cut_gradiend_coeff
@@ -958,20 +945,25 @@ class DistRobust(AbstracRiskMeasure):
         if next_sp == None:
             #No change in probabilities
             return
+        assert sp.model.status == GRB.OPTIMAL, 'Previous stage problem is assume to be solved.'
         next_rnd_vector = rnd_container[t+1]  #Descendant outcomes
         omega_t = next_rnd_vector.getOutcomes(sample_path, ev=False)
         zs = np.zeros(len(omega_t))
-        for (i,outcome) in enumerate(omega_t):
-            next_sp_output = next_sp.solve(in_state_vals=forward_out_states[t-1], 
-                                 random_realization=outcome, 
-                                 forwardpass=False, 
-                                 random_container=rnd_container, 
-                                 sample_path = sample_path)
-            zs[i] = next_sp_output['objval']
+        if sp.multicut:
+            for (k,oracle) in sp.oracle.items():
+                zs[k] = oracle.X
+        else:
+            for (i,outcome) in enumerate(omega_t):
+                next_sp_output = next_sp.solve(in_state_vals=forward_out_states[t-1], 
+                                     random_realization=outcome, 
+                                     forwardpass=False, 
+                                     random_container=rnd_container, 
+                                     sample_path = sample_path)
+                zs[i] = next_sp_output['objval']
     
         p_worst = self.inner_solver.compute_worst_case_distribution(zs)
         p_w = ds_beta*p_worst + (1-ds_beta)*next_rnd_vector.p_copy
-        next_rnd_vector.modifyOutcomesProbabilities(p_worst)
+        next_rnd_vector.modifyOutcomesProbabilities(p_w)
         
         
 
