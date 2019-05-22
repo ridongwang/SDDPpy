@@ -44,6 +44,7 @@ for v in m3.getVars():
 
 # Reset the model with the constraint and optimize
 #Now we get a new X.  
+print('Reseting problem ')
 m3.reset()
 m3.optimize()
 for v in m3.getVars():
