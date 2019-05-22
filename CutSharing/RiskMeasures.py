@@ -1,6 +1,9 @@
 '''
 Created on Jan 11, 2018
 
+Modified on May 22, 2019:
+    Deep change in the cut gradient and intercept computation.
+
 @author: dduque
 '''
 
@@ -26,16 +29,63 @@ class AbstracRiskMeasure(ABC):
             _current_cut_gradient (dict): local copy of the current
                 cut gradient (used again when computing the.
         '''
-        
         self.next_stage_rnd_vec = None
         self._current_cut_gradient = None
     
     @abstractmethod
-    def compute_cut_gradient(self):
-        raise('Method not implemented in abstract class')
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs,cut_id, p=None):
+        '''
+        Computes cut(s) gradient(s) for both multi cut and single cut 
+        implementations of the algorithm.
+        
+        Args:
+            sp (StageProblem): current subproblem where the cut will be added.
+            sp_nex (StageProblem): subproblem for the next stage.
+            srv (StageRandomVector): Random vector of the next stage
+            soo (List of dict): A list of outputs of all the subproblems descendants (subs outputs outcomes).
+            spfs (dict (str-float)): Values for the states of the current stage computed 
+                in the forward pass.
+            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
+            p (ndarray): Optional, vector of probabilities 
+        Return 
+            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
+                the list contains just one element.
+            cut_gradiend_coeff(list[dict]):
+        '''
+        multicut = sp.multicut
+        cut_gradiend_coeff = None
+        if multicut == False: #single cut
+            probs = srv.p if type(p)==type(None) else p
+            cut_gradiend_coeff = [{}]
+            for v_out in sp.out_state:
+                cut_gradiend_coeff[0][v_out] = sum(probs[i]*soo[i]['RC'][v_out] for (i,o) in enumerate(srv.outcomes))
+        else: #Multicut
+            cut_gradiend_coeff = [{} for _ in range(len(soo))]
+            for (i,outcome) in enumerate(soo):
+                cut_gradiend_coeff[i] = outcome['RC']
+            
+        self._current_cut_gradient = cut_gradiend_coeff
+        return cut_gradiend_coeff
+    
     @abstractmethod
-    def compute_cut_intercept(self):
-        raise('Method not implemented in abstract class')
+    def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id, p = None ):
+        '''
+        Computes cut intercept(s).
+        
+        Args: (as in cut gradient method)
+        Returns:
+            cut_intercepts (list of float): List of intercep(s) of the cut(s).
+        '''
+        cut_gradiend_coeff = self._current_cut_gradient
+        cut_intercepts = None
+        if sp.multicut == False:
+            probs = srv.p if type(p)==type(None) else p
+            cut_intercepts = [np.sum(probs[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - np.sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
+        else:
+            cut_intercepts = [0  for _ in srv.outcomes]
+            for (i,o) in enumerate(srv.outcomes):
+                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
+        return cut_intercepts
     @abstractmethod
     def update_cut_intercept(self):
         raise('Method not implemented in abstract class')
@@ -54,6 +104,20 @@ class AbstracRiskMeasure(ABC):
         Only needed for dynamic sampling
         '''
         return None
+
+def compute_gradients_from_RC():
+    '''
+        Computes the gradient of the cut from the
+        reduced costs (RC) of the state variables.
+        Args:
+            RC (dict): A dictionary of reduce c
+        Returns:
+            grad (dict): A dictionary with the gradient coefficients
+                for each state varaibles
+                
+    '''
+    
+
     
 
 class Expectation(AbstracRiskMeasure):
@@ -63,104 +127,16 @@ class Expectation(AbstracRiskMeasure):
         
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
-        Computes expected dual variables for the single cut version
-        and then the gradient.
-        
-        Args:
-            sp (StageProblem): current subproblem where the cut will be added.
-            sp_nex (StageProblem): subproblem for the next stage.
-            srv (StageRandomVector): Random vector of the next stage
-            soo (List of dict): A list of outputs of all the subproblems descendants.
-            spfs (dict (str-float)): Values for the states of the current stage computed 
-                in the forward pass.
-            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
-        Return 
-            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
-                the list contains just one element.
-            cut_gradiend_coeff(list[dict]):
+            See abstract class method
         '''
-        multicut = sp.multicut
-        pi_bar = None
-        cut_gradiend_coeff = None
-        
-        if multicut == False: #single cut
-            pi_bar = [{}]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state}]
-            for ctr in sp_next.ctrsForDuals:
-                pi_bar[0][ctr] = sum(srv.p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
-            
-            #for (c,vi) in sp_next.ctrInStateMatrix:
-            #    vo = sp_next.get_out_state_var(vi)
-            #    cut_gradiend_coeff[0][vo] += pi_bar[0][c]*sp_next.ctrInStateMatrix[c,vi]
-            for v_in in sp_next.in_state:
-                vo = sp_next.get_out_state_var(v_in)
-                cut_gradiend_coeff[0][vo] = sum(srv.p[i]*soo[i]['RC'][v_in] for (i,o) in enumerate(srv.outcomes))
-            #print(cut_gradiend_coeff)
-            #print({vn:sum(srv.p[i]*soo[i]['RC'][vn] for (i,o) in enumerate(srv.outcomes)) for vn in soo[0]['RC']})
-        else:           #Multicut
-            pi_bar = [{} for _ in srv.outcomes]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
-            for ctr in sp_next.ctrsForDuals:
-                for (i,o) in enumerate(srv.outcomes):
-                    #pi_bar[i][ctr] = srv.p[i]*soo[i]['duals'][ctr]
-                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
-            for (i,o) in enumerate(srv.outcomes):
-                for v_in in sp_next.in_state:
-                    vo = sp_next.get_out_state_var(v_in)
-                    cut_gradiend_coeff[i][vo] = soo[i]['RC'][v_in]
-            
-            
-            #===================================================================
-            # for (c,vi) in sp_next.ctrInStateMatrix:
-            #     vo = sp_next.get_out_state_var(vi)
-            #     for (i,o) in enumerate(srv.outcomes):
-            #         cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
-            #===================================================================
-        
-        #=======================================================================
-        # for cg in cut_gradiend_coeff:
-        #     for vo in cg:
-        #         cg[vo] = np.round(cg[vo], 7)  
-        #=======================================================================
-        self._current_cut_gradient = cut_gradiend_coeff
-        return pi_bar, cut_gradiend_coeff
+        return super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id)
+ 
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
-        Computes cut intercept(s) 
-        
-        Args: (as in cut gradient method)
-        Returns:
-            cut_intercepts (list of int): List of intercep(s) of the cut(s).
+            See abstract class method
         '''
-        cut_gradiend_coeff = self._current_cut_gradient
-        cut_intercepts = None
-        if sp.multicut == False:
-            #print(sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)), ' ' , sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state))
-            cut_intercepts = [np.sum(srv.p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - np.sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
-            #cut_intercepts = [np.sum(srv.p[i]*(soo[i]['objval'] - np.sum(spfs[vn]*soo[i]['RC'][sp_next.get_out_state_var(vn)] for vn in sp.out_state)) for (i,o) in enumerate(srv.outcomes))]
-#===============================================================================
-#             
-#             if np.abs(cut_intercepts[0]-cut_intercepts1[0])>0:
-#                 print("diff intecep?")
-#                 print('%30.16f %30.16f' %(cut_intercepts[0],cut_intercepts1[0]))
-# 
-#             else:
-#                 print('%15.8f %15.8f' %(cut_intercepts[0],cut_intercepts1[0]))
-#===============================================================================
-            
-        else:
-            cut_intercepts = [0  for _ in srv.outcomes]
-            for (i,o) in enumerate(srv.outcomes):
-                #cut_intercepts[i] = srv.p[i]*soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-       
-        #=======================================================================
-        # for i in range(len(cut_intercepts)):
-        #     cut_intercepts[i] = np.round(cut_intercepts[i],7)
-        #=======================================================================
-        return cut_intercepts
-
+        return super().compute_cut_intercept(sp, sp_next, srv, soo, spfs, cut_id)
     
     def update_cut_intercept(self):
         pass
@@ -172,6 +148,9 @@ class Expectation(AbstracRiskMeasure):
     def forward_prob_update(self, *args):
         pass
 
+'''
+Distance function for Wasserstein metric
+'''
 def norm_fun(xi_o, xi_d, n):
     '''
     Computes the norm of the difference of the vectors given as parameters
@@ -211,60 +190,24 @@ class DistRobustWasserstein(AbstracRiskMeasure):
     
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
-        Computes expected dual variables for the single cut version
-        and then the gradient.
-        
-        Args:
-            sp (StageProblem): current subproblem where the cut will be added.
-            sp_nex (StageProblem): subproblem for the next stage.
-            srv (StageRandomVector): Random vector of the next stage
-            soo (List of dict): A list of outputs of all the subproblems descendants.
-            spfs (dict (str-float)): Values for the states of the current stage computed 
-                in the forward pass.
-            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
-        Return 
-            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
-                the list contains just one element.
-            cut_gradiend_coeff(list[dict]):
+            See abstrac method. This risk measure does not support the
+            single cut implmentation.
         '''
-        multicut = sp.multicut
-        pi_bar = None
-        cut_gradiend_coeff = None
-        
-        if multicut == False: #single cut
+        if sp.multicut == False: #single cut
             raise 'Risk measure does not support single cut'
         else:           #Multicut
-            pi_bar = [{} for _ in srv.outcomes]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
-            for ctr in sp_next.ctrsForDuals:
-                for (i,o) in enumerate(srv.outcomes):
-                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
-            
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                for (i,o) in enumerate(srv.outcomes):
-                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
-            
-        self._current_cut_gradient = cut_gradiend_coeff
-        return pi_bar, cut_gradiend_coeff
+            return super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id)
+
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
-        Computes cut intercept(s) 
-        
-        Args: (as in cut gradient method)
-        Returns:
-            cut_intercepts (list of int): List of intercep(s) of the cut(s).
+            See abstrac method. This risk measure does not support the
+            single cut implmentation.
         '''
-        cut_gradiend_coeff = self._current_cut_gradient
-        cut_intercepts = None
-        if sp.multicut == False:
-            cut_intercepts = [sum(soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
-        else:
-            cut_intercepts = [0  for _ in srv.outcomes]
-            for (i,o) in enumerate(srv.outcomes):
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-        return cut_intercepts
+        if sp.multicut == False: #single cut
+            raise 'Risk measure does not support single cut'
+        else:           #Multicut
+            return super().compute_cut_intercept(sp, sp_next, srv, soo, spfs, cut_id)
     
     def update_cut_intercept(self):
         pass            
@@ -509,17 +452,12 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
             raise 'Risk measure does not support single cut'
         else:           #Multicut
             #Gen and store regular cut gradients (w.r.t x)
-            pi_bar = [{} for _ in srv.outcomes]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
+            cut_gradiend_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id)
             
+            pi_bar = [{} for _ in srv.outcomes]
             for ctr in sp_next.ctrsForDuals:
                 for (i,o) in enumerate(srv.outcomes):
                     pi_bar[i][ctr] = soo[i]['duals'][ctr]
-            
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                for (i,o) in enumerate(srv.outcomes):
-                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
             
             self._pi_bar  = pi_bar
             
@@ -567,21 +505,13 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
-        Computes cut intercept(s) 
-        
-        Args: (as in cut gradient method)
-        Returns:
-            cut_intercepts (list of int): List of intercep(s) of the cut(s).
+            See abstrac method. This risk measure does not support the
+            single cut implmentation.
         '''
-        cut_gradiend_coeff = self._current_cut_gradient
-        cut_intercepts = None
-        if sp.multicut == False:
+        if sp.multicut == False: #single cut
             raise 'Risk measure does not support single cut'
-        else:
-            cut_intercepts = [0  for _ in srv.outcomes]
-            for (i,o) in enumerate(srv.outcomes):
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-        return cut_intercepts
+        else:           #Multicut
+            return super().compute_cut_intercept(sp, sp_next, srv, soo, spfs, cut_id)
     
     def update_cut_intercept(self):
         raise 'update_cut_intercept is not available for this risk measure'           
@@ -708,63 +638,27 @@ class DistRobustDuality(AbstracRiskMeasure):
         
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
-        Computes expected dual variables for the single cut version
-        and then the gradient.
-        
-        Args:
-            sp (StageProblem): current subproblem where the cut will be added.
-            sp_nex (StageProblem): subproblem for the next stage.
-            srv (StageRandomVector): Random vector of the next stage
-            soo (List of dict): A list of outputs of all the subproblems descendants.
-            spfs (dict (str-float)): Values for the states of the current stage computed 
-                in the forward pass.
-            cut_id (int): Numeric id of the cut being created (iteration in SDDP)
-        Return 
-            pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
-                the list contains just one element.
-            cut_gradiend_coeff(list[dict]):
+            See abstrac method. This risk measure does not support the
+            single cut implmentation.
         '''
-        multicut = sp.multicut
-        pi_bar = None
-        cut_gradiend_coeff = None
-        
-        if multicut == False: #single cut
+        if sp.multicut == False: #single cut
             raise 'Risk measure does not support single cut'
         else:           #Multicut
-            pi_bar = [{} for _ in srv.outcomes]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
-            for ctr in sp_next.ctrsForDuals:
-                for (i,o) in enumerate(srv.outcomes):
-                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
-            
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                for (i,o) in enumerate(srv.outcomes):
-                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
-            
-        self._current_cut_gradient = cut_gradiend_coeff
-        return pi_bar, cut_gradiend_coeff
+            return super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id)
+
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
-        Computes cut intercept(s) 
-        
-        Args: (as in cut gradient method)
-        Returns:
-            cut_intercepts (list of int): List of intercep(s) of the cut(s).
+            See abstrac method. This risk measure does not support the
+            single cut implmentation.
         '''
-        cut_gradiend_coeff = self._current_cut_gradient
-        cut_intercepts = None
-        if sp.multicut == False:
-            cut_intercepts = [sum(soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
-        else:
-            cut_intercepts = [0  for _ in srv.outcomes]
-            for (i,o) in enumerate(srv.outcomes):
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-        return cut_intercepts
+        if sp.multicut == False: #single cut
+            raise 'Risk measure does not support single cut'
+        else:           #Multicut
+            return super().compute_cut_intercept(sp, sp_next, srv, soo, spfs, cut_id)
     
     def update_cut_intercept(self):
-        pass
+        raise 'Cut intercepts should not be updated in this risk measure.'
     
     def modify_stage_problem(self, sp,  model, next_stage_rnd_vector):
         '''
@@ -991,7 +885,7 @@ class DistRobust(AbstracRiskMeasure):
         self._wors_case_dist = None
         self._static_dist = True
         
-    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfv, cut_id):
+    def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
         Computes expected dual variables for the single cut version
         and then the gradient.
@@ -1009,37 +903,21 @@ class DistRobust(AbstracRiskMeasure):
                 the list contains just one element.
             cut_gradiend_coeff(list[dict]):
         '''
+        #Solve inner max problem on the side
         zs = np.array([soo[i]['objval'] for i in range(len(srv.outcomes))])
         p = self.inner_solver.compute_worst_case_distribution(zs)
         self._wors_case_dist = p
         multicut = sp.multicut
-        pi_bar = None
-        cut_gradiend_coeff = None
         
-        if multicut == False: #single cut
-            pi_bar = [{}]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state}]
-            for ctr in sp_next.ctrsForDuals:
-                pi_bar[0][ctr] = sum(p[i]*soo[i]['duals'][ctr] for (i,o) in enumerate(srv.outcomes))
-            
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                cut_gradiend_coeff[0][vo] += pi_bar[0][c]*sp_next.ctrInStateMatrix[c,vi]
-        else:           #Multicut
+        #Get cut_gradient
+        cut_gradiend_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id, p)
+        
+        #Add extra constraints for multicut implementation
+        if multicut:
             sp.model.addConstr(lhs=self.global_oracle - quicksum(p[i]*sp.oracle[i] for i in sp.oracle), sense=GRB.GREATER_EQUAL, rhs=0, name='unicut[%i]' %(cut_id))
-            pi_bar = [{} for _ in srv.outcomes]
-            cut_gradiend_coeff = [{vo:0 for vo in sp.out_state} for _ in srv.outcomes]
-            for ctr in sp_next.ctrsForDuals:
-                for (i,o) in enumerate(srv.outcomes):
-                    pi_bar[i][ctr] = soo[i]['duals'][ctr]
-            
-            for (c,vi) in sp_next.ctrInStateMatrix:
-                vo = sp_next.get_out_state_var(vi)
-                for (i,o) in enumerate(srv.outcomes):
-                    cut_gradiend_coeff[i][vo] += pi_bar[i][c]*sp_next.ctrInStateMatrix[c,vi]
             
         self._current_cut_gradient = cut_gradiend_coeff
-        return pi_bar, cut_gradiend_coeff
+        return cut_gradiend_coeff
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs,cut_id):
         '''
@@ -1050,17 +928,8 @@ class DistRobust(AbstracRiskMeasure):
             cut_intercepts (list of int): List of intercep(s) of the cut(s).
         '''
         p = self._wors_case_dist
-        cut_gradiend_coeff = self._current_cut_gradient
-        cut_intercepts = None
-        if sp.multicut == False:
-            cut_intercepts = [sum(p[i]*soo[i]['objval'] for (i,o) in enumerate(srv.outcomes)) - sum(spfs[vn]*cut_gradiend_coeff[0][vn] for vn in sp.out_state)]
-        else:
-            cut_intercepts = [0  for _ in srv.outcomes]
-            for (i,o) in enumerate(srv.outcomes):
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn]*cut_gradiend_coeff[i][vn] for vn in sp.out_state)
-        return cut_intercepts
-        
-        
+        return super().compute_cut_intercept(sp, sp_next, srv, soo, spfs, cut_id, p )
+       
         
     def update_cut_intercept(self):
         pass  
