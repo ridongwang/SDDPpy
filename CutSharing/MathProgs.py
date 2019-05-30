@@ -68,8 +68,8 @@ class StageProblem():
         self.model.params.Method = 1
         #self.model.params.NumericFocus = 3
         #self.model.params.PreDual = 0
-        self.model.params.Presolve = 0
-        #self.model.params.Crossover = 1
+        #self.model.params.Presolve = 0
+        #self.model.params.Crossover = 0
         #self.model.params.CrossoverBasis = 1 
         #self.model.params.NormAdjust = 2
         #self.model.params.ObjScale = 1
@@ -226,7 +226,7 @@ class StageProblem():
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
         
-        if status ==  SP_OPTIMAL:
+        if status ==  SP_OPTIMAL or self.model.status==GRB.SUBOPTIMAL:
             output['objval'] = self.model.ObjVal
             if forwardpass == True:
                 resolves = 0

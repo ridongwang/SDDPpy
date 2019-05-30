@@ -67,9 +67,9 @@ def stage_prob_factory(data):
     return stage_prob_builder
 
 if __name__ == '__main__':
-    CutSharing.options['max_iter'] = 500
+    CutSharing.options['max_iter'] = 50
     CutSharing.options['multicut'] = True
-    CutSharing.options['lines_freq'] = 50
+    CutSharing.options['lines_freq'] = 1
     T=2 # number of stages
     ''' 
     Test problem
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     rho = 10  # shortfall penalty
     
     scen = None # number of scenarios
-    for scen in [20,100]:#[5,10,30,50,100]:
+    for scen in [200]:#[5,10,30,50,100]:
         '''
             Data generation
         '''

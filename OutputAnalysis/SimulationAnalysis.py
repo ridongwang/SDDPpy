@@ -16,6 +16,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import sys
 from statsmodels.tsa.arima_model import ARIMA
+
 if __name__ == '__main__':
     from os import path
     sys.path.append(path.abspath('/Users/dduque/Dropbox/WORKSPACE/SDDP'))
@@ -167,6 +168,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     Plot out-of-sample simulation results
     '''
     f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=200)
+    #axR = axarr.twinx()
     r = None
     try:
         r = [sr.instance['risk_measure_params']['radius']  for sr in sim_results]
@@ -175,7 +177,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
-    q_plot = 95
+    q_plot = 90
     ev = [np.mean(sp_sim.sims_ub) for _ in r]
     axarr.semilogx(r,ev, color='r', label='SP Mean')
     ev_median = [np.median(sp_sim.sims_ub) for _ in r]
@@ -184,7 +186,9 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     axarr.semilogx(r,ev90, color='r', linestyle='--', dashes=(3, 1),  label='SP %i-%i' %(100-q_plot,q_plot))
     ev10 = [np.percentile(sp_sim.sims_ub,q=100-q_plot) for _ in r]
     axarr.semilogx(r,ev10, color='r', linestyle='--', dashes=(3, 1))
-        
+    sp_std = [np.std(sp_sim.sims_ub) for _ in r]
+    #axR.semilogx(r,sp_std, color='b', linestyle='--', dashes=(5, 1)) 
+    
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
     p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
@@ -202,6 +206,11 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     #axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
     axarr.semilogx(r,p10, color='k', linestyle='--', dashes=(3, 1),label='DRO %i-%i' %(100-q_plot,q_plot))
     axarr.semilogx(r,p90, color='k', linestyle='--', dashes=(3, 1))
+    
+    
+    dro_std = [np.std(sr.sims_ub)  for sr in sim_results]
+    #axR.semilogx(r,dro_std, color='b', linestyle='--', dashes=(5, 1)) 
+    
     #===========================================================================
     #axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
     #axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
@@ -217,14 +226,15 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
     # Major ticks every 20, minor ticks every 5
-    min_val = 70#-28000#np.round(np.min(p1)-0.01*np.abs(np.min(p1)),-2) - 100
-    max_val = 150#-27000    
+    min_val = -85000#70 for cap expansion 
+    max_val = -10000#150 for cap exapnsion     
     major_r = 1000#np.abs(max_val-min_val)/10
     minor_r = 100#np.abs(max_val-min_val)/50
     major_ticks = np.arange(min_val, max_val, major_r)
     minor_ticks = np.arange(min_val, max_val, minor_r)
     #===========================================================================
-    axarr.set_ylim(min_val, max_val)
+    #axarr.set_ylim(min_val, max_val)
+    #axR.set_ylim(10000, 20000)
     # axarr.set_yticks(major_ticks)
     # axarr.set_yticks(minor_ticks, minor=True)
     #===========================================================================
@@ -236,13 +246,14 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     axarr.grid(which='minor', alpha=0.2)
     axarr.grid(which='major', alpha=0.5)
     
-    axarr.yaxis.set_minor_locator(MultipleLocator(5))
+    axarr.yaxis.set_minor_locator(MultipleLocator(500))
     axarr.set_xlabel('Radius')
     axarr.set_ylabel('Out-of-sample performance')
     axarr.grid(which='minor', alpha=0.2)
     axarr.grid(which='major', alpha=0.5)
     
     plt.tight_layout()
+    #plt.show()
     pp = PdfPages(plot_path)
     pp.savefig(f)
     pp.close()
@@ -462,7 +473,7 @@ if __name__ == '__main__':
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
 
-        sp_file = 'Hydro_R10_AR1_T3_N%i_%i_I100001' %(n,n)
+        sp_file = 'Hydro_R3_AR1_T6_N%i_%i_I100001' %(n,n)
         sp_sim = pickle.load(open('%s%s%s%i%s' %('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/',sp_file,'_Time',max_time,'_SP_MC_ES_OOS.pickle'), 'rb'))
         
         #Sort experiments

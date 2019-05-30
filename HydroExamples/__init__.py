@@ -21,3 +21,5 @@ class Reservoir():
         self.turbine = turbine
         self.spill_cost = s_cost
         self.inflows = inflows 
+
+dro_radii = [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,5]]

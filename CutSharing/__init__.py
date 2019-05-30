@@ -38,7 +38,7 @@ SP_UNBOUNDED = 'sp_unbounded'
 '''
 tolerances
 '''
-ZERO_TOL = 1E-8
+ZERO_TOL = 1E-9
 SDDP_OPT_TOL = 1E-3
 
 '''
@@ -78,7 +78,7 @@ def gurobiStatusCodeToStr( intstatus ):
         return SP_LOADED
     elif intstatus == GRB.OPTIMAL:
         return SP_OPTIMAL
-    elif intstatus in GRB.INFEASIBLE:
+    elif intstatus == GRB.INFEASIBLE:
         return SP_INFEASIBLE
     elif intstatus == GRB.UNBOUNDED:
         return SP_UNBOUNDED

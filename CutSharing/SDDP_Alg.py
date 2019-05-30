@@ -182,7 +182,7 @@ class SDDP(object):
                                  sample_path = sample_path,
                                  num_cuts = self.num_cuts[i])
             
-            if sp_output['status'] != cs.SP_OPTIMAL:
+            if sp_output['status'] == cs.SP_INFEASIBLE:
                 self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
             
             fp_out_states.append(sp_output['out_state'])
@@ -231,7 +231,7 @@ class SDDP(object):
                                  sample_path = sample_path,
                                  num_cuts = self.num_cuts[i])
             
-            if sp_output['status'] != cs.SP_OPTIMAL:
+            if sp_output['status'] == cs.SP_INFEASIBLE:
                 self.debrief_infeasible_sub(sample_path, i, sp_output, sp)
             
             fp_out_states.append(sp_output['out_state'])
@@ -293,7 +293,7 @@ class SDDP(object):
                                      random_container=self.random_container, 
                                      sample_path = sample_path)
                 
-                if sp_output['status'] != cs.SP_OPTIMAL:
+                if sp_output['status'] == cs.SP_INFEASIBLE:
                     self.debrief_infeasible_sub(sample_path, t, sp_output, sp)
                 
                 #sp.printPostSolutionInformation()
@@ -423,8 +423,15 @@ class SDDP(object):
         ev = alg_options['expected_value_problem'] 
         self.random_container._set_outcomes_for_run(ev)
         dynamic_sampling = alg_options['dynamic_sampling']
-        
         lbs = []
+        
+        self.lb = None
+        self.ub = float('inf')
+        self.ub_hw = 0
+        self.upper_bounds = [] 
+        self.pass_iteration = 0
+        
+        
         self.pass_iteration = 0
         self.init_out(instance_name)
         T = len(self.stage_problems)
@@ -578,6 +585,17 @@ class SDDP(object):
             self.iteration_update(0, 0, force_print = True)
         return sr
     
+    
+    def change_dro_radius(self, new_dro_r):
+        assert self.instance['risk_measure_params']['radius'] <= new_dro_r , 'Invalid change of DRO radius.'
+        self.instance['risk_measure_params']['radius'] = new_dro_r
+        for sp in self.stage_problems:
+            sp.risk_measure.modify_param(radius=new_dro_r)
+            sp.model.update()
+        
+    
+    
+    
     def compute_statistical_bound1(self, n_samples):
         self.upper_bounds = []  # rest bound
         for i in range(0,n_samples):
@@ -617,7 +635,7 @@ class SDDP(object):
                                      random_container=self.random_container, 
                                      sample_path = sample_path,
                                      num_cuts = self.num_cuts)
-                if sp_output['status'] != cs.SP_OPTIMAL:
+                if sp_output['status'] == cs.SP_INFEASIBLE:
                     self.debrief_infeasible_sub(sample_path, t,sp_output,sp)
                 
                 fp_out_states.append(sp_output['out_state'])

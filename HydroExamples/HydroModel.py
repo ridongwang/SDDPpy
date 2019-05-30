@@ -152,7 +152,7 @@ def model_builder(stage, valley_chain):
     # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
     #===========================================================================
     
-    Ini_group = [0,3,6]  #Reservoirs which are first in the chain  #Oscars test Ini_group = [0] and R = 3
+    Ini_group = [0]#[0,3,6]  #Reservoirs which are first in the chain  #Oscars test Ini_group = [0] and R = 3
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in Ini_group), 'balance') 
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in Ini_group), 'balance') 
     
@@ -360,14 +360,18 @@ def load_hydro_data(approach, dus_type):
         N_training = N_data
         RHSnoise = np.copy(RHSnoise_data)    
 
-    rr = dro_radius
+    
     cut_type = 'MC' if options['multicut'] else 'SC'
     sampling_type = 'DS' if options['dynamic_sampling']  else 'ES'
-    instance_name = None
-    if approach == "SP":
-        instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], approach, cut_type,  sampling_type)
-    else:
-        instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.7f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , rr, DW_sampling)
+    
+    
+    def instance_name_gen(n_dro_radius):
+        if approach == "SP":
+            instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'], options['max_time'], approach, cut_type,  sampling_type)
+        else:
+            instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.7f_%s" % (nr, lag, T, N_data, N_training,  options['max_iter'],options['max_time'], dus_type, approach, cut_type,  sampling_type , n_dro_radius, DW_sampling)
+        return instance_name
+    instance_name = instance_name_gen(dro_radius)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
 
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
@@ -382,5 +386,5 @@ def load_hydro_data(approach, dus_type):
     rnd_container_data = random_builder(valley_chain_data)
     
     
-    return T, model_builder_n_tran, rnd_builder_n_train, rnd_container_data, rnd_container_oos, rr, instance_name
+    return T, model_builder_n_tran, rnd_builder_n_train, rnd_container_data, rnd_container_oos, dro_radius, instance_name, instance_name_gen
     

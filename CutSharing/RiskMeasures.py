@@ -104,6 +104,7 @@ class AbstracRiskMeasure(ABC):
         Only needed for dynamic sampling
         '''
         return None
+    
 
 
 class Expectation(AbstracRiskMeasure):
@@ -866,6 +867,8 @@ class DistRobust(AbstracRiskMeasure):
         '''
         super().__init__()
         self.inner_solver = dro_inner_solver(**dro_solver_params)
+        self.inner_solver_class = dro_inner_solver
+        self.inner_solver_param = dro_solver_params
         
         #For multi-cut version
         self.global_oracle = None
@@ -920,6 +923,7 @@ class DistRobust(AbstracRiskMeasure):
         
     def update_cut_intercept(self):
         pass  
+    
     def modify_stage_problem(self,  sp,  model, next_stage_rnd_vector):
         '''
         Modify the stage problem to accommodate additional variables and constraints
@@ -965,8 +969,17 @@ class DistRobust(AbstracRiskMeasure):
         p_w = ds_beta*p_worst + (1-ds_beta)*next_rnd_vector.p_copy
         next_rnd_vector.modifyOutcomesProbabilities(p_w)
         
+    def modify_param(self, **kwags):
+        for kw_name in kwags:
+            if kw_name in self.inner_solver_param:
+                self.inner_solver_param[kw_name] = kwags[kw_name]
+                self.inner_solver.modify_inner_solver(**{kw_name:kwags[kw_name]})
+            else:
+                raise 'Parameter %s is not defined in risk measure %s' %(kw_name, type(self))
         
 
+        
+        
 class DistRobusInnerSolver(ABC):
     @abstractmethod
     def __init__(self):
@@ -1122,7 +1135,7 @@ class DiscreteWassersteinInnerSolver(DistRobusInnerSolver):
                 xi_j = nsrv_des.get_sorted_outcome(j)
                 d_ij = self.dist_func(xi_i,xi_j, self.norm)
                 DUS_exp.addTerms(d_ij,z[i,j])
-        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dus[t_%i]' %(t))
+        model.addConstr(lhs=DUS_exp, sense=GRB.LESS_EQUAL, rhs=self.radius, name = 'dro_radius')
         model.ModelSense= GRB.MAXIMIZE
         model.update()
         
@@ -1150,6 +1163,14 @@ class DiscreteWassersteinInnerSolver(DistRobusInnerSolver):
             return new_p
         else:
             raise 'Discrete Wasserstein model was not optimal.'    
+        
+    def modify_inner_solver(self, radius=None):
+            if self.model != None:
+                self.model.getConstrByName('dro_radius').RHS  = radius
+                self.model.update()
+            
+        
+        
         
         
 

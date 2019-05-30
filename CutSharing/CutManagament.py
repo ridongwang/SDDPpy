@@ -94,8 +94,12 @@ class Cut():
         #Reference to the constraint
         if self.lhs.getValue() >= self.rhs - ZERO_TOL :
             self.is_active  = False
+            #slack = self.lhs.getValue() - self.rhs
+            #print(sp , '  o:', outcome,   'Not added ' , slack)
             #self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
         else:
+            #slack = self.lhs.getValue() - self.rhs
+            #print(sp , '  o:', outcome,   'added ' , slack)
             #print('New cuts: ' , self.name)
             self.is_active  = True
             #Reference to the constraint
