@@ -152,7 +152,7 @@ def model_builder(stage, valley_chain):
     # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
     #===========================================================================
     
-    Ini_group = [0]#[0,3,6]  #Reservoirs which are first in the chain  #Oscars test Ini_group = [0] and R = 3
+    Ini_group = list(range(0,nr,3))  #Reservoirs which are first in the chain  #Oscars test Ini_group = [0] and R = 3
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in Ini_group), 'balance') 
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in Ini_group), 'balance') 
     
@@ -299,7 +299,7 @@ def load_hydro_data(approach, dus_type):
     from InstanceGen.ReservoirChainGen import read_instance
     prices = [18+round(5*np.sin(0.5*(x-2)),2) for x in range(0,T)]
     print(prices)
-    hydro_instance = read_instance('hydro_rnd_instance_R30_UD1_T24_LAG1_OUT10K_AR1.pkl' , lag = lag)
+    hydro_instance = read_instance('hydro_rnd_instance_R30_UD0_T48_LAG1_OUT10K_AR1.pkl' , lag = lag)
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr, : , 0:T] #Total of 10,000 samples
     initial_inflow = np.array(hydro_instance.inital_inflows)[:,0:nr]

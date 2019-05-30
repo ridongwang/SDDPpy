@@ -168,7 +168,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     Plot out-of-sample simulation results
     '''
     f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=200)
-    #axR = axarr.twinx()
+    axR = axarr.twinx()
     r = None
     try:
         r = [sr.instance['risk_measure_params']['radius']  for sr in sim_results]
@@ -187,7 +187,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     ev10 = [np.percentile(sp_sim.sims_ub,q=100-q_plot) for _ in r]
     axarr.semilogx(r,ev10, color='r', linestyle='--', dashes=(3, 1))
     sp_std = [np.std(sp_sim.sims_ub) for _ in r]
-    #axR.semilogx(r,sp_std, color='b', linestyle='--', dashes=(5, 1)) 
+    axR.semilogx(r,sp_std, color='b', linestyle='--', dashes=(5, 1)) 
     
     mean = [np.mean(sr.sims_ub)  for sr in sim_results]
     median = [np.median(sr.sims_ub)  for sr in sim_results]
@@ -209,7 +209,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     
     
     dro_std = [np.std(sr.sims_ub)  for sr in sim_results]
-    #axR.semilogx(r,dro_std, color='b', linestyle='--', dashes=(5, 1)) 
+    axR.semilogx(r,dro_std, color='b', linestyle='--', dashes=(5, 1)) 
     
     #===========================================================================
     #axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
@@ -222,7 +222,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     #axarr[0].set_ylim([algo_options['opt_tol']*0.95, np.max(train_loss)])
     #axarr[1].set_ylim([0, 1])
     
-    axarr.legend(loc=1, shadow=True, fontsize='small')
+    axarr.legend(loc='best', shadow=True, fontsize='small')
     #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
     # Major ticks every 20, minor ticks every 5
@@ -473,7 +473,7 @@ if __name__ == '__main__':
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
 
-        sp_file = 'Hydro_R3_AR1_T6_N%i_%i_I100001' %(n,n)
+        sp_file = 'Hydro_R10_AR1_T6_N%i_%i_I100001' %(n,n)
         sp_sim = pickle.load(open('%s%s%s%i%s' %('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/',sp_file,'_Time',max_time,'_SP_MC_ES_OOS.pickle'), 'rb'))
         
         #Sort experiments
