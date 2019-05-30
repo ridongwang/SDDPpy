@@ -176,6 +176,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             'value to determine the number of constraints to be added in the primal representation of the DUS'
         self.data_random_container = data_random_container
         self.dro_ctrs = {} 
+        self.gamma = None
     
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
@@ -199,7 +200,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
             return super().compute_cut_intercept(sp, sp_next, srv, soo, spfs, cut_id)
     
     def update_cut_intercept(self):
-        pass            
+        pass
     
     def modify_stage_problem(self, sp,  model, next_stage_rnd_vector):
         '''
@@ -247,10 +248,22 @@ class DistRobustWasserstein(AbstracRiskMeasure):
                 self.dro_ctrs[(i,j)]= crt
             model.update()
         
+        self.gamma = gamma_var
         
     
     def forward_pass_updates(self, *args, **kwargs):
         return False, 0 
+    
+    def modify_param(self, **kwags):
+        for kw_name in kwags:
+            if kw_name in self.__dict__:
+                self.__dict__[kw_name] = kwags[kw_name]
+                if kw_name == 'radius' and self.gamma!=None:
+                    self.gamma.obj = kwags[kw_name]
+                    
+            else:
+                raise 'Parameter %s is not defined in risk measure %s' %(kw_name, type(self))
+
     
     def forward_prob_update (self, t, sp, next_sp, fp_out_states , sample_path,  rnd_container ):
         '''Updates the probability distribution for the descendants of the current stage.
