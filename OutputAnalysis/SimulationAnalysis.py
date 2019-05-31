@@ -117,18 +117,26 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             exp_name = lbs_exp[0]
             lb_points = len(lbs_exp[1])
             lbs_data = lbs_exp[1]
-            #print([lbs_data[i][1] for i in range(lb_points)])
-            #print([lbs_data[i][0] for i in range(lb_points)])
-            axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
+            print(lb_points)#, [lbs_data[i][1] for i in range(lb_points)])
+            #print(lb_points, [lbs_data[i][0] for i in range(lb_points)])
+            
+            #axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
+            #min_val = np.minimum(min_val,lbs_data[10][0])
+            #max_val = np.maximum(max_val,lbs_data[-1][0])
+            #max_time = np.minimum(max_time, lbs_data[-1][1])
+            #exp_ix = exp_ix +1
+            axarr.plot([i for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
             min_val = np.minimum(min_val,lbs_data[10][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
-            max_time = np.minimum(max_time, lbs_data[-1][1])
+            max_time = np.minimum(max_time, lb_points)
             exp_ix = exp_ix +1
         #max_time = 2000
+        min_val = 40000
+        max_time = 100
         print(min_val,max_val,max_time)   
-        axarr.legend(loc='best', shadow=True, fontsize='small')
+        axarr.legend(loc='lower right', shadow=True, fontsize='small')
         axarr.set_ylim(min_val, max_val+0.01*np.abs(max_val-min_val))
-        axarr.yaxis.set_minor_locator(MultipleLocator(10))
+        axarr.yaxis.set_minor_locator(MultipleLocator(1000))
         axarr.set_ylabel('Lower bound')
         
         axarr.set_xlim(0, max_time)
