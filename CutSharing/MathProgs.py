@@ -217,16 +217,21 @@ class StageProblem():
         '''
         lp_time = time()
         self.model.update()
-        #self.model.reset()
         self.model.optimize()
-           
+        if self.model.status != GRB.OPTIMAL:
+            self.model.reset()
+            self.model.optimize()
         lp_time = time() - lp_time
+        
+        
+        '''
+        Retrieve solution
+        '''
         data_mgt_time = time()
         output = {}
         status = gurobiStatusCodeToStr(self.model.status)
         output['status'] = status
-        
-        if status ==  SP_OPTIMAL or self.model.status==GRB.SUBOPTIMAL:
+        if status ==  SP_OPTIMAL:
             output['objval'] = self.model.ObjVal
             if forwardpass == True:
                 resolves = 0
@@ -263,7 +268,8 @@ class StageProblem():
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
             
         else:
-            print('Not optimal sub')
+            raise 'Model is not optimal, status: %i' %(self.model.status)
+   
             #if self.stage == 0:
                 #self.print_theta()
             

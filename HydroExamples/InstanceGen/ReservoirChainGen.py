@@ -53,7 +53,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                             R_matrices[t][l][i][i-j]=R_matrices[t-season][l][i][i-j]
     print(R_matrices[2][1])
     np.random.seed(1234)
-    inflow_t0 = [[np.random.uniform(5,40) for i in range(num_reservoirs)] for l in range(lag+1)] 
+    inflow_t0 = [[np.around(np.random.uniform(5,40),3) for i in range(num_reservoirs)] for l in range(lag+1)] 
     
     print(np.array(inflow_t0)[:,0:5])
     #===========================================================================
@@ -81,7 +81,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
         #loc_s = np.exp(mu_s+0.5*sig_s**2)
         for i in range(num_reservoirs):
             if t<season:
-                RHS_noise[i,:,t] = np.random.lognormal(mu_s[i],sig_s[i],num_outcomes) #nr 10 and nr 100
+                RHS_noise[i,:,t] = np.around(np.random.lognormal(mu_s[i],sig_s[i],num_outcomes),3) #nr 10 and nr 100
                 mu_i = np.exp(mu_s[i]+0.5*sig_s[i]**2)
                 var_i = mu_i*sig_s[i]
                 #RHS_noise[i,:,t] = np.abs(np.random.normal(mu_i, var_i,num_outcomes)) #nr 10 and nr 100
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     
     
     
-    hydro_instance = read_instance('hydro_rnd_instance_R%i_UD%i_T%i_LAG%i_OUT10K_AR1.pkl' %(nr,ud,T,lag) , lag=1)
+    hydro_instance = read_instance('hydro_rnd_instance_R%i_UD%i_T%i_LAG%i_OUT10K_AR1.pkl' %(nr,ud,T,1) , lag=1)
     matrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise
     inflow_t0 = hydro_instance.inital_inflows

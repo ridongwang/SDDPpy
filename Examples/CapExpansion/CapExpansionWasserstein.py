@@ -81,7 +81,7 @@ if __name__ == '__main__':
     rho = 10  # shortfall penalty
     
     scen = None # number of scenarios
-    for scen in [200]:#[5,10,30,50,100]:
+    for scen in [20,50,100,200]:#[5,10,30,50,100]:
         '''
             Data generation
         '''
@@ -159,7 +159,8 @@ if __name__ == '__main__':
             else:
                 print(sim_results[0].instance)
                 raise 'Unknown dro params'
-            instance_name = 'CapExp_N%i_m%i_n%i' %(scen,m,n)
-            plot_path = '%s%s.pdf' %(ptf,instance_name)
-            N = scen
-            plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file=False)
+            for plot_type in ['means', 'vars']:
+                instance_name = 'CapExp_N%i_m%i_n%i_%s' %(scen,m,n,plot_type)
+                plot_path = '%s%s.pdf' %(ptf,instance_name)
+                N = scen
+                plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type=plot_type, excel_file=False)

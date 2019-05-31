@@ -120,7 +120,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             #print([lbs_data[i][1] for i in range(lb_points)])
             #print([lbs_data[i][0] for i in range(lb_points)])
             axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            min_val = np.minimum(min_val,lbs_data[100][0])
+            min_val = np.minimum(min_val,lbs_data[10][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
             max_time = np.minimum(max_time, lbs_data[-1][1])
             exp_ix = exp_ix +1
@@ -163,12 +163,16 @@ def plot_lbs_comp(lbs_by_r, plot_path):
     #===========================================================================
     
 
-def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
+def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means',excel_file = True):
     '''
     Plot out-of-sample simulation results
+    Args:
+        sp_sim (SimResult): object that contains the results for the SP solution
+        sim_results (list of SimResult): list with the results for each radius
+        N (int): Number of outcomes per stage
+        plot_type: 'means': plots the mean of SP and DRO and the 10th-90th percentiles
+                   'vars': Plot the variance and coefficient of variation of SP and DRO
     '''
-    f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=200)
-    axR = axarr.twinx()
     r = None
     try:
         r = [sr.instance['risk_measure_params']['radius']  for sr in sim_results]
@@ -177,61 +181,63 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
             r = [sr.instance['risk_measure_params']['dro_solver_params']['DUS_radius']  for sr in sim_results]
         except:
             r = [sr.instance['risk_measure_params']['dro_solver_params']['radius']  for sr in sim_results]
+    
+    '''
+    Compute SP statistics
+    '''
     q_plot = 90
-    ev = [np.mean(sp_sim.sims_ub) for _ in r]
-    axarr.semilogx(r,ev, color='r', label='SP Mean')
-    ev_median = [np.median(sp_sim.sims_ub) for _ in r]
-    #axarr.semilogx(r,ev_median, color='r',linestyle='--', label='SP Median')
-    ev90 = [np.percentile(sp_sim.sims_ub,q=q_plot) for _ in r]
-    axarr.semilogx(r,ev90, color='r', linestyle='--', dashes=(3, 1),  label='SP %i-%i' %(100-q_plot,q_plot))
-    ev10 = [np.percentile(sp_sim.sims_ub,q=100-q_plot) for _ in r]
-    axarr.semilogx(r,ev10, color='r', linestyle='--', dashes=(3, 1))
-    sp_std = [np.std(sp_sim.sims_ub) for _ in r]
-    axR.semilogx(r,sp_std, color='b', linestyle='--', dashes=(5, 1)) 
+    sp_mean = np.array([np.mean(sp_sim.sims_ub) for _ in r])
+    sp_median = np.array([np.median(sp_sim.sims_ub) for _ in r])
+    sp_q_up = np.array([np.percentile(sp_sim.sims_ub,q=q_plot) for _ in r])
+    sp_q_down = np.array([np.percentile(sp_sim.sims_ub,q=100-q_plot) for _ in r])
+    sp_std = np.array([np.std(sp_sim.sims_ub) for _ in r])
+    sp_cv = sp_std/sp_mean
     
-    mean = [np.mean(sr.sims_ub)  for sr in sim_results]
-    median = [np.median(sr.sims_ub)  for sr in sim_results]
-    p20 = [np.percentile(sr.sims_ub, q=20)   for sr in sim_results]
-    p80 = [np.percentile(sr.sims_ub, q=80)   for sr in sim_results]
-    p10 = [np.percentile(sr.sims_ub, q=q_plot)   for sr in sim_results]
-    p90 = [np.percentile(sr.sims_ub, q=100-q_plot)   for sr in sim_results]
-    p95 = [np.percentile(sr.sims_ub, q=95)   for sr in sim_results]
-    p5 = [np.percentile(sr.sims_ub, q=5)   for sr in sim_results]
-    p99 = [np.percentile(sr.sims_ub, q=99)   for sr in sim_results]
-    p1 = [np.percentile(sr.sims_ub, q=1)   for sr in sim_results]
-    
-    axarr.semilogx(r,mean, color='k', label='DRO Mean')
-    #axarr.semilogx(r,median, color='black',linestyle='--', label='DR Median')
-    #axarr.semilogx(r,p20, color='red', linestyle='--', dashes=(1, 1),label='20-80')
-    #axarr.semilogx(r,p80, color='red', linestyle='--', dashes=(1, 1))
-    axarr.semilogx(r,p10, color='k', linestyle='--', dashes=(3, 1),label='DRO %i-%i' %(100-q_plot,q_plot))
-    axarr.semilogx(r,p90, color='k', linestyle='--', dashes=(3, 1))
+    '''
+    Compute DRO statistics
+    '''
+    dro_mean = np.array([np.mean(sr.sims_ub)  for sr in sim_results])
+    dro_median = np.array([np.median(sr.sims_ub)  for sr in sim_results])
+    dro_q_up = np.array([np.percentile(sr.sims_ub, q=q_plot)   for sr in sim_results])
+    dro_q_down = np.array([np.percentile(sr.sims_ub, q=100-q_plot)   for sr in sim_results])
+    dro_std = np.array([np.std(sr.sims_ub)  for sr in sim_results])
+    dro_cv = dro_std/dro_mean
     
     
-    dro_std = [np.std(sr.sims_ub)  for sr in sim_results]
-    axR.semilogx(r,dro_std, color='b', linestyle='--', dashes=(5, 1)) 
-    
-    #===========================================================================
-    #axarr.semilogx(r,p5, color='red', linestyle='--', dashes=(7, 3) ,label=' 5 - 95')
-    #axarr.semilogx(r,p95, color='red', linestyle='--', dashes=(7, 3))
-    #axarr.semilogx(r,p1, color='red', label=' 1 - 99')
-    #axarr.semilogx(r,p99, color='red', )
-    #===========================================================================
-    
-    #axarr[1].plot(iterations,test_accuracy, color='b', label='Test acc.')
-    #axarr[0].set_ylim([algo_options['opt_tol']*0.95, np.max(train_loss)])
-    #axarr[1].set_ylim([0, 1])
+    '''
+    Plot data
+    '''
+    f, axarr = plt.subplots(1, 1, figsize=(6, 6), dpi=200)
+    if plot_type == 'means':
+        axarr.semilogx(r,sp_mean, color='r', label='SP Mean')
+        axarr.semilogx(r,sp_q_up, color='r', linestyle='--', dashes=(3, 1),  label='SP %i-%i' %(100-q_plot,q_plot))
+        axarr.semilogx(r,sp_q_down, color='r', linestyle='--', dashes=(3, 1))
+        axarr.semilogx(r,dro_mean, color='k', label='DRO Mean')
+        axarr.semilogx(r,dro_q_up, color='k', linestyle='--', dashes=(3, 1),label='DRO %i-%i' %(100-q_plot,q_plot))
+        axarr.semilogx(r,dro_q_down, color='k', linestyle='--', dashes=(3, 1))
+        min_val = 70#-85000#70 for cap expansion 
+        max_val = 150#-10000#150 for cap exapnsion     
+        #axarr.set_ylim(min_val, max_val)
+        axarr.set_ylabel('Out-of-sample performance')
+    elif plot_type == 'vars':
+        #axR = axarr.twinx()
+        axarr.semilogx(r,sp_std, color='r', label= 'SP SD') 
+        #axR.semilogx(r,sp_cv, color='r', linestyle='--', dashes=(5, 1), label='SP CV')
+        axarr.semilogx(r,dro_std, color='k', label= 'DRO SD') 
+        #axR.semilogx(r,dro_cv, color='k', linestyle='--', dashes=(5, 1), label='DRO CV') 
+        axarr.set_ylabel('Standard deviation')
+        #axR.set_ylabel('Coeff. of variation')
+        min_val = 30#-85000#70 for cap expansion 
+        max_val = 120#-10000#150 for cap exapnsion     
+        axarr.set_ylim(min_val, max_val)
+        
     
     axarr.legend(loc='best', shadow=True, fontsize='small')
-    #axarr[1].legend(loc='lower right', shadow=True, fontsize='x-large')
     
-    # Major ticks every 20, minor ticks every 5
-    min_val = -85000#70 for cap expansion 
-    max_val = -10000#150 for cap exapnsion     
     major_r = 1000#np.abs(max_val-min_val)/10
     minor_r = 100#np.abs(max_val-min_val)/50
-    major_ticks = np.arange(min_val, max_val, major_r)
-    minor_ticks = np.arange(min_val, max_val, minor_r)
+    #major_ticks = np.arange(min_val, max_val, major_r)
+    #minor_ticks = np.arange(min_val, max_val, minor_r)
     #===========================================================================
     #axarr.set_ylim(min_val, max_val)
     #axR.set_ylim(10000, 20000)
@@ -248,7 +254,6 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file = True):
     
     axarr.yaxis.set_minor_locator(MultipleLocator(500))
     axarr.set_xlabel('Radius')
-    axarr.set_ylabel('Out-of-sample performance')
     axarr.grid(which='minor', alpha=0.2)
     axarr.grid(which='major', alpha=0.5)
     
@@ -441,9 +446,7 @@ if __name__ == '__main__':
     #===========================================================================
     if 'path_to_files' in  kwargs:
         path_to_files = kwargs['path_to_files']
-    else:
-        raise "path parameter is necessary."
-
+    
     if 'plot_type' in  kwargs:
         plot_type = kwargs['plot_type']
         assert plot_type in ['LBS', 'OOS','OOSGAP'], 'Plot type is either lbs or oos %s' %(plot_type)
@@ -473,7 +476,7 @@ if __name__ == '__main__':
                 new_sim = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
                 sim_results.append(new_sim)
 
-        sp_file = 'Hydro_R10_AR1_T6_N%i_%i_I100001' %(n,n)
+        sp_file = 'Hydro_R10_AR1_T12_N%i_%i_I100001' %(n,n)
         sp_sim = pickle.load(open('%s%s%s%i%s' %('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/',sp_file,'_Time',max_time,'_SP_MC_ES_OOS.pickle'), 'rb'))
         
         #Sort experiments
@@ -495,39 +498,38 @@ if __name__ == '__main__':
         N = kwargs['N']
         plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file=False)
     elif plot_type == 'LBS':
-        experiment_files = list(positional_args)
+        print(kwargs)
+        ptf_primal = kwargs['ptf_primal']
+        ptf_dual = kwargs['ptf_dual']
+        instance_name = kwargs['exp_file']
+        dro_r = kwargs['r']
+        print(type(dro_r),  '%10.7f' %dro_r)
         lbs_by_r = {}
-        for f in experiment_files:
+        for sampling_sche in ['DS', 'ES']:
             try:
-                exp_name = 'Primal' if ('Primal' in f or 'PRIMAL' in f) else 'Dual'
-                print('%s%s' %(path_to_files,f) , exp_name)
-                instance, lb_data = pickle.load(open('%s%s' %(path_to_files,f), 'rb'))
-                exp_name = exp_name + ('_DS' if instance['alg_options']['dynamic_sampling'] else '_ES')
-                exp_name = exp_name + ('_MC' if instance['alg_options']['multicut'] else '_SC')
-                r_instance = None
-                if 'radius' in instance['risk_measure_params']:
-                    r_instance =instance['risk_measure_params']['radius']
-                elif 'dro_solver_params' in  instance['risk_measure_params']:
-                    if 'radius' in instance['risk_measure_params']['dro_solver_params']:
-                        r_instance = instance['risk_measure_params']['dro_solver_params']['radius']
-                    elif 'DUS_radius' in instance['risk_measure_params']['dro_solver_params']:
-                        r_instance = instance['risk_measure_params']['dro_solver_params']['DUS_radius']
-                    else:
-                        print(instance)
-                        raise 'Unknown dro params'
-                else:
-                    print(instance)
-                    raise 'Unknown dro params'
-                print(exp_name)
+                file_name = ptf_dual+instance_name + '_DW_DUAL_MC_%s_%.7f_None_LBS.pickle' %(sampling_sche,dro_r)
+                instance, lb_data = pickle.load(open('%s' %(file_name), 'rb'))
+                r_instance =instance['risk_measure_params']['radius']
+                exp_name = 'DUAL_MC_%s' %(sampling_sche)
                 if r_instance not in lbs_by_r:
                     lbs_by_r[r_instance] = [(exp_name, lb_data)]
                 else:
                     lbs_by_r[r_instance].append((exp_name,lb_data))
-                
             except:
-                print('Something wrong with %s' %(f))
-
-        plot_path = path_to_files + file_n + "_DW_LBS"
+                print(file_name, '  is missing ' )
+            for cut_type in ['MC', 'SC']:
+                try:
+                    file_name = ptf_primal+instance_name + '_DW_PRIMAL_%s_%s_%.7f_None_LBS.pickle' %(cut_type,sampling_sche,dro_r)
+                    instance, lb_data = pickle.load(open('%s' %(file_name), 'rb'))
+                    exp_name = 'PRIMAL_%s_%s' %(cut_type, sampling_sche)
+                    if r_instance not in lbs_by_r:
+                        lbs_by_r[r_instance] = [(exp_name, lb_data)]
+                    else:
+                        lbs_by_r[r_instance].append((exp_name,lb_data))
+                except:
+                    print(file_name, '  is missing ' )
+            
+        plot_path = path_to_files + instance_name + "_DW_LBS"
         plot_lbs_comp(lbs_by_r, plot_path)   
     elif plot_type == "OOSGAP":
         #compare out of sample performance as gaps
