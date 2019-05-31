@@ -39,7 +39,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                             #R_matrices[t][l][i][i-j]=np.random.normal(0, var) #for nr=10  experiments
                             R_matrices[t][l][i][i-j]= np.round(np.random.normal(0.4, 0.2), 3) #for nr=30  experiments
                             #R_matrices[t][l][i][i-j]=np.random.normal(0.1, (1.0/(lag*up_stream_dep+1)))
-                            #R_matrices[t][l][i][i-j]=np.random.uniform(-var,var)
+                            #R_matrices[t][l][i][i-j]=np.random.uniform(0,0.3)
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-1/(up_stream_dep+lag),1/(up_stream_dep+lag)) #for nr=100
                             #===================================================
                             # if t>0:
@@ -53,7 +53,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                             R_matrices[t][l][i][i-j]=R_matrices[t-season][l][i][i-j]
     print(R_matrices[2][1])
     np.random.seed(1234)
-    inflow_t0 = [[np.around(np.random.uniform(5,40),3) for i in range(num_reservoirs)] for l in range(lag+1)] 
+    inflow_t0 = [[np.around(np.random.uniform(0,30),3) for i in range(num_reservoirs)] for l in range(lag+1)] 
     
     print(np.array(inflow_t0)[:,0:5])
     #===========================================================================
@@ -71,22 +71,38 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
     #===========================================================================
     RHS_noise = np.zeros(shape=(num_reservoirs,num_outcomes,T))
     for t in range(T):
-        mean_t =  np.minimum(np.array([1.5 - round(0.1 * np.sin(0.5 * (t - 6)), 2) for i in range(num_reservoirs)]),1.5)
-        sig_t = 1+0*np.array([1 + round(0.3 * np.sin(0.5 * (t - 5)), 2) for i in range(num_reservoirs)])
+        #mean_t =  np.minimum(np.array([1.5 - round(0.1 * np.sin(0.5 * (t - 6)), 2) for i in range(num_reservoirs)]),1.5)
+        #sig_t = np.array([1 + round(0.3 * np.sin(0.5 * (t - 5)), 2) for i in range(num_reservoirs)])
         
+        mean_t =  np.minimum(np.array([25 - round(10 * np.sin(0.5 * (t - 6)), 2) for i in range(num_reservoirs)]),50)
+        sig_t = np.array([10 + round(5 * np.sin(0.5 * (t - 2)), 2) for i in range(num_reservoirs)])
         
+        cov_mat = np.zeros((nr,nr))
+        for i in range(nr):
+            for j in range(nr):
+                if i == j:
+                    cov_mat[i,j] = sig_t[i]**2
+                else:
+                    cov_mat[i,j] = sig_t[i]*sig_t[j]*np.random.uniform(0.3,0.9)
+        RHS_corralated = np.random.multivariate_normal(mean_t, cov_mat, size= num_outcomes)
+        if t<season:
+            RHS_noise[:,:,t] = RHS_corralated.transpose()
+        else:
+            RHS_noise[:,:,t] = RHS_noise[:,:,t-season]
         print(t, ': ', mean_t[0], '  ' , sig_t[0])
-        mu_s = np.random.uniform(mean_t , mean_t, num_reservoirs)
-        sig_s = np.random.uniform(sig_t*0.5 , sig_t, num_reservoirs)
-        #loc_s = np.exp(mu_s+0.5*sig_s**2)
-        for i in range(num_reservoirs):
-            if t<season:
-                RHS_noise[i,:,t] = np.around(np.random.lognormal(mu_s[i],sig_s[i],num_outcomes),3) #nr 10 and nr 100
-                mu_i = np.exp(mu_s[i]+0.5*sig_s[i]**2)
-                var_i = mu_i*sig_s[i]
-                #RHS_noise[i,:,t] = np.abs(np.random.normal(mu_i, var_i,num_outcomes)) #nr 10 and nr 100
-            else:
-                RHS_noise[i,:,t] = RHS_noise[i,:,t-season]
+        #=======================================================================
+        # mu_s = np.random.uniform(mean_t , mean_t, num_reservoirs)
+        # sig_s = np.random.uniform(sig_t*0.5 , sig_t, num_reservoirs)
+        # #loc_s = np.exp(mu_s+0.5*sig_s**2)
+        # for i in range(num_reservoirs):
+        #     if t<season:
+        #         #RHS_noise[i,:,t] = np.around(np.random.lognormal(mu_s[i],sig_s[i],num_outcomes),3) #nr 10 and nr 100
+        #         mu_i = np.exp(mu_s[i]+0.5*sig_s[i]**2)
+        #         var_i = mu_i*sig_s[i]
+        #         RHS_noise[i,:,t] = (np.random.normal(mu_i, var_i,num_outcomes)) #nr 10 and nr 100
+        #     else:
+        #         RHS_noise[i,:,t] = RHS_noise[i,:,t-season]
+        #=======================================================================
         
     
     if simulate:
@@ -101,7 +117,7 @@ def simulate_AR_model(R_matrices, inflow_t0, RHS_noise, T, nr, lag):
     prices = [18+round(5*np.sin(0.5*(x-2)),2) for x in range(0,T)]
     num_reservoirs = nr
     plt.figure(1)
-    num_reps = 500
+    num_reps = 200
     res_ref  = [0,1,2, 5, 8]
     np.random.seed(res_ref)
     mean_res_ref = {rr:np.zeros((T)) for rr in res_ref}
@@ -175,6 +191,6 @@ if __name__ == '__main__':
     matrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise
     inflow_t0 = hydro_instance.inital_inflows
-    simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 12, 10, 1)
+    simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 24, 10, 1)
     
      
