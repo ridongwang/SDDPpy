@@ -83,7 +83,7 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                 if i == j:
                     cov_mat[i,j] = sig_t[i]**2
                 else:
-                    cov_mat[i,j] = sig_t[i]*sig_t[j]*np.random.uniform(0.3,0.9)
+                    cov_mat[i,j] = sig_t[i]*sig_t[j]*np.random.uniform(0.3,0.95)
         RHS_corralated = np.random.multivariate_normal(mean_t, cov_mat, size= num_outcomes)
         if t<season:
             RHS_noise[:,:,t] = RHS_corralated.transpose()

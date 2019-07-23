@@ -32,12 +32,13 @@ class Turbine():
         self.flowknots = flowknots
         self.powerknots = powerknots
 class Reservoir():
-    def __init__(self, minlevel, maxlevel, initial, turbine, s_cost, inflows):
+    def __init__(self, minlevel, maxlevel, initial, turbine, p_cost, s_cost, inflows):
         self.min = minlevel
         self.max = maxlevel
         self.initial = initial
         self.turbine = turbine
         self.spill_cost = s_cost
+        self.pour_cost = p_cost
         self.inflows = inflows 
 
 
@@ -53,10 +54,9 @@ dro_radius = None
 Rmatrix = None
 RHSnoise = None
 initial_inflow = None 
-#valley_chain = None
-#valley_chain_oos = None
 prices = None
-Water_Penalty = 10000
+Water_Penalty = 1000
+Spillage_Penalty = 100
 
 def random_builder(valley_chain):
     rc = RandomContainer()
@@ -79,7 +79,6 @@ def model_builder(stage, valley_chain):
     '''
     Builds a particular instance of a multistage problem
     '''
-    import gurobipy as gb
     m = Model('Hydrovalley_%i' %(stage))
     
     '''
@@ -152,7 +151,7 @@ def model_builder(stage, valley_chain):
     # m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + sum(R_t[l][i][j]*inflow0[j,l]  for l in lag_set for j in R_t[l][i])+ innovations[i] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr)), 'balance')
     #===========================================================================
     
-    Ini_group = list(range(0,nr,3))  #Reservoirs which are first in the chain  #Oscars test Ini_group = [0] and R = 3
+    Ini_group = list(range(0,nr,5))  #Reservoirs which are first in the chain  #Oscars test Ini_group = [0] and R = 3
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i]  for i in Ini_group), 'balance') 
     m.addConstrs((reservoir_level[i] ==  reservoir_level0[i] + inflow[i,1] - outflow[i] - spill[i] + pour[i] + outflow[i-1] + spill[i-1] for i in range(1,nr) if i not in Ini_group), 'balance') 
     
@@ -174,7 +173,7 @@ def model_builder(stage, valley_chain):
     m.addConstr(thermal_cost >= 50*thermal-3500)
     
     #Objective 
-    objfun = -prices[stage]*(generation+thermal) + quicksum(0*r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.spill_cost*pour[i] for (i,r) in enumerate(valley_chain)) + thermal_cost
+    objfun = -prices[stage]*(generation+thermal) + quicksum(r.spill_cost*spill[i] for (i,r) in enumerate(valley_chain)) + quicksum(r.pour_cost*pour[i] for (i,r) in enumerate(valley_chain)) + thermal_cost
     m.setObjective(objfun, GRB.MINIMIZE)
     m.update()
     if stage == -1:
@@ -326,7 +325,7 @@ def load_hydro_data(approach, dus_type):
     l_test = list(test_indeces) 
     l_test.sort()
     RHSnoise_oos = RHSnoise_density[:,l_test]
-    valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_oos]
+    valley_chain_oos = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, Spillage_Penalty, x) for x in RHSnoise_oos]
     
     #Train indices for Wasserstein distance
     available_indices = set(range(len(RHSnoise_density[0]))) - test_indeces
@@ -334,7 +333,7 @@ def load_hydro_data(approach, dus_type):
     #data_indeces=set(experiment_desing_gen.choice(list(available_indices), size=N_data, replace=False))
     data_indeces = available_indices[0:N_data]
     RHSnoise_data = RHSnoise_density[:,data_indeces]
-    valley_chain_data = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_data]
+    valley_chain_data = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, Spillage_Penalty, x) for x in RHSnoise_data]
     print(data_indeces)
     if DW_extended > 1 and dus_type=='DW':
         #Generate additional data points from the data
@@ -374,7 +373,7 @@ def load_hydro_data(approach, dus_type):
     instance_name = instance_name_gen(dro_radius)
     sddp_log.addHandler(logging.FileHandler(hydro_path+"/Output/log/%s.log" %(instance_name), mode='w'))
 
-    valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
+    valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, Spillage_Penalty, x) for x in RHSnoise]
 
     def rnd_builder_n_train():
         return random_builder(valley_chain)

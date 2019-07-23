@@ -120,28 +120,32 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             print(lb_points)#, [lbs_data[i][1] for i in range(lb_points)])
             #print(lb_points, [lbs_data[i][0] for i in range(lb_points)])
             
-            #axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            #min_val = np.minimum(min_val,lbs_data[10][0])
-            #max_val = np.maximum(max_val,lbs_data[-1][0])
-            #max_time = np.minimum(max_time, lbs_data[-1][1])
-            #exp_ix = exp_ix +1
+            #===================================================================
+            # axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
+            # min_val = np.minimum(min_val,lbs_data[80][0])
+            # max_val = np.maximum(max_val,lbs_data[-1][0])
+            # max_time = np.minimum(max_time, lbs_data[-1][1])
+            # exp_ix = exp_ix +1
+            #===================================================================
+            
             axarr.plot([i for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
             min_val = np.minimum(min_val,lbs_data[10][0])
             max_val = np.maximum(max_val,lbs_data[-1][0])
             max_time = np.minimum(max_time, lb_points)
-            exp_ix = exp_ix +1
+            exp_ix = exp_ix + 1
+        
         #max_time = 2000
-        min_val = 40000
-        max_time = 100
+        min_val = -530000
+        #max_time = 100
         print(min_val,max_val,max_time)   
         axarr.legend(loc='lower right', shadow=True, fontsize='small')
         axarr.set_ylim(min_val, max_val+0.01*np.abs(max_val-min_val))
         axarr.yaxis.set_minor_locator(MultipleLocator(1000))
         axarr.set_ylabel('Lower bound')
         
-        axarr.set_xlim(0, max_time)
+        #axarr.set_xlim(0, max_time)
         #axarr.xaxis.set_minor_locator(MultipleLocator(10))
-        axarr.set_xlabel('Time')
+        axarr.set_xlabel('Iterations')
         
         axarr.grid(which='minor', alpha=0.2)
         axarr.grid(which='major', alpha=0.5)
@@ -171,7 +175,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
     #===========================================================================
     
 
-def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means',excel_file = True):
+def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='vars',excel_file = True):
     '''
     Plot out-of-sample simulation results
     Args:
@@ -223,8 +227,8 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means',excel_
         axarr.semilogx(r,dro_mean, color='k', label='DRO Mean')
         axarr.semilogx(r,dro_q_up, color='k', linestyle='--', dashes=(3, 1),label='DRO %i-%i' %(100-q_plot,q_plot))
         axarr.semilogx(r,dro_q_down, color='k', linestyle='--', dashes=(3, 1))
-        min_val = 70#-85000#70 for cap expansion 
-        max_val = 150#-10000#150 for cap exapnsion     
+        min_val = 70#-150000#70 for cap expansion 
+        max_val = 150#-100000#150 for cap exapnsion     
         #axarr.set_ylim(min_val, max_val)
         axarr.set_ylabel('Out-of-sample performance')
     elif plot_type == 'vars':
@@ -237,7 +241,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means',excel_
         #axR.set_ylabel('Coeff. of variation')
         min_val = 30#-85000#70 for cap expansion 
         max_val = 120#-10000#150 for cap exapnsion     
-        axarr.set_ylim(min_val, max_val)
+        #axarr.set_ylim(min_val, max_val)
         
     
     axarr.legend(loc='best', shadow=True, fontsize='small')
@@ -260,7 +264,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means',excel_
     axarr.grid(which='minor', alpha=0.2)
     axarr.grid(which='major', alpha=0.5)
     
-    axarr.yaxis.set_minor_locator(MultipleLocator(500))
+    #axarr.yaxis.set_minor_locator(MultipleLocator(1000))
     axarr.set_xlabel('Radius')
     axarr.grid(which='minor', alpha=0.2)
     axarr.grid(which='major', alpha=0.5)

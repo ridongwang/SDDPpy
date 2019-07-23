@@ -67,7 +67,7 @@ def stage_prob_factory(data):
     return stage_prob_builder
 
 if __name__ == '__main__':
-    CutSharing.options['max_iter'] = 50
+    CutSharing.options['max_iter'] = 100
     CutSharing.options['multicut'] = True
     CutSharing.options['lines_freq'] = 1
     T=2 # number of stages
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     rho = 10  # shortfall penalty
     
     scen = None # number of scenarios
-    for scen in [20,50,100,200]:#[5,10,30,50,100]:
+    for scen in [99]:#[5,10,30,50,100]:
         '''
             Data generation
         '''
@@ -93,12 +93,13 @@ if __name__ == '__main__':
         dro_trials.extend([r for r in range(100,200,10)])
         #dro_trials.extend([r for r in range(200,1000,50)])
         #dro_trials.extend([r for r in range(1000,2001,200)])
-        dro_trials.extend([0.5,1,2,5,200,300,400,500,1000,5000])
+        dro_trials.extend([0.01,0.05,0.1,0.5,1,2,5,200,300,400,500,1000,5000])
         dro_trials.sort()
         #dro_trials = [10000000]
         print(dro_trials)
       
-        if False: #solve
+        if True: #solve
+            
             for dro_r in dro_trials:
                 instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
                 #algo_sp = SDDP(T, model_builder, random_builder)
@@ -138,10 +139,12 @@ if __name__ == '__main__':
             print(experiment_files)
             sim_results = []
             for dro_r in dro_trials:
-                instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
-                new_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
-                sim_results.append(new_sim)
-        
+                try:
+                    instance_name = 'DW_CapExp_N%i_m%i_n%i_r%.3f' %(scen,m,n,dro_r)
+                    new_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
+                    sim_results.append(new_sim)
+                except:
+                    print(dro_r, ' not fount')
             instance_name = 'SP_CapExp_N%i_m%i_n%i' %(scen,m,n)
             sp_sim = pickle.load(open('%s%s_OOS.pickle' %(ptf,instance_name), 'rb'))
             
