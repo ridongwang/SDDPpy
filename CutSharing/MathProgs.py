@@ -292,32 +292,33 @@ class StageProblem():
         #         strout = strout + '%20s:%10.3f;' %(v.varname, v.X)
         #=======================================================================
         strout = '======== Stage %s %.3f, HydroGen: %10.2f,  Thermal Gen %10.2f =========\n' %(self.stage,self.cx.getValue(), self.model.getVarByName('generation').X, self.model.getVarByName('thermal_gen').X)
-        strout += 'oracle %16.3f; ' %(self.model.ObjVal-self.cx.getValue())
-        for r in range(3):
-            v=self.model.getVarByName('reservoir_level[%i]' %r)
-            strout = strout + '>%10.3f; ' %(v.X)
+        strout += 'oracle %16.3f; \n' %(self.model.ObjVal-self.cx.getValue())
+        nr = 10
+        for r in range(nr):
+            v=self.model.getVarByName('reservoir_level0[%i]' %r)
+            strout = strout + '+%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(2):
-            v=self.model.getVarByName('innovations[%i]' %r)
-            #strout = strout + '+%10.3f; ' %(v.X)
-        strout += '\n'
-        for r in range(3):
+#         for r in range(nr):
+#             v=self.model.getVarByName('innovations[%i]' %r)
+#             strout = strout + '+%10.3f; ' %(v.X)
+#         strout += '\n'
+        for r in range(nr):
             v=self.model.getVarByName('inflow[%i,1]' %r)
             strout = strout + '+%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(3):
+        for r in range(nr):
             v=self.model.getVarByName('pour[%i]' %r)
             strout = strout + '+%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(3):
+        for r in range(nr):
             v=self.model.getVarByName('outflow[%i]' %r)
             strout = strout + '-%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(3):
+        for r in range(nr):
             v=self.model.getVarByName('spill[%i]' %r)
             strout = strout + '-%10.3f; ' %(v.X)
         strout += '\n'
-        for r in range(3):
+        for r in range(nr):
             v=self.model.getVarByName('reservoir_level[%i]' %r)
             strout = strout + '=%10.3f; ' %(v.X)
         print(strout)

@@ -175,7 +175,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
     #===========================================================================
     
 
-def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='vars',excel_file = True):
+def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means',excel_file = True):
     '''
     Plot out-of-sample simulation results
     Args:
@@ -197,7 +197,7 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='vars',excel_f
     '''
     Compute SP statistics
     '''
-    q_plot = 90
+    q_plot = 99
     sp_mean = np.array([np.mean(sp_sim.sims_ub) for _ in r])
     sp_median = np.array([np.median(sp_sim.sims_ub) for _ in r])
     sp_q_up = np.array([np.percentile(sp_sim.sims_ub,q=q_plot) for _ in r])

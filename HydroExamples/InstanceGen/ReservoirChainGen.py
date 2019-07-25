@@ -37,7 +37,8 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                         if (t<season):
                             #var = 0.2 if i>num_reservoirs/2 else 0.6
                             #R_matrices[t][l][i][i-j]=np.random.normal(0, var) #for nr=10  experiments
-                            R_matrices[t][l][i][i-j]= np.round(np.random.normal(0.4, 0.2), 3) #for nr=30  experiments
+                            R_matrices[t][l][i][i-j]= np.round(np.random.normal(1.0, 0.3), 3) #for nr=30  experiments
+                            R_matrices[t][l][i][i-j]= 0.5+0.5*np.sin(t) #for nr=30  experiments
                             #R_matrices[t][l][i][i-j]=np.random.normal(0.1, (1.0/(lag*up_stream_dep+1)))
                             #R_matrices[t][l][i][i-j]=np.random.uniform(0,0.3)
                             #R_matrices[t][l][i][i-j]=np.random.uniform(-1/(up_stream_dep+lag),1/(up_stream_dep+lag)) #for nr=100
@@ -70,12 +71,20 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
     # print(np.max(RHS_noise, 1))
     #===========================================================================
     RHS_noise = np.zeros(shape=(num_reservoirs,num_outcomes,T))
+    #reservoirs_mean = np.random.uniform(.50,1.1,size=num_reservoirs)
+    reservoirs_mean = np.random.uniform(5,20,size=num_reservoirs)
+    reservoirs_mean_shift = reservoirs_mean*0.5
+    r_CV = np.random.uniform(0.2,0.5,size=num_reservoirs)
+    print(reservoirs_mean)
+    print(r_CV)
     for t in range(T):
         #mean_t =  np.minimum(np.array([1.5 - round(0.1 * np.sin(0.5 * (t - 6)), 2) for i in range(num_reservoirs)]),1.5)
         #sig_t = np.array([1 + round(0.3 * np.sin(0.5 * (t - 5)), 2) for i in range(num_reservoirs)])
+        r_CV = np.random.uniform(0.7,2,size=num_reservoirs)
+        mean_t =  np.minimum(np.array([reservoirs_mean[i] - round(reservoirs_mean_shift[i] * np.sin(0.5 * (t - 6)), 2) for i in range(num_reservoirs)]),100)
+        sig_t = r_CV * mean_t
         
-        mean_t =  np.minimum(np.array([25 - round(10 * np.sin(0.5 * (t - 6)), 2) for i in range(num_reservoirs)]),50)
-        sig_t = np.array([10 + round(5 * np.sin(0.5 * (t - 2)), 2) for i in range(num_reservoirs)])
+        #sig_t = np.array([10 + round(5 * np.sin(0.5 * (t - 2)), 2) for i in range(num_reservoirs)])
         
         cov_mat = np.zeros((nr,nr))
         for i in range(nr):
@@ -84,12 +93,14 @@ def gen_instance(num_reservoirs = 1000, up_stream_dep = 1, T  = 12, lag = 1, num
                     cov_mat[i,j] = sig_t[i]**2
                 else:
                     cov_mat[i,j] = sig_t[i]*sig_t[j]*np.random.uniform(0.3,0.95)
+        reservoirs_mu = np.random.uniform(2,20,size=num_reservoirs)    
+        #RHS_corralated = reservoirs_mu+ np.exp(np.random.multivariate_normal(mean_t, cov_mat, size= num_outcomes))
         RHS_corralated = np.random.multivariate_normal(mean_t, cov_mat, size= num_outcomes)
         if t<season:
             RHS_noise[:,:,t] = RHS_corralated.transpose()
         else:
             RHS_noise[:,:,t] = RHS_noise[:,:,t-season]
-        print(t, ': ', mean_t[0], '  ' , sig_t[0])
+        print(t, ': ', mean_t[0:10], '  ' , sig_t[0:10])
         #=======================================================================
         # mu_s = np.random.uniform(mean_t , mean_t, num_reservoirs)
         # sig_s = np.random.uniform(sig_t*0.5 , sig_t, num_reservoirs)
@@ -117,8 +128,8 @@ def simulate_AR_model(R_matrices, inflow_t0, RHS_noise, T, nr, lag):
     prices = [18+round(5*np.sin(0.5*(x-2)),2) for x in range(0,T)]
     num_reservoirs = nr
     plt.figure(1)
-    num_reps = 200
-    res_ref  = [0,1,2, 5, 8]
+    num_reps = 500
+    res_ref  = [0,3,6,8]
     np.random.seed(res_ref)
     mean_res_ref = {rr:np.zeros((T)) for rr in res_ref}
     for replica in range(num_reps):
@@ -181,16 +192,18 @@ if __name__ == '__main__':
         file_name_path = hydro_path+'/data/hydro_rnd_instance_R%i_UD%i_T%i_LAG%i_OUT10K_AR1.pkl' %(nr,ud,T,lag)
         print(file_name_path)
         with open(file_name_path, 'wb') as output:
-            instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=T, lag = lag, num_outcomes=10000,  simulate=False)   
+            instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=T, lag = lag, num_outcomes=10000,  simulate=True)   
             pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
     #instance = gen_instance(num_reservoirs=nr, up_stream_dep=ud, T=T, lag = 1, num_outcomes= 10000,  simulate= True)  
     
     
     
-    hydro_instance = read_instance('hydro_rnd_instance_R%i_UD%i_T%i_LAG%i_OUT10K_AR1.pkl' %(nr,ud,T,1) , lag=1)
-    matrix = hydro_instance.ar_matrices
-    RHSnoise_density = hydro_instance.RHS_noise
-    inflow_t0 = hydro_instance.inital_inflows
-    simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 24, 10, 1)
+    #===========================================================================
+    # hydro_instance = read_instance('hydro_rnd_instance_R%i_UD%i_T%i_LAG%i_OUT10K_AR1.pkl' %(nr,ud,T,1) , lag=1)
+    # matrix = hydro_instance.ar_matrices
+    # RHSnoise_density = hydro_instance.RHS_noise
+    # inflow_t0 = hydro_instance.inital_inflows
+    # simulate_AR_model(matrix, inflow_t0, RHSnoise_density, 24, 10, 1)
+    #===========================================================================
     
      

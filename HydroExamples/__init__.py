@@ -22,4 +22,4 @@ class Reservoir():
         self.spill_cost = s_cost
         self.inflows = inflows 
 
-dro_radii = [b*(10**c) for c in [-1,0,1,2] for b in [1,2,3,4,5,6,7,8,9]]#[1,4,7]]
+dro_radii = [b*(10**c) for c in [-2,-1,0,1,2] for b in [1,2,3,4,5,6,7,8,9]]#[1,4,7]]
