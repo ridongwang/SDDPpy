@@ -58,7 +58,7 @@ Rmatrix = None
 RHSnoise = None
 initial_inflow = None 
 prices = None
-Water_Penalty = 10000
+Water_Penalty = 1000
 Spillage_Penalty = 10
 
 def random_builder(valley_chain):
