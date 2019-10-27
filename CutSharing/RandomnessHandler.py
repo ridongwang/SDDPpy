@@ -6,14 +6,17 @@ Created on Nov 19, 2017
 import copy
 import numpy as np
 import scipy.sparse as sp
-from gurobipy import * 
+from gurobipy import *
 from CutSharing.SDDP_utils import print_model
 import CutSharing as cs
+
+
 #NOT USED FOR THE MOMENT
 class SamplePath():
     '''
     classdocs
     '''
+    
     def __init__(self, sampler_func):
         '''
         Constructor
@@ -23,6 +26,7 @@ class SamplePath():
     def getStageRealizations(self, stage):
         assert stage in self.sampledvalues, 'Sample path has not being created'
         return self.sampledvalues[stage]
+
 
 class RandomContainer:
     '''
@@ -42,8 +46,8 @@ class RandomContainer:
         Adds a random vector associated with a stage
         '''
         self.stage_vectors.append(stageRndVector)
-
-    def getSamplePath(self,rnd_stream, ev = False):
+    
+    def getSamplePath(self, rnd_stream, ev=False):
         '''
         Generates a sample path. This is, a list of dictionaries
         where each dictionary corresponds to a different stage and 
@@ -65,12 +69,12 @@ class RandomContainer:
             partial_sample_path_ids = [0 for _ in self.stage_vectors]
         else:
             for srv in self.stage_vectors:
-                stage_sample, stage_outcome_id = srv.getSample(partial_sample_path,rnd_stream) 
+                stage_sample, stage_outcome_id = srv.getSample(partial_sample_path, rnd_stream)
                 partial_sample_path.append(stage_sample)
                 partial_sample_path_ids.append(stage_outcome_id)
         return partial_sample_path, partial_sample_path_ids
     
-    def getStageSample(self, t, partial_sample_path, rnd_stream, new_support = None , new_pmf = None):
+    def getStageSample(self, t, partial_sample_path, rnd_stream, new_support=None, new_pmf=None):
         '''
         Generates a sample for a given stage and appends it to a partial path
         **** Modifies the partial_sample_path given as a parameter ****
@@ -85,25 +89,23 @@ class RandomContainer:
                 realized value of each random element.
             stage_outcome_id (int): id of the outcome drew in the stage 
         '''
-        if new_support == None: #Sample w.r.t the original tree and given probs
+        if new_support == None:  #Sample w.r.t the original tree and given probs
             srv = self.stage_vectors[t]
-            stage_sample, stage_outcome_id = srv.getSample(partial_sample_path, rnd_stream) 
+            stage_sample, stage_outcome_id = srv.getSample(partial_sample_path, rnd_stream)
             partial_sample_path.append(stage_sample)
             return stage_sample, stage_outcome_id
         else:
             #Ignores the tree and use the provided supprt points
-            assert len(new_support)==len(new_pmf), 'Inconsistent distribution to sample from.'
+            assert len(new_support) == len(new_pmf), 'Inconsistent distribution to sample from.'
             assert self.stage_vectors[t].is_independent, 'Stage-wise independence is required for variant trees.'
-            lucky_outcome = rnd_stream.choice([i for i in range(len(new_support))], p = new_pmf)
+            lucky_outcome = rnd_stream.choice([i for i in range(len(new_support))], p=new_pmf)
             stage_sample = new_support[lucky_outcome]
             partial_sample_path.append(stage_sample)
             return stage_sample, np.nan
-            
-        
-        
+    
     def _preprocess_randomness(self):
         for sv in self.stage_vectors:
-            sv._preproces_randomness() 
+            sv._preproces_randomness()
     
     def _set_outcomes_for_run(self, ev):
         '''
@@ -116,43 +118,43 @@ class RandomContainer:
                 sv.set_ev_problem()
             else:
                 sv.set_stochastic_problem()
-            
     
-    def enumerate_scenarios(self,):
+    def enumerate_scenarios(self, ):
         all_scenarios = []
         self.recursive_enum(all_scenarios, 0, [])
         return all_scenarios
-        
-        
     
     def recursive_enum(self, all_scenarios, stage, past):
         sv = self.stage_vectors[stage]
         for outcome in sv.outcomes:
             past.append(outcome)
-            if stage < len(self.stage_vectors)-1:
+            if stage < len(self.stage_vectors) - 1:
                 self.recursive_enum(all_scenarios, stage + 1, past)
             else:
                 all_scenarios.append(copy.deepcopy(past))
             past.pop()
-            
-            
+    
     def reset_to_nominal_dist(self):
         for srv in self.stage_vectors:
-            srv.reset_to_nominal_dist()        
-        
+            srv.reset_to_nominal_dist()
     
     #Aux methods to make the container iterable
     def __iter__(self):
         return (x for x in self.stage_vectors)
+    
     def __getitem__(self, index):
         return self.stage_vectors[index]
+    
     def __setitem__(self, key, value):
         self.stage_vectors[key] = value
-    def __delitem__(self,key):
+    
+    def __delitem__(self, key):
         self.stage_vectors.__delitem__(key)
+    
     def __repr__(self):
         return [x for x in self.stage_vectors].__repr__()
-    
+
+
 class StageRandomVector:
     '''
     A class to represent the randomness of a stage
@@ -170,6 +172,7 @@ class StageRandomVector:
             depending on the risk measure.
         is_indipendent (bool): flag to distinguish between independent and dependent cases. 
     '''
+    
     def __init__(self, stage):
         self.stage = stage
         self.elements = {}
@@ -179,43 +182,44 @@ class StageRandomVector:
         self.outcomes_dim = 0
         self.p = None
         self.p_copy = None
-        self.is_independent = True 
+        self.is_independent = True
         self._first_element_added = False
         self._is_expected_value_problem = False
-      
-    def addRandomElememnt(self, ele_name, ele_outcomes , ele_prob=None):
+    
+    def addRandomElement(self, ele_name, ele_outcomes, ele_prob=None):
         if self._first_element_added == False:
             self.outcomes_dim = len(ele_outcomes)
             for e in ele_outcomes:
                 self.outcomes.append({})
-            self.ev_outcomes = {}   
+            self.ev_outcomes = {}
             self._first_element_added = True
             if type(ele_prob) == list or type(ele_prob) == np.ndarray:
                 self.p = np.array(ele_prob)
             else:
-                self.p = np.array([1/len(ele_outcomes) for x in ele_outcomes])
-            assert np.abs(1-sum(self.p))<cs.ZERO_TOL, "Invalid outcome probabilities"
+                self.p = np.array([1 / len(ele_outcomes) for x in ele_outcomes])
+            assert np.abs(1 - sum(self.p)) < cs.ZERO_TOL, "Invalid outcome probabilities"
             self.p_copy = self.p.copy()
         else:
-            assert len(self.outcomes)==len(ele_outcomes), "Random element with a different number of outcomes."
+            assert len(self.outcomes) == len(ele_outcomes), "Random element with a different number of outcomes."
         
-        self.vector_order[ele_name] = len(self.elements)#Defines order as it gets built. 
-        self.elements[ele_name] = RandomElement(self.stage, ele_name , ele_outcomes)
+        self.vector_order[ele_name] = len(self.elements)  #Defines order as it gets built.
+        self.elements[ele_name] = RandomElement(self.stage, ele_name, ele_outcomes)
         self.ev_outcomes[ele_name] = np.mean(ele_outcomes)
-        for (i,e) in enumerate(ele_outcomes):
+        for (i, e) in enumerate(ele_outcomes):
             self.outcomes[i][ele_name] = e
-            
+        
         return self.elements[ele_name]
     
     def set_ev_problem(self):
         self.outcomes = [self.ev_outcomes]
         self._is_expected_value_problem = True
+    
     def set_stochastic_problem(self):
         if self._is_expected_value_problem:
             self.outcomes = self.outcomes_copy
-        
+    
     def modifyOutcomesProbabilities(self, newp):
-        assert len(newp)==len(self.outcomes)
+        assert len(newp) == len(self.outcomes)
         self.p = np.array(newp)
     
     def getSample(self, partial_sample_path, rnd_gen):
@@ -233,31 +237,36 @@ class StageRandomVector:
             lucky_outcome (int): id of the outcome that was realized.
         '''
         try:
-            lucky_outcome = rnd_gen.choice([i for i in range(0,self.outcomes_dim)], p = self.p)
-            stage_sample = {e.name:
-                            e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
+            lucky_outcome = rnd_gen.choice([i for i in range(0, self.outcomes_dim)], p=self.p)
+            stage_sample = {
+                e.name: e.getSample(lucky_outcome, e.get_depedencies_realization(partial_sample_path))
+                for e in self.elements.values()
+            }
             return stage_sample, lucky_outcome
         except:
             print(self.p)
     
-    def get_ev_vector(self,partial_sample_path):
-        return {e.name: e.comput_element_ev(e.get_depedencies_realization(partial_sample_path)) for e in self.elements.values()}
+    def get_ev_vector(self, partial_sample_path):
+        return {
+            e.name: e.comput_element_ev(e.get_depedencies_realization(partial_sample_path))
+            for e in self.elements.values()
+        }
     
     def getOutcomes(self, sample_path, ev):
         if self.is_independent:
-            if ev ==True:
+            if ev == True:
                 return [self.ev_outcomes]
             return self.outcomes
         else:
-            if ev ==True:
+            if ev == True:
                 raise 'Expected value mode not implemented for dependent case.'
             outcomes_copy = copy.deepcopy(self.outcomes)
             for e in self.elements.values():
                 e_dependencies = e.get_depedencies_realization(sample_path)
                 new_e_outcomes = e.compute_outcomes(e_dependencies)
-                for i in range(0,len(new_e_outcomes)):
+                for i in range(0, len(new_e_outcomes)):
                     outcomes_copy[i][e.name] = new_e_outcomes[i]
-                    
+            
             return outcomes_copy
     
     def get_sorted_outcome(self, outcome_index):
@@ -273,20 +282,20 @@ class StageRandomVector:
         for ele in self.vector_order:
             xi[self.vector_order[ele]] = self.outcomes[outcome_index][ele]
         return xi
-        
+    
     def _preproces_randomness(self):
         '''
         Creates a copy of the input random vector and process autoregressive matrices
         '''
         self.outcomes_copy = copy.deepcopy(self.outcomes)
         vec_dim = len(self.elements)
-        R_matrices = [] #Auto reg matrices
+        R_matrices = []  #Auto reg matrices
         created = False
         for e in self.elements.values():
             abs_order_e = self.vector_order[e.name]
             if e.has_dependencies():
                 if created == False:
-                    R_matrices = [sp.coo_matrix((vec_dim,vec_dim), dtype=np.float64) for de in e.dependencies]
+                    R_matrices = [sp.coo_matrix((vec_dim, vec_dim), dtype=np.float64) for de in e.dependencies]
                     created = True
                 
                 for (i, d_stage) in enumerate(e.dependencies):
@@ -294,21 +303,21 @@ class StageRandomVector:
                     for dep_e in e.dependencies[d_stage]:
                         abs_order_d = self.vector_order[dep_e]
                         #R_matrices[i][abs_order_e,abs_order_d] = e.dependencies[d_stage][dep_e]
-                        R_matrices[i] =  R_matrices[i] + sp.coo_matrix(([e.dependencies[d_stage][dep_e]] , ([abs_order_e],[abs_order_d])), shape=(vec_dim,vec_dim ))
-                 
-                
+                        R_matrices[i] = R_matrices[i] + sp.coo_matrix(
+                            ([e.dependencies[d_stage][dep_e]], ([abs_order_e], [abs_order_d])),
+                            shape=(vec_dim, vec_dim))
                 
                 self.is_independent = False
                 self.lag = e.lag
-        self.autoreg_matrices = R_matrices       
-                
+        self.autoreg_matrices = R_matrices
+    
     def reset_to_nominal_dist(self):
         self.p = self.p_copy.copy()
     
-    def __repr__ (self):
-        return 't=%i %s' %(self.stage, self.elements.keys().__repr__())
-    
-    
+    def __repr__(self):
+        return 't=%i %s' % (self.stage, self.elements.keys().__repr__())
+
+
 class RandomElement:
     '''
     Class to represent a random element
@@ -324,18 +333,19 @@ class RandomElement:
             multiplicative coefficient.
     '''
     
-    def __init__(self, stage ,name , rnd_outcomes):
+    def __init__(self, stage, name, rnd_outcomes):
         self.stage = stage
         self.name = name
         self.outcomes = np.array(rnd_outcomes)
         self.dependencyFunction = None
         self.dependencies = {}
-        self.current_sample_path = None 
+        self.current_sample_path = None
+    
     def __repr__(self):
-        return 't=%i>%s' %(self.stage, self.name)
+        return 't=%i>%s' % (self.stage, self.name)
     
     def has_dependencies(self):
-        return True if len(self.dependencies)>0 else False
+        return True if len(self.dependencies) > 0 else False
     
     def addDependecyFunction(self, dependency_coefs, depFunc):
         '''
@@ -354,15 +364,15 @@ class RandomElement:
                     
         '''
         self.dependencyFunction = depFunc
-        self.dependencies = dependency_coefs 
+        self.dependencies = dependency_coefs
         min_stage_dep = min(x for x in self.dependencies)
         self.lag = self.stage - min_stage_dep
-        
-    def compute_outcomes(self, depedencies_realizations ):
+    
+    def compute_outcomes(self, depedencies_realizations):
         if self.dependencyFunction == None:
             return self.outcomes
         else:
-            new_outcomes = self.dependencyFunction(self,depedencies_realizations)
+            new_outcomes = self.dependencyFunction(self, depedencies_realizations)
             assert isinstance(new_outcomes, np.ndarray) and len(self.outcomes) == len(new_outcomes), \
                     "Dependency function returned outcomes that don't match the necessary dimensions (%i)" %(len(new_outcomes))
             return new_outcomes
@@ -371,10 +381,10 @@ class RandomElement:
         if self.dependencyFunction == None:
             return np.mean(self.outcomes)
         else:
-            new_outcomes = self.dependencyFunction(self,depedencies_realizations)
+            new_outcomes = self.dependencyFunction(self, depedencies_realizations)
             return np.mean(new_outcomes)
-         
-    def get_depedencies_realization(self, partial_sample_path):  
+    
+    def get_depedencies_realization(self, partial_sample_path):
         '''
         Gets the necessary values for the element dependencies
         given a partial path up to stage = self.stage - 1.
@@ -383,11 +393,10 @@ class RandomElement:
         for (stage, realization) in enumerate(partial_sample_path):
             if stage in self.dependencies:
                 my_depedencies[stage] = {}
-                for dname  in self.dependencies[stage]:
+                for dname in self.dependencies[stage]:
                     my_depedencies[stage][dname] = realization[dname]
-        return my_depedencies           
-                
-                   
+        return my_depedencies
+    
     def getSample(self, p, dependencies):
         '''
         Generates a sample of the random element give a probability vector
@@ -419,11 +428,11 @@ class ScenarioTree:
     
     def __init__(self, rnd_cont):
         #Creates the root nod of the scenario tree
-        self.root_node = ScenarioTreeNode(0,0,None,True)
+        self.root_node = ScenarioTreeNode(0, 0, None, True)
         self.rnd_cont = rnd_cont
         self.sample_path_costs = {}
         self.sample_path_outs = {}
-        
+    
     def add_sample_path(self, sample_id, sample_path_outcomes, sample_path_cost):
         '''
         Add a sample path in the tree. The descendants of ever node in the sample path
@@ -435,16 +444,14 @@ class ScenarioTree:
         node_t = self.root_node
         for t in range(len(sample_path_outcomes)):
             node_t.add_sample_path_info(sample_id)
-            if t<len(sample_path_outcomes)-1:
-                if len(node_t.children)==0:
-                    node_t.create_descendants(self.rnd_cont.stage_vectors[t+1])
-                
+            if t < len(sample_path_outcomes) - 1:
+                if len(node_t.children) == 0:
+                    node_t.create_descendants(self.rnd_cont.stage_vectors[t + 1])
                 
                 #update next node in the tree
-                next_outcome  = sample_path_outcomes[t+1]
+                next_outcome = sample_path_outcomes[t + 1]
                 node_t = node_t.children[next_outcome]
-        
-        
+    
     def compute_subtree_upper_bound(self, risk_measures):
         '''
         Args:
@@ -457,11 +464,11 @@ class ScenarioTree:
         
         #Variables creation
         p = m.addVars(n_paths, lb=0, ub=1, obj=self.sample_path_costs, vtype=GRB.CONTINUOUS, name='p')
-        self.root_node.create_phi_var(m,'')
+        self.root_node.create_phi_var(m, '')
         m.update()
         #Constraints
         m.addConstr(lhs=p.sum(), sense=GRB.EQUAL, rhs=1, name='global_prob')
-        self.root_node.create_constraints(m, p, risk_measures, self.rnd_cont,'')
+        self.root_node.create_constraints(m, p, risk_measures, self.rnd_cont, '')
         m.ModelSense = GRB.MAXIMIZE
         m.update()
         #print_model(m)
@@ -470,16 +477,17 @@ class ScenarioTree:
             m.computeIIS()
             m.write("model.ilp")
         else:
-            print('%15.5e' %(m.Objval))
-            for (i,v) in enumerate(m.getVars()):
-                if v.VarName[0]=='p' and v.X>0 and v.VarName[0:3]!='phi':
+            print('%15.5e' % (m.Objval))
+            for (i, v) in enumerate(m.getVars()):
+                if v.VarName[0] == 'p' and v.X > 0 and v.VarName[0:3] != 'phi':
                     print(v)
-                    if v.VarName[0]=='p' and v.VarName[0:3]!='phi':
+                    if v.VarName[0] == 'p' and v.VarName[0:3] != 'phi':
                         print(self.sample_path_costs[i])
                         print(self.sample_path_outs[i])
-                        
+            
             return m.Objval
-    
+
+
 class ScenarioTreeNode:
     '''
     A node of a scenario tree
@@ -493,14 +501,14 @@ class ScenarioTreeNode:
         phi_var (GRBVar): Decision variable for the upper bound model.
     '''
     
-    def __init__(self,  stage, outcome_id, parent, sampled):
+    def __init__(self, stage, outcome_id, parent, sampled):
         self.parent = parent
         self.outcome_id = outcome_id
         self.stage = stage
         self.children = []
         self.sampled = sampled
-        self.sample_path_ids = [] 
-        self.phi_var = None 
+        self.sample_path_ids = []
+        self.phi_var = None
     
     def add_sample_path_info(self, sample_id):
         '''
@@ -510,9 +518,7 @@ class ScenarioTreeNode:
         '''
         self.sample_path_ids.append(sample_id)
         self.sampled = True
-        
-        
-        
+    
     def create_descendants(self, stage_random_vector):
         '''
         Creates a descendant node for every outcome of the stage random 
@@ -521,9 +527,9 @@ class ScenarioTreeNode:
             stage_random_vector (StageRandomVector): object with the random elements of the next stage
         '''
         for o in range(stage_random_vector.outcomes_dim):
-            new_child = ScenarioTreeNode(self.stage+1, o, self, False)
+            new_child = ScenarioTreeNode(self.stage + 1, o, self, False)
             self.children.append(new_child)
-
+    
     def create_phi_var(self, model, branch_name):
         '''
         Recursively creates all the variables in the model. 
@@ -533,13 +539,17 @@ class ScenarioTreeNode:
             model (GRBModel): Upper bound model
             branch_name (str): String identifier for a branch of the tree
         '''
-        new_branch_name = branch_name + '_%i' %(self.outcome_id)
-        self.phi_var = model.addVar(lb=0, ub=1, obj=0, vtype=GRB.CONTINUOUS, name='phi[%i,%s]' %(self.stage,new_branch_name))
+        new_branch_name = branch_name + '_%i' % (self.outcome_id)
+        self.phi_var = model.addVar(lb=0,
+                                    ub=1,
+                                    obj=0,
+                                    vtype=GRB.CONTINUOUS,
+                                    name='phi[%i,%s]' % (self.stage, new_branch_name))
         
         for node in self.children:
             node.create_phi_var(model, new_branch_name)
-        
-    def create_constraints(self, model, p, risk_measures, rc , branch_name):
+    
+    def create_constraints(self, model, p, risk_measures, rc, branch_name):
         '''
         Recursively creates the constraint of the upper bound model.
         
@@ -551,34 +561,29 @@ class ScenarioTreeNode:
             branch_name (str): String identifier for a branch of the tree
         '''
         t = self.stage
-        new_branch_name = branch_name + '_%i' %(self.outcome_id)
+        new_branch_name = branch_name + '_%i' % (self.outcome_id)
         #Phi - p relation
-        if self.sampled: 
-            model.addConstr(lhs = self.phi_var, sense=GRB.EQUAL,  rhs=quicksum(p[i] for i in self.sample_path_ids), name='PhiToP_%i%s' %(t,new_branch_name))
-        
-            if len(self.children)>0:
+        if self.sampled:
+            model.addConstr(lhs=self.phi_var,
+                            sense=GRB.EQUAL,
+                            rhs=quicksum(p[i] for i in self.sample_path_ids),
+                            name='PhiToP_%i%s' % (t, new_branch_name))
+            
+            if len(self.children) > 0:
                 #prob consistency: Sum of descendants adds up to 1
                 #model.addConstr(quicksum(n.phi_var for n in self.children), sense=GRB.EQUAL,  rhs=1, name='cox_%i%s' %(t,new_branch_name))
                 #model.update()
                 #Uncertainty set
                 phis = [n.phi_var for n in self.children]
-                risk_measures[t].define_scenario_tree_uncertainty_set(self.stage,self.outcome_id,model,rc[t+1],phis ,new_branch_name)
-                
+                risk_measures[t].define_scenario_tree_uncertainty_set(self.stage, self.outcome_id, model, rc[t + 1],
+                                                                      phis, new_branch_name)
                 
                 for node in self.children:
-                    node.create_constraints(model, p , risk_measures, rc , new_branch_name)
-    
-    
-    
+                    node.create_constraints(model, p, risk_measures, rc, new_branch_name)
 
-def AR1_depedency(rnd_ele , realizations):
+
+def AR1_depedency(rnd_ele, realizations):
     assert type(realizations) == dict, 'Realizations are not in the expected form.'
     assert len(realizations) == 1, "Dependency model has a lag > 1."
-    AR1model = sum(realizations[k][j]*rnd_ele.dependencies[k][j] for k in realizations for j in realizations[k])
-    return AR1model +  rnd_ele.outcomes
-
-    
-    
-    
-    
-    
+    AR1model = sum(realizations[k][j] * rnd_ele.dependencies[k][j] for k in realizations for j in realizations[k])
+    return AR1model + rnd_ele.outcomes

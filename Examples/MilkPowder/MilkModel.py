@@ -33,11 +33,11 @@ def random_builder():
         rv_t = StageRandomVector(w)
         rc.append(rv_t)
         if w > 0:
-            rv_t.addRandomElememnt('evapotranspiration' , [ow['evapotranspiration'] for ow in O[w]])
-            rv_t.addRandomElememnt('rainfall' ,  [ow['rainfall'] for ow in O[w]])
+            rv_t.addRandomElement('evapotranspiration' , [ow['evapotranspiration'] for ow in O[w]])
+            rv_t.addRandomElement('rainfall' ,  [ow['rainfall'] for ow in O[w]])
         else:
-            rv_t.addRandomElememnt('evapotranspiration' , [numpy.mean([ow['evapotranspiration'] for ow in O[w]])])
-            rv_t.addRandomElememnt('rainfall' ,  [numpy.mean([ow['rainfall'] for ow in O[w]])])
+            rv_t.addRandomElement('evapotranspiration' , [numpy.mean([ow['evapotranspiration'] for ow in O[w]])])
+            rv_t.addRandomElement('rainfall' ,  [numpy.mean([ow['rainfall'] for ow in O[w]])])
 
     rc.preprocess_randomness()
     return rc
@@ -49,11 +49,11 @@ def random_builder_oos(data_OOS):
         rv_t = StageRandomVector(w)
         rc.append(rv_t)
         if w > 0:
-            rv_t.addRandomElememnt('evapotranspiration' , [ow['evapotranspiration'] for ow in data_OOS[w]])
-            rv_t.addRandomElememnt('rainfall' ,  [ow['rainfall'] for ow in data_OOS[w]])
+            rv_t.addRandomElement('evapotranspiration' , [ow['evapotranspiration'] for ow in data_OOS[w]])
+            rv_t.addRandomElement('rainfall' ,  [ow['rainfall'] for ow in data_OOS[w]])
         else:
-            rv_t.addRandomElememnt('evapotranspiration' , [numpy.mean([ow['evapotranspiration'] for ow in data_OOS[w]])])
-            rv_t.addRandomElememnt('rainfall' ,  [numpy.mean([ow['rainfall'] for ow in data_OOS[w]])])
+            rv_t.addRandomElement('evapotranspiration' , [numpy.mean([ow['evapotranspiration'] for ow in data_OOS[w]])])
+            rv_t.addRandomElement('rainfall' ,  [numpy.mean([ow['rainfall'] for ow in data_OOS[w]])])
 
     rc.preprocess_randomness()
     return rc

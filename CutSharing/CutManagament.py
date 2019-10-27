@@ -8,9 +8,9 @@ from gurobipy import *
 from CutSharing import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
 from abc import ABC, abstractmethod
 
+
 class CutPool():
-    
-    def __init__(self, stage ):
+    def __init__(self, stage):
         self.stage = stage
         self.pool = {}
         self.pool_order = []
@@ -23,7 +23,7 @@ class CutPool():
             self.cut_selector = SlackBasedCutSelector()
         else:
             self.cut_selector = None
-        
+    
     def addCuts(self, model, new_cuts):
         '''
         Add cut to the pool manager
@@ -38,15 +38,13 @@ class CutPool():
             assert new_cut.name not in self.pool
             self.pool[new_cut.name] = new_cut
             self.pool_order.append(new_cut.name)
-
-        if self.cut_selector != None:
+        
+        if self.cut_selector is not None:
             self.cut_selector.add_recent_cuts([(c.name, c.is_active) for c in new_cuts])
             self.cut_selector.select_cuts(model, self.pool, self.pool_order)
     
-    
     def needs_update(self):
         return self._requires_ajustment
-    
     
     def get_non_zero_duals(self):
         tup_ind = []
@@ -57,18 +55,28 @@ class CutPool():
                 tup_ind.append((opt_cut.cut_id, opt_cut.outcome))
                 duals.append(opt_cut.ctrRef.Pi)
         return tup_ind, duals
-                
     
     def __len__(self):
         return len(self.pool)
+    
     def __iter__(self):
         return (x for x in self.pool.values())
-        
+
+
 class Cut():
     '''
     Structure for a cut
     '''
-    def __init__(self,sp, var_coeffs, intercept, cut_id , stagewise_ind = True, ind_rhs = None, dep_rhs_vector = None, outcome = 0):
+    
+    def __init__(self,
+                 sp,
+                 var_coeffs,
+                 intercept,
+                 cut_id,
+                 stagewise_ind=True,
+                 ind_rhs=None,
+                 dep_rhs_vector=None,
+                 outcome=0):
         '''
         Args:
             var_coeffs (dict of reals): coefficient of each variable involved in the cut where variable name is the key.
@@ -77,10 +85,10 @@ class Cut():
         '''
         m = sp.model
         stage = sp.stage
-        self.name = 'cut[%i,%i,%i]' %(stage,cut_id,outcome)
-        self.lhs = quicksum(-var_coeffs[vn]*m.getVarByName(vn) for vn in var_coeffs) 
+        self.name = 'cut[%i,%i,%i]' % (stage, cut_id, outcome)
+        self.lhs = quicksum(-var_coeffs[vn] * m.getVarByName(vn) for vn in var_coeffs)
         self.lhs.add(sp.oracle[outcome])
-        self.recomputable_rhs = (stagewise_ind==False)
+        self.recomputable_rhs = (stagewise_ind == False)
         self.rhs = intercept
         self.ind_rhs = ind_rhs
         self.dep_rhs_vector = dep_rhs_vector
@@ -92,8 +100,8 @@ class Cut():
         #m.update()
         
         #Reference to the constraint
-        if self.lhs.getValue() >= self.rhs - ZERO_TOL :
-            self.is_active  = False
+        if self.lhs.getValue() >= self.rhs - ZERO_TOL:
+            self.is_active = False
             #slack = self.lhs.getValue() - self.rhs
             #print(sp , '  o:', outcome,   'Not added ' , slack)
             #self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
@@ -101,25 +109,25 @@ class Cut():
             #slack = self.lhs.getValue() - self.rhs
             #print(sp , '  o:', outcome,   'added ' , slack)
             #print('New cuts: ' , self.name)
-            self.is_active  = True
+            self.is_active = True
             #Reference to the constraint
-            self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
-            #print('New cuts: ' , self.name, ' %20.16f ' %(self.lhs.getValue()-self.rhs))
+            self.ctrRef = m.addConstr(self.lhs >= self.rhs, self.name)
+            #print('New cuts: ', self.name, ' %20.16f ' % (self.lhs.getValue() - self.rhs))
             #print(self.name, self.lhs , '>='  , self.rhs)
         
         #==============================#
         # Extra information for dual retrieval
         self.cut_id = cut_id
         self.outcome = outcome
-
+    
     def adjust_intercept(self, omega_last):
         '''
         omega_last (1D ndarray): current ancestor scenario.
         '''
         dep_rhs = self.dep_rhs_vector.dot(omega_last).squeeze()
-        new_rhs = dep_rhs + self.ind_rhs 
+        new_rhs = dep_rhs + self.ind_rhs
         self.ctrRef.RHS = new_rhs
-        
+
 
 class CutSelector(ABC):
     @abstractmethod
@@ -136,57 +144,59 @@ class CutSelector(ABC):
         '''
         raise 'Unimplmented method in a cut selection class.'
     
-    def enforce_all(self,model,pool):
+    def enforce_all(self, model, pool):
         for u in self.unactive:
-            pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
+            pool[u].ctrRef = model.addConstr(pool[u].lhs >= pool[u].rhs, pool[u].name)
             self.active.append(u)
         self.unactive.clear()
-        
-    def add_recent_cuts(self,c_info):
-        for (c_name,c_is_active) in c_info:
+    
+    def add_recent_cuts(self, c_info):
+        for (c_name, c_is_active) in c_info:
             if c_is_active:
                 self.active.append(c_name)
             else:
                 self.unactive.append(c_name)
+
 
 class LastCutsSelector(CutSelector):
     '''
     Cut selector based on the last added cuts. The number of cuts
     is set in the algorithm options.
     '''
+    
     def __init__(self):
         super().__init__()
         self.cut_capacity = options['max_cuts_last_cuts_selector']
-        
+    
     def select_cuts(self, model, pool, pool_order):
-        if len(self.active)<= self.cut_capacity or len(self.active)==0:
+        if len(self.active) <= self.cut_capacity or len(self.active) == 0:
             pass
         else:
             iters = 0
-            while len(self.active)> self.cut_capacity:
+            while len(self.active) > self.cut_capacity:
                 a = self.active[0]
-                if pool[a].lhs.getValue() > pool[a].rhs + 1E-6: #todo: use other parameter
+                if pool[a].lhs.getValue() > pool[a].rhs + 1E-6:  #todo: use other parameter
                     pool[a].is_active = False
                     model.remove(pool[a].ctrRef)
                     pool[a].ctrRef = None
                     self.unactive.append(a)
                     self.active.pop(0)
                 else:
-                    iters +=1
+                    iters += 1
                     self.active.append(self.active.pop(0))
-
+                
                 if iters >= len(self.active):
                     '''
                     Cardinality of selected cuts can't be satisfied.
                     Augmenting the maximum number of cuts
                     '''
-                    self.cut_capacity = int(1.5*self.cut_capacity)
+                    self.cut_capacity = int(1.5 * self.cut_capacity)
                     #options['max_cuts_last_cuts_selector'] = int(1.5*options['max_cuts_last_cuts_selector'])
                     #print('max_cuts_last_cuts_selector -- > ' , self.cut_capacity , a)
                     break
-        
 
-class  SlackBasedCutSelector(CutSelector):
+
+class SlackBasedCutSelector(CutSelector):
     '''
     Cut selector based on binding cuts. At each iteration
     statistics on the cuts are updated to keep track of the
@@ -198,36 +208,36 @@ class  SlackBasedCutSelector(CutSelector):
             has been non-binding.
 
     '''
+    
     def __init__(self):
         super().__init__()
         self.active_stats = {}
         self.cut_capacity = options['max_cuts_slack_based']
-        self.track_ini=0
-        self.track_end=0
-
+        self.track_ini = 0
+        self.track_end = 0
+    
     def select_cuts(self, model, pool, pool_order):
         
-        #Update stats 
+        #Update stats
         tracked = int(len(self.active))
         ini_changed = False
         for i in range(self.track_ini, tracked):
             a = self.active[i]
             if (a in self.active_stats) == False:
-                self.active_stats[a]=0
+                self.active_stats[a] = 0
             else:
                 #Count unactive times
                 if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
-                    self.active_stats[a] +=1
-                    if self.active_stats[a] >= options['slack_num_iters_cut_selector'] and ini_changed==False:
-                        self.track_ini= i
+                    self.active_stats[a] += 1
+                    if self.active_stats[a] >= options['slack_num_iters_cut_selector'] and ini_changed == False:
+                        self.track_ini = i
                     else:
-                        ini_changed=True
-                else:    
-                    self.active_stats[a] = 0 
-                
-            
-        if len(self.active)<= self.cut_capacity or len(self.active)==0:
-            pass #Not cut management requiered
+                        ini_changed = True
+                else:
+                    self.active_stats[a] = 0
+        
+        if len(self.active) <= self.cut_capacity or len(self.active) == 0:
+            pass  #Not cut management requiered
         else:
             #Check active cuts (removing cuts from subproblems)
             hay_cut = len(self.active)
@@ -247,25 +257,26 @@ class  SlackBasedCutSelector(CutSelector):
             #Check unactive cuts (adding cuts)
             new_unactive = []
             for u in self.unactive:
-                if pool[u].lhs.getValue()  < pool[u].rhs:
+                if pool[u].lhs.getValue() < pool[u].rhs:
                     self.active.append(u)
-                    pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
+                    pool[u].ctrRef = model.addConstr(pool[u].lhs >= pool[u].rhs, pool[u].name)
                     pool[u].is_active = True
                     self.active_stats[u] = 0
-                else: 
+                else:
                     new_unactive.append(u)
             self.unactive = new_unactive
-            self.track_ini=0
+            self.track_ini = 0
             #print(self.active[0], hay_cut, len(self.active))
-            if len(self.active)>self.cut_capacity:
-                self.cut_capacity = int(1.5*self.cut_capacity)
+            if len(self.active) > self.cut_capacity:
+                self.cut_capacity = int(1.5 * self.cut_capacity)
                 #options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
-                print('max_cuts_slack_based -- > ' , self.cut_capacity ,a)
+                print('max_cuts_slack_based -- > ', self.cut_capacity, a)
+
 
 #    FLORIDA BRANCH - TODO: Delete this when version is stable again
 #===============================================================================
 # =======
-# 
+#
 #     def select_cuts(self, model, pool, pool_order):
 #         #Check unactive cuts
 #         new_unactive = []
@@ -275,17 +286,17 @@ class  SlackBasedCutSelector(CutSelector):
 #                 pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
 #                 pool[u].is_active = True
 #                 self.active_stats[u] = 0
-#             else: 
+#             else:
 #                 new_unactive.append(u)
 #         self.unactive = new_unactive
 #         new_active = []
 #         for a in self.active:
 #             if (a in self.active_stats) == False:
 #                 self.active_stats[a]=0
-#             
+#
 #             if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
 #                 self.active_stats[a] +=1
-#             
+#
 #             if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
 #                 pool[a].is_active = False
 #                 model.remove(pool[a].ctrRef)
@@ -294,6 +305,6 @@ class  SlackBasedCutSelector(CutSelector):
 #             else:
 #                 new_active.append(a)
 #         self.active = new_active
-#         
+#
 # >>>>>>> SDDP_DSC_FLORIDA
 #===============================================================================

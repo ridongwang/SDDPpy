@@ -11,6 +11,9 @@
 *.ilp
 *.mps
 
+# PDF files 
+*.pdf
+
 #Pickle files
 *.pickle 
 
@@ -18,3 +21,7 @@
 /CutSharing/__pycache__/
 .settings/
 */Output/
+
+.vs_code/
+*workspace/
+
