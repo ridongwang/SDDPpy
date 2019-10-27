@@ -47,9 +47,9 @@ def random_builder():
         rc.append(rv_t)
         for (i,r) in enumerate(valley_chain):
             if t>0:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), r.inflows)
+                re = rv_t.addRandomElement('innovations[%i]' %(i), r.inflows)
             else:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), [0.0])
+                re = rv_t.addRandomElement('innovations[%i]' %(i), [0.0])
             rndVectors.append(rv_t)
     rc.preprocess_randomness()
     return rc
@@ -65,9 +65,9 @@ def random_builder_out_of_sample(vally_chain_sample):
         rc.append(rv_t)
         for (i,r) in enumerate(vally_chain_sample):
             if t>0:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), r.inflows)
+                re = rv_t.addRandomElement('innovations[%i]' %(i), r.inflows)
             else:
-                re = rv_t.addRandomElememnt('innovations[%i]' %(i), [0.0])
+                re = rv_t.addRandomElement('innovations[%i]' %(i), [0.0])
             rndVectors.append(rv_t)
     rc.preprocess_randomness()
     return rc

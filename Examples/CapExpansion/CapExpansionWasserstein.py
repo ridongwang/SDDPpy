@@ -134,7 +134,6 @@ if __name__ == '__main__':
                 save_path = './Output/%s_OOS.pickle' % (instance_name)
                 write_object_results(save_path, sim_result)
                 report_stats(sim_result.sims_ub)
-                break
             
             # Run SP
             instance_name = 'SP_CapExp_N%i_m%i_n%i' % (n_scenarios, m, n)

@@ -42,11 +42,11 @@ def random_builder():
         R_t = Rmatrix[t]
         for (i,r) in enumerate(valley_chain):
             if t>0:
-                re = rv_t.addRandomElememnt('inflow[%i]' %(i), r.inflows)
+                re = rv_t.addRandomElement('inflow[%i]' %(i), r.inflows)
                 dep_coeffs = {t-l:{'inflow[%i]' %(j): R_t[l][i][j] for j in  R_t[l][i]}  for l in Rmatrix[t]}
                 re.addDependecyFunction(dep_coeffs, AR1_depedency)
             else:
-                re = rv_t.addRandomElememnt('inflow[%i]' %(i), [initial_inflow[i]])
+                re = rv_t.addRandomElement('inflow[%i]' %(i), [initial_inflow[i]])
             rndVectors.append(rv_t)
     return rc
 

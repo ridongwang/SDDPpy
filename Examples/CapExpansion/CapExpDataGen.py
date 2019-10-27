@@ -115,6 +115,6 @@ class Datahandler:
             #    self.d[j, w] = np.round(np.exp(np.random.normal(demand_log_mean, demand_log_std)), 3)
         #print('Scenarios: ', scen)
         #print(self.d.transpose())
-        if scen < 200:
-            print(self.d)
-        print(np.mean(self.d), np.std(self.d))
+        # if scen < 200:
+        #     print(self.d)
+        # print(np.mean(self.d), np.std(self.d))
