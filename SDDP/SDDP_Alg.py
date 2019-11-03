@@ -3,7 +3,7 @@ Created on Nov 17, 2017
 
 Module that contains the main logic of SDDP algorithm.
 
-@author: dduque
+@author: Daniel Duque
 '''
 import logging
 import time
