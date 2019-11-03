@@ -11,7 +11,7 @@ import os
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 import numpy as np
-from CutSharing.RiskMeasures import DistRobustWassersteinCont
+from SDDP.RiskMeasures import DistRobustWassersteinCont
 newsvendro_path = os.path.dirname(os.path.realpath(__file__))
 from OutputAnalysis.SimulationAnalysis import SimResult, plot_sim_results
 def solve_cont_wasserstain(N,K,L, xi_n, C, d, r, c, dro_radius):

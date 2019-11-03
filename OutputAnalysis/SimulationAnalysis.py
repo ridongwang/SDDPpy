@@ -119,6 +119,11 @@ def plot_lbs(lb_s, lb_d, N, r_list, plot_path):
 
 
 def plot_lbs_comp(lbs_by_r, plot_path):
+    '''
+        Plots a the lower bound evolution for different variants of 
+        SDDP, namely, Dual vs Primal, Multi-cut vs Single-cut, and
+        Empirical vs Dynamic sampling.
+    '''
     dash_styles = [(4, 1), (3, 2), (2, 3), (1, 4), (1, 1), (2, 2)]
     plot_colors = ['black', 'red', 'blue', 'green', 'magenta', 'grey']
     methods_names = ['Empirical', 'Dynamic']
@@ -145,7 +150,7 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             # exp_ix = exp_ix +1
             #===================================================================
             
-            axarr.plot([i for i in range(lb_points)], [lbs_data[i][0] for i in range(lb_points)],
+            axarr.plot([lbs_data[i][1] for i in range(lb_points)], [lbs_data[i][0] for i in range(lb_points)],
                        color=plot_colors[exp_ix],
                        linestyle='--',
                        dashes=dash_styles[exp_ix],
@@ -155,9 +160,9 @@ def plot_lbs_comp(lbs_by_r, plot_path):
             max_time = np.minimum(max_time, lb_points)
             exp_ix = exp_ix + 1
         
-        #max_time = 2000
-        min_val = -530000
-        #max_time = 100
+        # max_time = 2000
+        # min_val = -120_000
+        # max_time = 100
         print(min_val, max_val, max_time)
         axarr.legend(loc='lower right', shadow=True, fontsize='small')
         axarr.set_ylim(min_val, max_val + 0.01 * np.abs(max_val - min_val))
@@ -165,8 +170,8 @@ def plot_lbs_comp(lbs_by_r, plot_path):
         axarr.set_ylabel('Lower bound')
         
         #axarr.set_xlim(0, max_time)
-        #axarr.xaxis.set_minor_locator(MultipleLocator(10))
-        axarr.set_xlabel('Iterations')
+        # axarr.xaxis.set_minor_locator(MultipleLocator(10))
+        axarr.set_xlabel('Time (s)')
         
         axarr.grid(which='minor', alpha=0.2)
         axarr.grid(which='major', alpha=0.5)
@@ -249,9 +254,9 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means', excel
                        dashes=(3, 1),
                        label='DRO %i-%i' % (100 - q_plot, q_plot))
         axarr.semilogx(r, dro_q_down, color='k', linestyle='--', dashes=(3, 1))
-        min_val = 55  #-150000#70 for cap expansion
-        max_val = 100  #-100000#150 for cap exapnsion
-        #axarr.set_ylim(min_val, max_val)
+        min_val = -125000  #550 for cap expansion
+        max_val = 100000  #860 for cap exapnsion
+        axarr.set_ylim(min_val, max_val)
         axarr.set_ylabel('Out-of-sample performance')
     elif plot_type == 'vars':
         #axR = axarr.twinx()
@@ -261,8 +266,8 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means', excel
         #axR.semilogx(r,dro_cv, color='k', linestyle='--', dashes=(5, 1), label='DRO CV')
         axarr.set_ylabel('Standard deviation')
         #axR.set_ylabel('Coeff. of variation')
-        min_val = 50_000  #-85000#70 for cap expansion
-        max_val = 90_000  #-10000#150 for cap exapnsion
+        min_val = 100  #-85000#70 for cap expansion
+        max_val = 240  #-10000#150 for cap exapnsion
         #axarr.set_ylim(min_val, max_val)
     
     axarr.legend(loc='best', shadow=True, fontsize='small')

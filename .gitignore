@@ -18,7 +18,7 @@
 *.pickle 
 
 # Folders
-/CutSharing/__pycache__/
+/SDDP/__pycache__/
 .settings/
 */Output/
 

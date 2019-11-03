@@ -7,8 +7,8 @@ import copy
 import numpy as np
 import scipy.sparse as sp
 from gurobipy import *
-from CutSharing.SDDP_utils import print_model
-import CutSharing as cs
+from SDDP.SDDP_utils import print_model
+import SDDP as cs
 
 
 #NOT USED FOR THE MOMENT

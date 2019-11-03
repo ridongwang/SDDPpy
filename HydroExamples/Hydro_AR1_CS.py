@@ -4,12 +4,12 @@ Created on Jan 3, 2018
 @author: dduque
 '''
 import csv
-import CutSharing
+import SDDP
 import logging
 import numpy as np
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
-from CutSharing.SDPP_Alg import SDDP
-from CutSharing import logger as sddp_log
+from SDDP.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
+from SDDP.SDPP_Alg import SDDP
+from SDDP import logger as sddp_log
 from HydroExamples import Turbine, Reservoir
 from Utils.argv_parser import sys,parse_args
 from gurobipy import Model, GRB, quicksum
@@ -119,14 +119,14 @@ if __name__ == '__main__':
     if 'T' in kwargs:
         T = kwargs['T']
     if 'max_iter' in kwargs:
-        CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+        SDDP.options['max_iter'] = kwargs['max_iter']
+        SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/10)
     if 'sim_iter' in kwargs:
-        CutSharing.options['sim_iter'] = kwargs['sim_iter']
+        SDDP.options['sim_iter'] = kwargs['sim_iter']
     
 
     for nr in [5,10,50,100,500,1000]:
-        instance_name = "Hydro_R%i_AR1_T%i_I%i_CS" % (nr, T, CutSharing.options['max_iter'])
+        instance_name = "Hydro_R%i_AR1_T%i_I%i_CS" % (nr, T, SDDP.options['max_iter'])
         Rmatrix = hydro_instance.ar_matrices
         RHSnoise = hydro_instance.RHS_noise[0:nr]
         initial_inflow = hydro_instance.inital_inflows[0:nr]
@@ -138,6 +138,6 @@ if __name__ == '__main__':
         
         algo = SDDP(T, model_builder, random_builder)
         algo.run( instance_name=instance_name)
-        algo.simulate_policy(CutSharing.options['sim_iter'])
+        algo.simulate_policy(SDDP.options['sim_iter'])
         del(algo)
     

@@ -4,24 +4,24 @@ Created on Jan 3, 2018
 @author: dduque
 '''
 import csv
-import CutSharing
+import SDDP
 import logging
 import numpy as np
 from Utils.file_savers import write_object_results
 np.set_printoptions(linewidth= 200, nanstr='nen')
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
-from CutSharing.SDDP_Alg import SDDP
-from CutSharing import logger as sddp_log
+from SDDP.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
+from SDDP.SDDP_Alg import SDDP
+from SDDP import logger as sddp_log
 
 from Utils.argv_parser import sys,parse_args
 from gurobipy import *
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from HydroExamples import *
-from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality,\
+from SDDP.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality,\
     InnerDROSolverX2, DistRobustWasserstein, mod_chi2, DistRobustWassersteinCont
 from OutputAnalysis.SimulationAnalysis import plot_sim_results,\
     plot_metrics_comparison, plot_lbs
-from CutSharing.RandomManager import experiment_desing_gen,\
+from SDDP.RandomManager import experiment_desing_gen,\
     reset_experiment_desing_gen
 
 '''
@@ -183,10 +183,10 @@ if __name__ == '__main__':
     if 'T' in kwargs:
         T = kwargs['T']
     if 'max_iter' in kwargs:
-        CutSharing.options['max_iter'] = 100#kwargs['max_iter']
-        CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/10)
+        SDDP.options['max_iter'] = 100#kwargs['max_iter']
+        SDDP.options['lines_freq'] = 1#int(SDDP.options['max_iter']/10)
     if 'sim_iter' in kwargs:
-        CutSharing.options['sim_iter'] = kwargs['sim_iter']
+        SDDP.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
         lag = kwargs['lag']
     if 'dro_radius' in kwargs:
@@ -198,7 +198,7 @@ if __name__ == '__main__':
     hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
     
     
-    instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
+    instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, SDDP.options['max_iter'])
     Rmatrix = hydro_instance.ar_matrices
     RHSnoise_density = hydro_instance.RHS_noise[0:nr]
     N_training = N
@@ -233,10 +233,10 @@ if __name__ == '__main__':
     is dualized to form a series of single-level problems. 
     '''
     valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
-    CutSharing.options['multicut'] = True
-    CutSharing.options['dynamic_sampling'] = True
+    SDDP.options['multicut'] = True
+    SDDP.options['dynamic_sampling'] = True
     rr = dro_radius
-    instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_WC_%.5f" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows), rr)
+    instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS_WC_%.5f" % (nr, lag, T, SDDP.options['max_iter'], len(valley_chain[0].inflows), rr)
     #supp_ctrs = [{'innovations[%i]' %(resv):1 for resv in range(nr)} , {'innovations[%i]' %(resv):-1 for resv in range(nr)}]
     #supp_rhs = [RHSnoise_wasswer.sum(axis=0).max(), -(RHSnoise_wasswer.sum(axis=0).min())]             
     supp_ctrs = [{'innovations[%i]' %(resv):1} for resv in range(nr)]
@@ -244,9 +244,9 @@ if __name__ == '__main__':
     supp_rhs = [RHSnoise[resv].max() for resv in range(nr)] 
     supp_rhs.extend((-RHSnoise[resv].min() for resv in range(nr)))                                                                          
     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
-    lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])
+    lbs = algo.run(instance_name=instance_name, dynamic_sampling=SDDP.options['dynamic_sampling'])
     
-    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
     save_path = hydro_path+'/Output/WassersteinCont/%s_OOS.pickle' %(instance_name)
     write_object_results(save_path, sim_result)
     save_path = hydro_path+'/Output/DisceteWassersteinSingleCut/%s_LBS.pickle' %(instance_name)

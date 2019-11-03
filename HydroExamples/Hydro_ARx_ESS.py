@@ -4,24 +4,24 @@ Created on Jan 3, 2018
 @author: dduque
 '''
 import csv
-import CutSharing
+import SDDP
 import logging
 import numpy as np
 from Utils.file_savers import write_object_results
 np.set_printoptions(linewidth= 200, nanstr='nen')
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
-from CutSharing.SDDP_Alg import SDDP
-from CutSharing import logger as sddp_log
+from SDDP.RandomnessHandler import RandomContainer, StageRandomVector, AR1_depedency
+from SDDP.SDDP_Alg import SDDP
+from SDDP import logger as sddp_log
 
 from Utils.argv_parser import sys,parse_args
 from gurobipy import *
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance
 from HydroExamples import *
-from CutSharing.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality,\
+from SDDP.RiskMeasures import DistRobust, PhilpottInnerDROSolver, DistRobustDuality,\
     InnerDROSolverX2, DistRobustWasserstein, mod_chi2, DistRobustWassersteinCont
 from OutputAnalysis.SimulationAnalysis import plot_sim_results,\
     plot_metrics_comparison, plot_lbs
-from CutSharing.RandomManager import experiment_desing_gen,\
+from SDDP.RandomManager import experiment_desing_gen,\
     reset_experiment_desing_gen
 
 '''
@@ -181,10 +181,10 @@ if __name__ == '__main__':
     if 'T' in kwargs:
         T = kwargs['T']
     if 'max_iter' in kwargs:
-        CutSharing.options['max_iter'] = kwargs['max_iter']
-        CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+        SDDP.options['max_iter'] = kwargs['max_iter']
+        SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/10)
     if 'sim_iter' in kwargs:
-        CutSharing.options['sim_iter'] = kwargs['sim_iter']
+        SDDP.options['sim_iter'] = kwargs['sim_iter']
     if 'lag' in kwargs:
         lag = kwargs['lag']
     
@@ -193,7 +193,7 @@ if __name__ == '__main__':
         hydro_instance = read_instance('hydro_rnd_instance_R10_UD1_T120_LAG1_OUT10K_AR.pkl' , lag = lag)
         
         for nr in [10]:#,10,50,100,500,1000]:
-            instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, CutSharing.options['max_iter'])
+            instance_name = "Hydro_R%i_AR%i_T%i_I%i_ESS" % (nr, lag, T, SDDP.options['max_iter'])
             Rmatrix = hydro_instance.ar_matrices
             RHSnoise_density = hydro_instance.RHS_noise[0:nr]
             for N_training in [5]:#[2,3,5,10,20,30]:
@@ -240,18 +240,18 @@ if __name__ == '__main__':
                 prices = [10+round(5*np.sin(x),2) for x in range(0,T)]
                 
                 
-                CutSharing.options['max_iter'] = 300
+                SDDP.options['max_iter'] = 300
                 '''
                 Expected value risk measure
                 '''
                 #===============================================================
                 # valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
-                # CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
-                # CutSharing.options['multicut'] = True
-                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                # SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/10)
+                # SDDP.options['multicut'] = True
+                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], len(valley_chain[0].inflows))
                 # algo = SDDP(T, model_builder, random_builder)
                 # algo.run( instance_name=instance_name)
-                # algo.simulate_policy(CutSharing.options['sim_iter'] , out_of_sample_rnd_cont)
+                # algo.simulate_policy(SDDP.options['sim_iter'] , out_of_sample_rnd_cont)
                 # del(algo)
                 #===============================================================
                 
@@ -265,10 +265,10 @@ if __name__ == '__main__':
                 '''
                 #===============================================================
                 # valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
-                # #CutSharing.options['max_iter'] =10
-                # CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
-                # CutSharing.options['multicut'] = True
-                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                # #SDDP.options['max_iter'] =10
+                # SDDP.options['lines_freq'] = 10#int(SDDP.options['max_iter']/100)
+                # SDDP.options['multicut'] = True
+                # instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], len(valley_chain[0].inflows))
                 # sim_results = list()
                 # #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2,3] for b in [1,3,5,8]]:
                 # for rr in r_lbs:
@@ -277,7 +277,7 @@ if __name__ == '__main__':
                 #     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
                 #     lbs = algo.run(instance_name=instance_name, dynamic_sampling=False)
                 #     lbs_static.append(lbs)
-                #     sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                #     sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                 #     sim_results.append(sim_result)
                 #     del(algo)
                 # sim_results_com.append(sim_results)
@@ -289,10 +289,10 @@ if __name__ == '__main__':
                 Variation   DUS Experiment 1 static sampling
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
-                #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
-                CutSharing.options['multicut'] = True
-                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                #SDDP.options['max_iter'] =10
+                SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/10)
+                SDDP.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
   
                 for rr in r_lbs:
@@ -302,7 +302,7 @@ if __name__ == '__main__':
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, dist_func = mod_chi2)
                     lbs = algo.run(instance_name=instance_name, dynamic_sampling=True)
                     lbs_list.append(lbs)
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 #sim_results_com.append(sim_results)
@@ -314,23 +314,23 @@ if __name__ == '__main__':
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
                 print(RHSnoise)
-                #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/100)
-                CutSharing.options['multicut'] = True
-                CutSharing.options['dynamic_sampling'] = False
+                #SDDP.options['max_iter'] =10
+                SDDP.options['lines_freq'] = 10#int(SDDP.options['max_iter']/100)
+                SDDP.options['multicut'] = True
+                SDDP.options['dynamic_sampling'] = False
                 sim_results = list()
                 
                 #for rr in r_lbs:
                 #for rr in [b*(10**c) for c in [0] for b in [10]]:
                 #for rr in [b*(10**c) for c in [-3,-2,-1,-0,1,2] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
                 for rr in [10]:
-                    sampling_type = 'DS' if CutSharing.options['dynamic_sampling']  else 'ES'
-                    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  CutSharing.options['max_iter'], 'MC', rr,sampling_type)
+                    sampling_type = 'DS' if SDDP.options['dynamic_sampling']  else 'ES'
+                    instance_name = "Hydro_R%i_AR%i_T%i_N%i_I%iESS_%s_DW_%f_%s" % (nr, lag, T, len(valley_chain[0].inflows),  SDDP.options['max_iter'], 'MC', rr,sampling_type)
                     print('DRO Dual Wasserstein Dynamic r = %10.4e' %(rr))
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr)
-                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=CutSharing.options['dynamic_sampling'])
+                    lbs = algo.run(instance_name=instance_name, dynamic_sampling=SDDP.options['dynamic_sampling'])
                     lbs_dynamic.append(lbs)
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     save_path = hydro_path+'/Output/DW_Dual/%s_LBS.pickle' %(instance_name)
                     write_object_results(save_path, (algo.instance, lbs))
@@ -346,10 +346,10 @@ if __name__ == '__main__':
                 Uses less data points as origin in the implicit transport problem
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise]
-                #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 10#int(CutSharing.options['max_iter']/10)
-                CutSharing.options['multicut'] = True
-                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], N_training)
+                #SDDP.options['max_iter'] =10
+                SDDP.options['lines_freq'] = 10#int(SDDP.options['max_iter']/10)
+                SDDP.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], N_training)
                 sim_results = list()
                 for rr in []:
                 #for rr in [b*(10**c) for c in [0] for b in [0.0009,15,50]]:
@@ -357,7 +357,7 @@ if __name__ == '__main__':
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWasserstein , norm = 1 , radius = rr, data_random_container = random_builder_out_of_sample(wasser_valley_chain))
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     print('Wasserstein r = %10.4e' %(rr))
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinDSE2.pdf' %(instance_name), N_training)
@@ -371,10 +371,10 @@ if __name__ == '__main__':
                 Uses dat points for origins and continuum support for destinations
                 '''
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
-                #CutSharing.options['max_iter'] =10
-                CutSharing.options['lines_freq'] = 1#int(CutSharing.options['max_iter']/100)
-                CutSharing.options['multicut'] = True
-                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], len(valley_chain[0].inflows))
+                #SDDP.options['max_iter'] =10
+                SDDP.options['lines_freq'] = 1#int(SDDP.options['max_iter']/100)
+                SDDP.options['multicut'] = True
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], len(valley_chain[0].inflows))
                 sim_results = list()
                 for rr in r_lbs:
                     #for rr in [b*(10**c) for c in [-4,-3,-2,-1,-0,1,2,3] for b in [1,1.5,2,3,4,5,6,7,8,9]]:
@@ -390,7 +390,7 @@ if __name__ == '__main__':
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustWassersteinCont, radius = rr, support_ctrs = supp_ctrs,  support_rhs = supp_rhs)
                     algo.run( instance_name=instance_name, dynamic_sampling=True)
                     
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 #plot_sim_results(sim_results, hydro_path+'/Output/%s_WassersteinConts.pdf' %(instance_name), N_training)
@@ -401,13 +401,13 @@ if __name__ == '__main__':
                 '''
                 DRO Philpott - Variation
                 '''
-                CutSharing.options['max_iter'] = 3000
-                CutSharing.options['multicut'] = False
-                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+                SDDP.options['max_iter'] = 3000
+                SDDP.options['multicut'] = False
+                SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/10)
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 dim_p = len(valley_chain[0].inflows)
                 q_prob = 1/dim_p
-                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], dim_p)
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], dim_p)
                 sim_results = []
                 # [1,5,10,50,100,250,500,750,1000,2000,5000]
                 for rr in []:
@@ -415,7 +415,7 @@ if __name__ == '__main__':
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':rr, 'set_type':DistRobustDuality.L1_NORM})
                     algo.run( instance_name=instance_name)
                     raise 'Wasserstein noice not fixed '
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 #plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2.pdf' %(instance_name))
@@ -425,13 +425,13 @@ if __name__ == '__main__':
                 '''
                 DRO Dual - Variation
                 '''
-                #CutSharing.options['max_iter'] = 20
-                CutSharing.options['multicut'] = True
-                CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/10)
+                #SDDP.options['max_iter'] = 20
+                SDDP.options['multicut'] = True
+                SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/10)
                 valley_chain = [Reservoir(30, 200, 50, valley_turbines, Water_Penalty, x) for x in RHSnoise_wasswer]
                 dim_p = len(valley_chain[0].inflows)
                 q_prob = 1/dim_p
-                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, CutSharing.options['max_iter'], dim_p)
+                instance_name = "Hydro_R%i_AR%i_T%i_I%i_N%iESS" % (nr, lag, T, SDDP.options['max_iter'], dim_p)
                 sim_results = []
                 # [1,5,10,50,100,250,500,750,1000,2000,5000]
                 for rr in []:
@@ -439,39 +439,39 @@ if __name__ == '__main__':
                     algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustDuality, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':rr, 'set_type':DistRobustDuality.L1_NORM, 'cutting_planes':False})
                     algo.run( instance_name=instance_name)
                     
-                    sim_result = algo.simulate_policy(CutSharing.options['sim_iter'], out_of_sample_rnd_cont)
+                    sim_result = algo.simulate_policy(SDDP.options['sim_iter'], out_of_sample_rnd_cont)
                     sim_results.append(sim_result)
                     del(algo)
                 #plot_sim_results(sim_results, hydro_path+'/Output/%s_Chi2.pdf' %(instance_name))
                 
                 #===================================================================
-                # CutSharing.options['multicut'] = True
+                # SDDP.options['multicut'] = True
                 # algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = InnerDROSolverX2, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':DUS_radius, 'set_type':DistRobustDuality.L2_NORM})
                 # algo.run( instance_name=instance_name)
-                # algo.simulate_policy(CutSharing.options['sim_iter'])
+                # algo.simulate_policy(SDDP.options['sim_iter'])
                 # del(algo)
                 # 
-                # CutSharing.options['multicut'] = False
+                # SDDP.options['multicut'] = False
                 # algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':DUS_radius, 'set_type':DistRobustDuality.L2_NORM})
                 # algo.run( instance_name=instance_name)
-                # algo.simulate_policy(CutSharing.options['sim_iter'])
+                # algo.simulate_policy(SDDP.options['sim_iter'])
                 # del(algo)
                 # 
-                # CutSharing.options['multicut'] = True
+                # SDDP.options['multicut'] = True
                 # algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobust, dro_solver = PhilpottInnerDROSolver, dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':DUS_radius, 'set_type':DistRobustDuality.L2_NORM})
                 # algo.run( instance_name=instance_name)
-                # algo.simulate_policy(CutSharing.options['sim_iter'])
+                # algo.simulate_policy(SDDP.options['sim_iter'])
                 # del(algo)
                 #===================================================================
                 #===================================================================
-                # CutSharing.options['max_iter'] = 100
-                # CutSharing.options['lines_freq'] = int(CutSharing.options['max_iter']/20)
-                # CutSharing.options['multicut'] = True
+                # SDDP.options['max_iter'] = 100
+                # SDDP.options['lines_freq'] = int(SDDP.options['max_iter']/20)
+                # SDDP.options['multicut'] = True
                 # algo = SDDP(T, model_builder, random_builder, risk_measure = DistRobustDuality,dro_solver = PhilpottInnerDROSolver, 
                 #             dro_solver_params = {'nominal_p':np.array([q_prob]*dim_p), 'DUS_radius':DUS_radius, 'set_type':DistRobustDuality.L2_NORM, 'cutting_planes':True})
                 #  
                 # algo.run( instance_name=instance_name)
-                # algo.simulate_policy(CutSharing.options['sim_iter'])
+                # algo.simulate_policy(SDDP.options['sim_iter'])
                 # del(algo)
                 #===================================================================
             

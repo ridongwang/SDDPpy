@@ -16,13 +16,13 @@ Created on Sep 13, 2018
 from __init__ import import_SDDP
 import_SDDP()
 
-from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
+from SDDP import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
     SLACK_BASED_CUT_SELECTOR
-from CutSharing.SDDP_Alg import SDDP
+from SDDP.SDDP_Alg import SDDP
 from Utils.file_savers import write_object_results
 from HydroModel import load_hydro_data, hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
-from CutSharing.SDDP_utils import report_stats
+from SDDP.SDDP_utils import report_stats
 
 
 

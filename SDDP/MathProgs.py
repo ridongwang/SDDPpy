@@ -4,13 +4,13 @@ Created on Nov 17, 2017
 @author: dduque
 '''
 from gurobipy import GRB, Model, tupledict, read
-from CutSharing.CutManagament import Cut
-from CutSharing.CutManagament import CutPool
-import CutSharing
-from CutSharing import *
+from SDDP.CutManagament import Cut
+from SDDP.CutManagament import CutPool
+import SDDP
+from SDDP import *
 from time import time
 import scipy.sparse as sp
-from CutSharing.RiskMeasures import Expectation
+from SDDP.RiskMeasures import Expectation
 
 
 class StageProblem():
@@ -72,7 +72,7 @@ class StageProblem():
         # Optimizer parameters
         self.model.params.OutputFlag = 0  # No optimization output
         self.model.params.DualReductions = 0  # Give definite info on status (when inf or unbounded)
-        self.model.params.Threads = CutSharing.options['grb_threads']
+        self.model.params.Threads = SDDP.options['grb_threads']
         self.model.params.Method = 1
         #self.model.params.NumericFocus = 3
         #self.model.params.PreDual = 0
@@ -526,7 +526,7 @@ class StageOracleProblem():
         
         # Optimizer parameters
         self.model.params.OutputFlag = 0
-        self.model.params.Threads = CutSharing.options['grb_threads']
+        self.model.params.Threads = SDDP.options['grb_threads']
         #self.model.params.Method = 2
         
         #Construct dictionaries of (constraints,variables) key where duals are needed

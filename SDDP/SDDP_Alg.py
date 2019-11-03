@@ -1,23 +1,25 @@
 '''
 Created on Nov 17, 2017
 
+Module that contains the main logic of SDDP algorithm.
+
 @author: dduque
 '''
 import logging
 import time
 
 import numpy as np
-import CutSharing as cs
-from CutSharing.MathProgs import StageProblem, not_optimal_sp,\
+import SDDP as cs
+from SDDP.MathProgs import StageProblem, not_optimal_sp,\
     StageOracleProblem
 
-from CutSharing.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen
+from SDDP.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen
 
 from OutputAnalysis.SimulationAnalysis import SimResult
-from CutSharing.RandomnessHandler import ScenarioTree
-from CutSharing.RiskMeasures import Expectation
-from CutSharing.WassersteinWorstCase import solve_worst_case_expectation
-from CutSharing import check_options_concitency
+from SDDP.RandomnessHandler import ScenarioTree
+from SDDP.RiskMeasures import Expectation
+from SDDP.WassersteinWorstCase import solve_worst_case_expectation
+from SDDP import check_options_concitency
 
 sddp_log = cs.logger
 

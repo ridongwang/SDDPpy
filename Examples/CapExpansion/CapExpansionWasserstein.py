@@ -10,13 +10,13 @@ sys.path.append('/Users/dduque/Dropbox/WORKSPACE/SDDP')  # Import SDDP for every
 import Examples
 import numpy as np
 from gurobipy import GRB, Model
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector
+from SDDP.RandomnessHandler import RandomContainer, StageRandomVector
 from Examples.CapExpansion.CapExpDataGen import Datahandler
-from CutSharing.SDDP_Alg import SDDP
+from SDDP.SDDP_Alg import SDDP
 from Utils.file_savers import write_object_results
-from CutSharing.SDDP_utils import report_stats
-import CutSharing
-from CutSharing.RiskMeasures import DiscreteWassersteinInnerSolver, DistRobust,\
+from SDDP.SDDP_utils import report_stats
+import SDDP
+from SDDP.RiskMeasures import DiscreteWassersteinInnerSolver, DistRobust,\
     DistRobustWasserstein
 import pickle
 from OutputAnalysis.SimulationAnalysis import plot_sim_results
@@ -69,11 +69,11 @@ def stage_prob_factory(data):
 
 
 if __name__ == '__main__':
-    CutSharing.options['max_iter'] = 1000
-    CutSharing.options['multicut'] = True
-    CutSharing.options['lines_freq'] = 100
-    CutSharing.options['outputlevel'] = 2
-    CutSharing.options['sim_iter'] = 1_000
+    SDDP.options['max_iter'] = 1000
+    SDDP.options['multicut'] = True
+    SDDP.options['lines_freq'] = 100
+    SDDP.options['outputlevel'] = 2
+    SDDP.options['sim_iter'] = 1_000
     
     T = 2  # number of stages
     '''

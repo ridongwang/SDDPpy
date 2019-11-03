@@ -7,14 +7,14 @@ from __init__ import import_SDDP, dro_radii
 #from HydroExamples import dro_radii, import_SDDP
 import_SDDP()
 
-from CutSharing import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
+from SDDP import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
     SLACK_BASED_CUT_SELECTOR
-from CutSharing.SDDP_Alg import SDDP
-from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
+from SDDP.SDDP_Alg import SDDP
+from SDDP.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver
 from Utils.file_savers import write_object_results
 from HydroModel import load_hydro_data,  hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance #Necessary to unpickle file!
-from CutSharing.SDDP_utils import report_stats
+from SDDP.SDDP_utils import report_stats
     
 if __name__ == '__main__':
     '''

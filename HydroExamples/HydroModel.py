@@ -6,10 +6,10 @@ Created on Sep 12, 2018
 Hydro model functions. Unifies the creation of the model for testing
 with different risk measures.
 '''
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector
-from CutSharing.RandomManager import reset_experiment_desing_gen, experiment_desing_gen
-from CutSharing.SDDP_utils import print_model
-from CutSharing import logger as sddp_log, options
+from SDDP.RandomnessHandler import RandomContainer, StageRandomVector
+from SDDP.RandomManager import reset_experiment_desing_gen, experiment_desing_gen
+from SDDP.SDDP_utils import print_model
+from SDDP import logger as sddp_log, options
 from gurobipy import Model, GRB, quicksum
 from scipy.spatial import ConvexHull
 from Utils.argv_parser import sys, parse_args

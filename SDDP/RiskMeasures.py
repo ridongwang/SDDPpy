@@ -9,7 +9,7 @@ Modified on May 22, 2019:
 
 from abc import ABC, abstractmethod
 from gurobipy import *
-import CutSharing as cs
+import SDDP as cs
 import numpy as np
 
 sddp_log = cs.logger

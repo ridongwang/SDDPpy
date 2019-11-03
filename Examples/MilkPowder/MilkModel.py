@@ -11,12 +11,12 @@ import json
 import os 
 import sys
 import numpy
-from CutSharing.RandomnessHandler import RandomContainer, StageRandomVector
+from SDDP.RandomnessHandler import RandomContainer, StageRandomVector
 from gurobipy import Model, GRB
-from CutSharing.SDDP_utils import print_model
-from CutSharing.SDDP_Alg import SDDP
-from CutSharing import options, load_algorithm_options
-from CutSharing.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver,\
+from SDDP.SDDP_utils import print_model
+from SDDP.SDDP_Alg import SDDP
+from SDDP import options, load_algorithm_options
+from SDDP.RiskMeasures import DistRobust, DiscreteWassersteinInnerSolver,\
     DistRobustWasserstein
 milk_path = os.path.dirname(os.path.realpath(__file__))
 

@@ -5,7 +5,7 @@ Created on Nov 17, 2017
 '''
 import numpy as np
 from gurobipy import *
-from CutSharing import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
+from SDDP import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
 from abc import ABC, abstractmethod
 
 

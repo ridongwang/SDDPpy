@@ -4,7 +4,7 @@ Created on Jun 13, 2018
 @author: dduque
 '''
 import numpy as np
-from CutSharing import logger as sddp_log
+from SDDP import logger as sddp_log
 
 def print_model(m):
     '''
