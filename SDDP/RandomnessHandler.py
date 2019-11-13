@@ -153,7 +153,24 @@ class RandomContainer:
     
     def __repr__(self):
         return [x for x in self.stage_vectors].__repr__()
+    
+    @property
+    def support_dimension(self):
+        assert self.stage_vectors[0].outcomes_dim == self.stage_vectors[-1].outcomes_dim, \
+            "Support dimension is not supposed to change in dimension over time."
+        return self.stage_vectors[0].outcomes_dim
 
+    def get_noise_ub(self, noise_names):
+        bounds = []
+        for noise_term  in noise_names:
+            bounds.append(np.max([sv.get_ub(noise_term) for sv in self.stage_vectors]))
+        return bounds
+
+     def get_noise_lb(self, noise_names):
+        bounds = []
+        for noise_term  in noise_names:
+            bounds.append(np.min([sv.get_lb(noise_term) for sv in self.stage_vectors]))
+        return bounds
 
 class StageRandomVector:
     '''
@@ -167,7 +184,7 @@ class StageRandomVector:
         outcomes (list of dict): a list of possible outcomes of the random vector.
             Each element of the list is a dictionary containing the numerical values
             for all the random elements of the vector. In the interstage dependent case,
-            this values are the independent part only.  
+            this values are the independent part only.
         p (ndarray): vector with the probabilities of each outcome. This vector is modifiable
             depending on the risk measure.
         is_indipendent (bool): flag to distinguish between independent and dependent cases. 
@@ -313,7 +330,13 @@ class StageRandomVector:
     
     def reset_to_nominal_dist(self):
         self.p = self.p_copy.copy()
-    
+
+    def get_ub(self, ele_name):
+        return np.max(self.elements[ele_name].rnd_outcomes)
+
+    def get_lb(self, ele_name):
+        return np.min(self.elements[ele_name].rnd_outcomes)  
+
     def __repr__(self):
         return 't=%i %s' % (self.stage, self.elements.keys().__repr__())
 
