@@ -96,24 +96,20 @@ class Cut():
         # self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
         # self.is_active  = True
         #=======================================================================
-        #self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
-        #m.update()
-        
-        #Reference to the constraint
-        if self.lhs.getValue() >= self.rhs - ZERO_TOL:
-            self.is_active = False
-            #slack = self.lhs.getValue() - self.rhs
-            #print(sp , '  o:', outcome,   'Not added ' , slack)
-            #self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
-        else:
-            #slack = self.lhs.getValue() - self.rhs
-            #print(sp , '  o:', outcome,   'added ' , slack)
-            #print('New cuts: ' , self.name)
+        # self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
+        # m.update()
+        try:
+            # Try to evaluate LHS, is not possible if new vars were added to the cut
+            # Add constraint and get a reference to it.
+            if self.lhs.getValue() >= self.rhs - ZERO_TOL:
+                self.is_active = False
+            else:
+                self.is_active = True
+                self.ctrRef = m.addConstr(self.lhs >= self.rhs, self.name)
+        except AttributeError:
+            # Add the cut to the model if lhs cannot be evaluated
             self.is_active = True
-            #Reference to the constraint
             self.ctrRef = m.addConstr(self.lhs >= self.rhs, self.name)
-            #print('New cuts: ', self.name, ' %20.16f ' % (self.lhs.getValue() - self.rhs))
-            #print(self.name, self.lhs , '>='  , self.rhs)
         
         #==============================#
         # Extra information for dual retrieval

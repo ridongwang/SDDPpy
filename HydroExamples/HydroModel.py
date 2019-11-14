@@ -357,7 +357,7 @@ def load_hydro_data(approach, dus_type):
     print(data_indeces)
     if DW_extended > 1 and dus_type == 'DW':
         #Generate additional data points from the data
-        if DW_sampling == None or DW_sampling == 'none' or DW_sampling == 'None':
+        if DW_sampling is None or DW_sampling == 'none' or DW_sampling == 'None':
             #available_indices = set(available_indices) - set(data_indeces)
             N_wasserstein = N_data * DW_extended
             #train_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False))

@@ -12,7 +12,7 @@ import_SDDP()
 from SDDP import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
     SLACK_BASED_CUT_SELECTOR
 from SDDP.SDDP_Alg import SDDP
-from SDDP.RiskMeasures import DistRobustWasserstein
+from SDDP.RiskMeasures import DistRobustWassersteinCont
 from Utils.file_savers import write_object_results
 from HydroModel import load_hydro_data, hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance  #Necessary to unpickle file!
@@ -29,27 +29,20 @@ if __name__ == '__main__':
     T, model_builder, random_builder, rnd_container_data, rnd_container_oos, r_dro, instance_name, _ = load_hydro_data(
         'DUAL', 'CW')
     
-    # Box-type set for the support
+    # Box-type set for the support of the form C\xi <= d (for a box, lb should be negativem, e.g, -I\xi<=-lb)
     sup_dim = rnd_container_data.support_dimension
     supp_ctrs = [{'innovations[%i]' % (reservoir): 1} for reservoir in range(sup_dim)]
     supp_ctrs.extend(({'innovations[%i]' % (r_id): -1}) for r_id in range(sup_dim))
-    supp_rhs = rnd_container_data.get_noise_ub([f'innovations[{r_id}]' for r_id in range(sup_dim)]
-    supp_rhs.extend(rnd_container_data.get_noise_lb([f'innovations[{r_id}]' for r_id in range(sup_dim)])
+    supp_rhs = rnd_container_data.get_noise_ub([f'innovations[{r_id}]' for r_id in range(sup_dim)])
+    supp_rhs.extend(rnd_container_data.get_noise_lb([f'innovations[{r_id}]' for r_id in range(sup_dim)], True))
     algo = SDDP(T,
                 model_builder,
                 random_builder,
                 risk_measure=DistRobustWassersteinCont,
-                radius=rr,
+                radius=r_dro,
                 support_ctrs=supp_ctrs,
                 support_rhs=supp_rhs)
     
-    algo = SDDP(T,
-                model_builder,
-                random_builder,
-                risk_measure=DistRobustWasserstein,
-                norm=1,
-                radius=r_dro,
-                data_random_container=rnd_container_data)
     lbs = algo.run(instance_name=instance_name)
     
     save_path = hydro_path + '/Output/DW_Dual/%s_LBS.pickle' % (instance_name)

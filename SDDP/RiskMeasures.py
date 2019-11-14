@@ -15,7 +15,7 @@ import numpy as np
 sddp_log = cs.logger
 ds_beta = cs.options['dynamic_sampling_beta']
 
-class AbstracRiskMeasure(ABC):
+class AbstractRiskMeasure(ABC):
     '''
     Abstract representation of what a risk measure should do in SDDP
     '''
@@ -34,7 +34,7 @@ class AbstracRiskMeasure(ABC):
     @abstractmethod
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs,cut_id, p=None):
         '''
-        Computes cut(s) gradient(s) for both multi cut and single cut 
+        Computes cut(s) gradient(s) for both multi cut and single cut
         implementations of the algorithm.
         
         Args:
@@ -42,29 +42,29 @@ class AbstracRiskMeasure(ABC):
             sp_nex (StageProblem): subproblem for the next stage.
             srv (StageRandomVector): Random vector of the next stage
             soo (List of dict): A list of outputs of all the subproblems descendants (subs outputs outcomes).
-            spfs (dict (str-float)): Values for the states of the current stage computed 
+            spfs (dict (str-float)): Values for the states of the current stage computed
                 in the forward pass.
             cut_id (int): Numeric id of the cut being created (iteration in SDDP)
-            p (ndarray): Optional, vector of probabilities 
-        Return 
+            p (ndarray): Optional, vector of probabilities.
+        Returns:
             pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
                 the list contains just one element.
-            cut_gradiend_coeff(list[dict]):
+            cut_gradient_coeff(list[dict]):
         '''
         multicut = sp.multicut
-        cut_gradiend_coeff = None
+        cut_gradient_coeff = None
         if multicut == False: #single cut
             probs = srv.p if type(p)==type(None) else p
-            cut_gradiend_coeff = [{}]
+            cut_gradient_coeff = [{}]
             for v_out in sp.out_state:
-                cut_gradiend_coeff[0][v_out] = sum(probs[i]*soo[i]['RC'][v_out] for (i,o) in enumerate(srv.outcomes))
+                cut_gradient_coeff[0][v_out] = sum(probs[i]*soo[i]['RC'][v_out] for (i,o) in enumerate(srv.outcomes))
         else: #Multicut
-            cut_gradiend_coeff = [{} for _ in range(len(soo))]
+            cut_gradient_coeff = [{} for _ in range(len(soo))]
             for (i,outcome) in enumerate(soo):
-                cut_gradiend_coeff[i] = outcome['RC']
+                cut_gradient_coeff[i] = outcome['RC']
             
-        self._current_cut_gradient = cut_gradiend_coeff
-        return cut_gradiend_coeff
+        self._current_cut_gradient = cut_gradient_coeff
+        return cut_gradient_coeff
     
     @abstractmethod
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id, p = None ):
@@ -107,7 +107,7 @@ class AbstracRiskMeasure(ABC):
     
 
 
-class Expectation(AbstracRiskMeasure):
+class Expectation(AbstractRiskMeasure):
     '''
     Implements an expected value risk measure
     '''
@@ -152,7 +152,7 @@ def mod_chi2(xi_o, xi_d, n):
     else:
         return 1;
 
-class DistRobustWasserstein(AbstracRiskMeasure):
+class DistRobustWasserstein(AbstractRiskMeasure):
     '''
     Distributional uncertainty set defined by the Wasserstein metric
     Attributes:
@@ -388,7 +388,7 @@ class DistRobustWasserstein(AbstracRiskMeasure):
         return n_org,n_des,d_ij,self.radius
     
     
-class DistRobustWassersteinCont(AbstracRiskMeasure):
+class DistRobustWassersteinCont(AbstractRiskMeasure):
     '''
     Distributional uncertainty set defined by the Wasserstein metric with continuous support.
     
@@ -421,6 +421,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         self.dro_support_var = {} 
         
         #===========================================
+        #Additional notation as in Mohajerin and Kuhn, 2018 (model 18b)
         self.lambda_var = None
         self._support_slack = None
         self._support_slack_computed = False
@@ -428,33 +429,21 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
 
     def compute_cut_gradient(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
-        Computes expected dual variables for the single cut version
-        and then the gradient.
-        
-        Args:
-            sp (StageProblem): current subproblem where the cut will be added.
-            sp_nex (StageProblem): subproblem for the next stage.
-            srv (StageRandomVector): random vector of the next stage
-            soo (List of dict): a list of outputs of all the subproblems descendants.
-            spfs (dict (str-float)): values for the states of the current stage computed 
-                in the forward pass.
-            cut_id (int): numeric id of the cut being created (iteration in SDDP).
-        Return 
-            pi_bar (list of dict): expected value of the duals. For the single cut algorithm
-                the list contains just one element. For the multicut algorithm the dual variables
-                correspond to the descendant problems. 
-            cut_gradiend_coeff(list of dict): gradient coefficients of the state variables. For this
-                risk measure, it also containt additional variables that modify the cuts (see Kuhn paper section 5.1).
+            See abstract method documentation for cut gradients.
+            
+            Besides the cut gradient and intercept computation, one needs
+            to create addition variables to model the dual of the worst-case
+            expectation problem.
         '''
         multicut = sp.multicut
         pi_bar = None
-        cut_gradiend_coeff = None
+        cut_gradient_coeff = None
         
         if multicut == False: #single cut
             raise 'Risk measure does not support single cut'
         else:           #Multicut
             #Gen and store regular cut gradients (w.r.t x)
-            cut_gradiend_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id)
+            cut_gradient_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id)
             
             pi_bar = [{} for _ in srv.outcomes]
             for ctr in sp_next.ctrsForDuals:
@@ -468,6 +457,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
             outcomes_dim  = len(srv.outcomes)
             supp_ctr_dim = len(self.support_ctrs)
             m = sp.model
+            # gamma_k: dual variables used in equation 18b of Mohajerin and Kuhn, 2018.
             gamma_k = m.addVars(outcomes_dim, supp_ctr_dim, lb=0,ub=GRB.INFINITY,obj=0,vtype=GRB.CONTINUOUS, name='gamma[%i]'%(cut_id))
             m.update()
             
@@ -484,17 +474,17 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
             for (i,o) in enumerate(srv.outcomes):
                 for supp_ctr_ix in range(supp_ctr_dim):
                     v_name = gamma_k[i, supp_ctr_ix].VarName
-                    if v_name in cut_gradiend_coeff[i]:
-                        cut_gradiend_coeff[i][v_name] += self._support_slack[i][supp_ctr_ix] 
+                    if v_name in cut_gradient_coeff[i]:
+                        cut_gradient_coeff[i][v_name] += self._support_slack[i][supp_ctr_ix] 
                     else:
-                        cut_gradiend_coeff[i][v_name] = self._support_slack[i][supp_ctr_ix]
+                        cut_gradient_coeff[i][v_name] = self._support_slack[i][supp_ctr_ix]
                 pi_i_k = pi_bar[i]
                 for rhs_ctr_name in sp_next.ctrRHSvName:
                     if sp.stage == 0:
                         pass # print(sp.stage)
                     
                     rnd_ele_name = sp_next.ctrRHSvName[rhs_ctr_name]
-                    inf_norm = quicksum(gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix][rnd_ele_name] if rnd_ele_name in self.support_ctrs[supp_ctr_ix] else 0) for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name] 
+                    inf_norm = quicksum(gamma_k[i, supp_ctr_ix]*(self.support_ctrs[supp_ctr_ix].get(rnd_ele_name, 0)) for supp_ctr_ix in range(supp_ctr_dim))-pi_i_k[rhs_ctr_name] 
                     m.addConstr(lhs=self.lambda_var, sense=GRB.GREATER_EQUAL,  rhs=inf_norm , name='normCtr_%i_%i_%s_neg' %(cut_id, i, rnd_ele_name))
                     m.addConstr(lhs=self.lambda_var, sense=GRB.GREATER_EQUAL,  rhs=-inf_norm , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
                     #===========================================================
@@ -502,8 +492,8 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                     #              sense=GRB.LESS_EQUAL, rhs=self.lambda_var , name='normCtr_%i_%i_%s_pos' %(cut_id, i, rnd_ele_name))
                     #===========================================================
                     m.update()
-        self._current_cut_gradient = cut_gradiend_coeff
-        return pi_bar, cut_gradiend_coeff
+        self._current_cut_gradient = cut_gradient_coeff
+        return cut_gradient_coeff
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
@@ -542,7 +532,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         
         #Using the same notation as in Kuhn paper
         #lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
-        lambda_var =  model.addVar(lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='lambda[%i]' %(t))
+        lambda_var =  model.addVar(lb=0, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='lambda[%i]' %(t))
         self.lambda_var = lambda_var 
         #nu_var =  model.addVars(n_outcomes_org,  lb=-GRB.INFINITY,ub=GRB.INFINITY,vtype=GRB.CONTINUOUS,name='nu[%i]' %(t))
         # Oracle variables are used in placed of nu_var
@@ -558,15 +548,17 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
     
     def forward_pass_updates(self, *args, **kwargs):
         return False, 0 
+
     def forward_prob_update (self, t, sp, next_sp,  fp_out_states, sample_path ,rnd_container ):
-        '''Updates the probability distribution for the descendants of the current stage.
-        The update sets the probability use to sample new outcomes to the worst case prob
-        distribution for the particular sample path being explored.
-        Args:
-            t (int): current stage (just solved in forward pass)
-            rnd_container (RandomContainer): object that contains all the randomness in the problem.
-            
-        This method modifies the probabilities of the random vector for stage t+1.
+        '''
+            Updates the probability distribution for the descendants of the current stage.
+            The update sets the probability use to sample new outcomes to the worst case prob
+            distribution for the particular sample path being explored.
+            Args:
+                t (int): current stage (just solved in forward pass)
+                rnd_container (RandomContainer): object that contains all the randomness in the problem.
+                
+            This method modifies the probabilities of the random vector for stage t+1.
         '''
         pass
         #TODO: think how is the dynamic sampling scheme in this case
@@ -600,7 +592,7 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
         
         
         for (i,tup) in enumerate(tup_ind):
-            #print(tup, duals_vars[i])
+            # print(tup, duals_vars[i])
             k = tup[0]
             outc = tup[1]
             new_pmf.append(duals_vars[i])
@@ -614,10 +606,22 @@ class DistRobustWassersteinCont(AbstracRiskMeasure):
                 except:
                     print('Constraint not available: normCtr_%i_%i_%s_neg' %(k, outc, ele))
             new_support.append(new_supp_point)
+        # Support points might be repeated
+        ix_1 = len(new_support) - 1
+        while ix_1 > 0:
+            ix_2 = ix_1 -1
+            while ix_2 >=0:
+                if np.sqrt(np.sum((new_support[ix_1][e] - new_support[ix_2][e])**2 for e in new_support[ix_1])) < cs.ZERO_TOL:
+                    new_support.pop(ix_1)  # Erase duplicate support
+                    new_pmf[ix_2] += new_pmf.pop(ix_1)  # Combined probabilites
+                    break
+                ix_2 -= 1
+            ix_1 -= 1
+        
         rnd_cont[stage+1].worst_case_dist = {'support':new_support , 'pmf':new_pmf}
         return new_support, new_pmf
         
-class DistRobustDuality(AbstracRiskMeasure):
+class DistRobustDuality(AbstractRiskMeasure):
     INF_NORM = 'inf_norm'
     L1_NORM = 'L1_norm'
     L2_NORM = 'L2_norm'
@@ -861,7 +865,7 @@ class DRO_CuttingPlanes():
 
 
 
-class DistRobust(AbstracRiskMeasure):
+class DistRobust(AbstractRiskMeasure):
     '''
         Distributionally robust risk measure based on primal formulation (Philpott et al.). 
     '''
@@ -1187,7 +1191,7 @@ class DiscreteWassersteinInnerSolver(DistRobusInnerSolver):
         
         
 
-class ContinuousWassersetinInnerSolver(DistRobusInnerSolver):
+class ContinuousWassersteinInnerSolver(DistRobusInnerSolver):
     '''
     .
     '''

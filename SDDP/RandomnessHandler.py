@@ -156,21 +156,22 @@ class RandomContainer:
     
     @property
     def support_dimension(self):
-        assert self.stage_vectors[0].outcomes_dim == self.stage_vectors[-1].outcomes_dim, \
+        assert len(self.stage_vectors[0].elements) == len(self.stage_vectors[0].elements), \
             "Support dimension is not supposed to change in dimension over time."
-        return self.stage_vectors[0].outcomes_dim
-
-    def get_noise_ub(self, noise_names):
+        return len(self.stage_vectors[0].elements)
+    
+    def get_noise_ub(self, noise_names, flip_sign=False):
         bounds = []
-        for noise_term  in noise_names:
-            bounds.append(np.max([sv.get_ub(noise_term) for sv in self.stage_vectors]))
+        for noise_term in noise_names:
+            bounds.append(((-1)**flip_sign) * np.max([sv.get_ub(noise_term) for sv in self.stage_vectors]))
+        return bounds
+    
+    def get_noise_lb(self, noise_names, flip_sign=False):
+        bounds = []
+        for noise_term in noise_names:
+            bounds.append(((-1)**flip_sign) * np.min([sv.get_lb(noise_term) for sv in self.stage_vectors]))
         return bounds
 
-     def get_noise_lb(self, noise_names):
-        bounds = []
-        for noise_term  in noise_names:
-            bounds.append(np.min([sv.get_lb(noise_term) for sv in self.stage_vectors]))
-        return bounds
 
 class StageRandomVector:
     '''
@@ -330,13 +331,13 @@ class StageRandomVector:
     
     def reset_to_nominal_dist(self):
         self.p = self.p_copy.copy()
-
+    
     def get_ub(self, ele_name):
-        return np.max(self.elements[ele_name].rnd_outcomes)
-
+        return np.max(self.elements[ele_name].outcomes)
+    
     def get_lb(self, ele_name):
-        return np.min(self.elements[ele_name].rnd_outcomes)  
-
+        return np.min(self.elements[ele_name].outcomes)
+    
     def __repr__(self):
         return 't=%i %s' % (self.stage, self.elements.keys().__repr__())
 

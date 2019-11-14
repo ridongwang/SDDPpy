@@ -176,9 +176,9 @@ class SDDP(object):
     def forwardpass(self, sample_path, simulation=False):
         '''
         Runs a forward pass given a sample path. If no sample pass is given,
-        a dynamic version of the forward pass method is invoked. 
+        a dynamic version of the forward pass method is invoked.
         '''
-        if sample_path == None or len(sample_path) == 0:  #No sample path was given
+        if sample_path is None or len(sample_path) == 0:  # No sample path was given
             return self.dynamic_forwardpass(sample_path, simulation)
         
         fp_out_states = []
@@ -248,7 +248,6 @@ class SDDP(object):
             next_sp = self.stage_problems[i + 1] if i + 1 < len(self.stage_problems) else None
             sp.risk_measure.forward_prob_update(i, sp, next_sp, fp_out_states, sample_path, self.random_container)
             try:
-                
                 new_support, new_pmf = sp.risk_measure.forward_prob_update_WassCont(i, sp, self.random_container)
             except:
                 pass
