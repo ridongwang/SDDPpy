@@ -222,8 +222,8 @@ class SDDP(object):
     
     def dynamic_forwardpass(self, sample_path, simulation=False):
         '''
-        Runs a forward pass in which the sample path is constructed 
-        as as the forward pass progresses in time. 
+        Runs a forward pass in which the sample path is constructed
+        as as the forward pass progresses in time.
         '''
         fp_out_states = []
         fp_ub_value = 0

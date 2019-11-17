@@ -105,11 +105,7 @@ def solve_cont_wasserstain(N, xi_n, K, r, c, b, L, C, d, dro_r, norm='inf'):
     model.update()
     model.write('news_vendor_dro.lp')
     model.optimize()
-    #===========================================================================
-    # print(model.getObjective())
-    # for c in model.getConstrs():
-    #     print(c.ConstrName, model.getRow(c), c.Sense, c.RHS)
-    #===========================================================================
+    
     if model.status == GRB.OPTIMAL:
         #print(model.ObjVal, x.X, lam.X, [s[i].X for i in N])
         print(f"f* = {model.ObjVal}")
@@ -129,7 +125,7 @@ def solve_cont_wasserstain(N, xi_n, K, r, c, b, L, C, d, dro_r, norm='inf'):
         new_support = []
         pmf = []
         for (k, i) in piece_ctrs:
-            if piece_ctrs[(k, i)].Pi > 1E-9:
+            if piece_ctrs[(k, i)].Pi > 1E-7:
                 new_atom = xi_n[i]
                 new_atom = xi_n[i] - (norm_aux_ctrs[(k, i)].Pi) / piece_ctrs[(k, i)].Pi
                 new_support.append(new_atom)
@@ -164,7 +160,7 @@ def create_obj(K, c, r, b):
     '''
     
     def news_vendor_obj(x, xi_n):
-        return np.max([c[k] * x + r[k] * xi_n + b[k] for k in K])
+        return np.max([c[k] * x + r[k] * xi_n + b[k] for k in K], axis=0)
     
     return news_vendor_obj
 
@@ -184,7 +180,7 @@ def test_out_of_sample(x_star, test_set, obj_fun, instance):
 if __name__ == '__main__':
     np.random.seed(0)
     
-    K = [0, 1]  # [0, 1, 2, 3]
+    K = [0, 1, 2]  # [0, 1, 2, 3]
     r = [0, -3, -5, -9]  # selling prices to induces multiple pieces
     c = [1 + r[1], 1, 1, 1]
     b = [0, 0, 20, 40]
@@ -192,10 +188,10 @@ if __name__ == '__main__':
     news_vendor_fun = create_obj(K, c, r, b)
     # density = np.append(np.append(np.random.lognormal(0, 1, size=1000), np.random.normal(10, 1, size=2000)),
     #                     np.random.normal(15, 2, size=1000))
-    neg_supp = 50 - np.random.lognormal(2, 1, size=100000)
-    density = neg_supp[neg_supp > 0]
-    #density = np.abs(np.random.binomial(200, 0.1, size=20000))
-    density_bins = 50  # np.arange(0, 40)
+    # neg_supp = np.random.lognormal(2, 1, size=100000)
+    # density = neg_supp[neg_supp > 0]
+    density = np.abs(np.random.binomial(200, 0.1, size=20000))
+    density_bins = np.arange(0, 40)
     #===========================================================================
     # n, bins, patches = plt.hist(density, 100, normed=1, facecolor='green', alpha=0.75)
     # y = mlab.normpdf( bins, density.mean(), density.std())
@@ -210,7 +206,7 @@ if __name__ == '__main__':
     # plt.show()
     #===========================================================================
     xi_n = np.array([])
-    for n in [30]:
+    for n in [20]:
         print('Solving n=', n)
         extra_points = n - len(xi_n)
         
@@ -230,7 +226,11 @@ if __name__ == '__main__':
         sim_results = []
         sp_sim = None  # Non-DRO simulations
         #for dro_radius in [100]:
-        for dro_radius in [1]:  # np.arange(0, 10, 1):
+        
+        # for dro_radius in ([0, 0.5] + list(np.arange(1, 10, 0.1)) +
+        #                    [10, 11, 12, 13, 14, 15, 20, 30, 40, 50, 60, 70, 80, 100, 150, 200, 250]):
+        for dro_radius in [2]:
+            print(f'DRO radius: {dro_radius}')
             plt.bar(bins_n[:-1], heights_n, width=(max(bins_n) - min(bins_n)) / len(bins_n), color="blue", alpha=0.8)
             instance_name = 'NewVendor_N%i_CW' % (n)
             instance = {'risk_measure_params': {}}
@@ -238,6 +238,7 @@ if __name__ == '__main__':
             instance['risk_measure_params']['radius'] = dro_radius
             instance['risk_measure'] = DistRobustWassersteinCont
             x_star, supp, pmf = solve_cont_wasserstain(N, xi_n, K, r, c, b, L, C, d, dro_radius, norm=2)
+            print(supp, pmf)
             data_worst_case = np.random.choice(supp, size=1000000, p=pmf)
             heights, bins = np.histogram(data_worst_case, bins=len(bins_n))
             heights = heights / sum(heights)
@@ -250,5 +251,9 @@ if __name__ == '__main__':
             report_stats(sim_res.sims_ub)
             if dro_radius == 0:
                 sp_sim = sim_res
-            plt.show()
-        #plot_sim_results(sp_sim, sim_results, newsvendro_path + '/Output/%s.pdf' % (instance_name), n, excel_file=False)
+            #plt.show()
+        # plot_sim_results(sp_sim,
+        #                  sim_results,
+        #                  news_vendor_path + '/Output/%s.pdf' % (instance_name),
+        #                  n,
+        #                  excel_file=False)
