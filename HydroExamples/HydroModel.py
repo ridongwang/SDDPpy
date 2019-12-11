@@ -391,9 +391,12 @@ def load_hydro_data(approach, dus_type):
                                                                                options['max_iter'], options['max_time'],
                                                                                approach, cut_type, sampling_type)
         else:
-            instance_name = "Hydro_R%i_AR%i_T%i_N%i_%i_I%i_Time%i_%s_%s_%s_%s_%.7f_%s" % (
-                nr, lag, T, N_data, N_training, options['max_iter'], options['max_time'], dus_type, approach, cut_type,
-                sampling_type, n_dro_radius, DW_sampling)
+            alg_iters = options['max_iter']
+            alg_cpu_time = options['max_time']
+            beta = options['dynamic_sampling_beta']
+            instance_name = f"Hydro_R{nr}_AR{lag}_T{T}_N_{N_data}_{N_training}_I_{alg_iters}_T{alg_cpu_time}" \
+                f"_{dus_type}_{approach}_{cut_type}_{sampling_type}_{n_dro_radius:.7f}_{DW_sampling}_{beta}"
+        
         return instance_name
     
     instance_name = instance_name_gen(dro_radius)

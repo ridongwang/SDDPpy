@@ -321,8 +321,8 @@ class SDDP(object):
             
             #DELLETE OR FIX LATER
             try:
-                # TODO: ONLY ADD TYHE cuts for the corresponding original  support point form where the new support came.
-                for outcome in stage_rnd_vector.worst_case_dist['support']:
+                worst_case_dist = stage_rnd_vector.worst_case_dist
+                for (i, outcome) in worst_case_dist['support']:
                     sp_output = sp.solve(in_state_vals=forward_out_states[t - 1],
                                          random_realization=outcome,
                                          forwardpass=False,
@@ -426,7 +426,7 @@ class SDDP(object):
         Starts the optimization routine in SDDP
         
         Args:
-            pre_sample_paths(list of dict): list that contains sample paths 
+            pre_sample_paths(list of dict): list that contains sample paths
                 to run in the forward passes
             instance_name (string): descriptive name of the problem
         '''

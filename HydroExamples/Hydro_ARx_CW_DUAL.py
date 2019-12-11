@@ -29,7 +29,7 @@ if __name__ == '__main__':
     T, model_builder, random_builder, rnd_container_data, rnd_container_oos, r_dro, instance_name, _ = load_hydro_data(
         'DUAL', 'CW')
     
-    # Box-type set for the support of the form C\xi <= d (for a box, lb should be negativem, e.g, -I\xi<=-lb)
+    # Box-type set for the support of the form C\xi <= d (for a box, lb should be negative, e.g, -I\xi<=-lb)
     sup_dim = rnd_container_data.support_dimension
     supp_ctrs = [{'innovations[%i]' % (reservoir): 1} for reservoir in range(sup_dim)]
     supp_ctrs.extend(({'innovations[%i]' % (r_id): -1}) for r_id in range(sup_dim))
