@@ -283,7 +283,7 @@ class StageProblem():
             self.model_stats.add_simplex_iter_entr(self.model.IterCount)
         
         else:
-            raise 'Model is not optimal, status: %i' % (self.model.status)
+            pass  # raise 'Model is not optimal, status: %i' % (self.model.status)
             
             #if self.stage == 0:
             #self.print_theta()
@@ -309,6 +309,7 @@ class StageProblem():
             self.model.getVarByName('thermal_gen').X)
         strout += 'oracle %16.3f; \n' % (self.model.ObjVal - self.cx.getValue())
         nr = 10
+        strout += 'R0'
         for r in range(nr):
             v = self.model.getVarByName('reservoir_level0[%i]' % r)
             strout = strout + '+%10.3f; ' % (v.X)
@@ -317,22 +318,28 @@ class StageProblem():
         #             v=self.model.getVarByName('innovations[%i]' %r)
         #             strout = strout + '+%10.3f; ' %(v.X)
         #         strout += '\n'
+        strout += 'I '
         for r in range(nr):
-            v = self.model.getVarByName('inflow[%i,1]' % r)
+            # v = self.model.getVarByName('inflow[%i,1]' % r)
+            v = self.model.getVarByName('inflow[%i]' % r)
             strout = strout + '+%10.3f; ' % (v.X)
         strout += '\n'
+        strout += 'P '
         for r in range(nr):
             v = self.model.getVarByName('pour[%i]' % r)
             strout = strout + '+%10.3f; ' % (v.X)
         strout += '\n'
+        strout += 'O '
         for r in range(nr):
             v = self.model.getVarByName('outflow[%i]' % r)
             strout = strout + '-%10.3f; ' % (v.X)
         strout += '\n'
+        strout += 'S '
         for r in range(nr):
             v = self.model.getVarByName('spill[%i]' % r)
             strout = strout + '-%10.3f; ' % (v.X)
         strout += '\n'
+        strout += 'R '
         for r in range(nr):
             v = self.model.getVarByName('reservoir_level[%i]' % r)
             strout = strout + '=%10.3f; ' % (v.X)
@@ -407,8 +414,8 @@ class StageProblem():
         Args:
             cut_id (int): Numeric id of the cut (corresponds to the number of backward passes).
             sp_next (StageProblem): stage problem object of the next stage
-                TODO: This might not be enougth for lags>1
-            rnd_vector_next (StageRandomVector): random vector containing the random variables 
+                TODO: This might not be enough for lags>1
+            rnd_vector_next (StageRandomVector): random vector containing the random variables
                 of the next stage.
             outputs_next (list of dict): list of outputs for every outcome in the next stage. 
                 Each element of the list is a dictionary with the same structure as the output
@@ -424,15 +431,14 @@ class StageProblem():
         srv = rnd_vector_next
         soo = outputs_next
         spfs = sample_path_forward_states
-        cut_gradiend_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs, cut_id)
+        cut_gradient_coeffs = self.risk_measure.compute_cut_gradient(self, sp_next, srv, soo, spfs, cut_id)
         cut_intercepts = self.risk_measure.compute_cut_intercept(self, sp_next, srv, soo, spfs, cut_id)
         
         stagewise_ind = srv.is_independent
-        #print(cut_gradiend_coeffs, cut_intercepts )
         if stagewise_ind:
             new_cuts = [
-                Cut(self, cut_gradiend_coeffs[i], cut_intercepts[i], cut_id, outcome=i)
-                for (i, grad) in enumerate(cut_gradiend_coeffs)
+                Cut(self, cut_gradient_coeffs[i], cut_intercepts[i], cut_id, outcome=i)
+                for (i, grad) in enumerate(cut_gradient_coeffs)
             ]
             self.cut_pool.addCuts(self.model, new_cuts)
         
@@ -459,7 +465,7 @@ class StageProblem():
             dep_rhs = dep_rhs_vector.dot(omega_stage_abs_order).squeeze()
             ind_rhs = cut_intercepts - dep_rhs
             new_cut = Cut(self,
-                          cut_gradiend_coeffs,
+                          cut_gradient_coeffs,
                           cut_intercepts,
                           cut_id,
                           stagewise_ind=False,
@@ -482,6 +488,9 @@ class StageProblem():
         for k in self.oracle:
             self.oracle[k].lb = -GRB.INFINITY
         self.model.update()
+    
+    def update_cut_pool_dro(self, cuts_left):
+        self.cut_pool.update_cut_pool_dro(self.model, cuts_left)
     
     def __repr__(self):
         return "SP(%i): #cuts:%i" % (self.stage, len(self.cut_pool.pool))

@@ -199,7 +199,7 @@ class SDDP(object):
             '''
             IO and stats updates
             '''
-            if not simulation and alg_options['outputlevel'] >= 3:
+            if simulation and alg_options['outputlevel'] >= 3:
                 sp.print_stage_res_summary()
             if i == 0:
                 self.lb = sp_output['objval']
@@ -254,8 +254,8 @@ class SDDP(object):
             '''
             IO and stats updates
             '''
-            if simulation and alg_options['outputlevel'] >= 3:
-                sp.print_stage_res_summary()
+            if not simulation and alg_options['outputlevel'] >= 3:
+                pass  #  sp.print_stage_res_summary()
             if i == 0:
                 self.lb = sp_output['objval']
             fp_ub_value += sp.get_stage_objective_value()
@@ -271,7 +271,7 @@ class SDDP(object):
         
         self.upper_bounds.append(fp_ub_value)
         if simulation and alg_options['outputlevel'] >= 3:
-            print('---------------------------')
+            sp.print_stage_res_summary()
         return fp_out_states
     
     def backwardpass(self, forward_out_states=None, sample_path=None, ev=False):
@@ -609,10 +609,11 @@ class SDDP(object):
             self.iteration_update(0, 0, force_print=True)
         return sr
     
-    def change_dro_radius(self, new_dro_r):
+    def change_dro_radius(self, new_dro_r, cuts_left=100):
         assert self.instance['risk_measure_params']['radius'] <= new_dro_r, 'Invalid change of DRO radius.'
         self.instance['risk_measure_params']['radius'] = new_dro_r
         for sp in self.stage_problems:
+            sp.update_cut_pool_dro(cuts_left=cuts_left)
             sp.risk_measure.modify_param(radius=new_dro_r)
             sp.model.update()
     

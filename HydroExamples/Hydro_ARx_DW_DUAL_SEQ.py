@@ -3,16 +3,6 @@ Created on Sep 13, 2018
 
 @author: dduque
 '''
-#===============================================================================
-# import os
-# import sys
-# #Include all modules of the project when running on shell
-# this_path = os.path.dirname(os.path.abspath(__file__))
-# parent_path= os.path.abspath(os.path.join(this_path, os.pardir))
-# cwd = os.getcwd()
-# print(__file__, this_path, parent_path, cwd, os.path.abspath(os.pardir))
-# sys.path.append(parent_path)
-#===============================================================================
 from __init__ import import_SDDP, dro_radii
 #from HydroExamples import dro_radii, import_SDDP
 import_SDDP()
@@ -22,7 +12,8 @@ from SDDP import options, LAST_CUTS_SELECTOR, load_algorithm_options,\
 from SDDP.SDDP_Alg import SDDP
 from SDDP.RiskMeasures import DistRobustWasserstein
 from Utils.file_savers import write_object_results
-from HydroModel import load_hydro_data, hydro_path
+#from HydroModel import load_hydro_data, hydro_path
+from HydroValley import load_hydro_data, hydro_path
 from InstanceGen.ReservoirChainGen import read_instance, HydroRndInstance  # Necessary to unpickle file!
 from SDDP.SDDP_utils import report_stats
 

@@ -15,7 +15,7 @@ class CutPool():
         self.pool = {}
         self.pool_order = []
         self.cut_selector = None
-        self._requires_ajustment = False
+        self._requires_adjustment = False
         
         if options['cut_selector'] == LAST_CUTS_SELECTOR:
             self.cut_selector = LastCutsSelector()
@@ -34,7 +34,7 @@ class CutPool():
         '''
         for new_cut in new_cuts:
             if new_cut.recomputable_rhs:
-                self._requires_ajustment = True
+                self._requires_adjustment = True
             assert new_cut.name not in self.pool
             self.pool[new_cut.name] = new_cut
             self.pool_order.append(new_cut.name)
@@ -44,7 +44,7 @@ class CutPool():
             self.cut_selector.select_cuts(model, self.pool, self.pool_order)
     
     def needs_update(self):
-        return self._requires_ajustment
+        return self._requires_adjustment
     
     def get_non_zero_duals(self):
         tup_ind = []
@@ -55,6 +55,17 @@ class CutPool():
                 tup_ind.append((opt_cut.cut_id, opt_cut.outcome))
                 duals.append(opt_cut.ctrRef.Pi)
         return tup_ind, duals
+    
+    def update_cut_pool_dro(self, model, cuts_left):
+        while len(self.pool) >= cuts_left:
+            cut_name = self.pool_order.pop(0)
+            cut = self.pool[cut_name]
+            try:
+                model.remove(cut.ctrRef)
+            except:
+                pass  #Constraint not found
+            cut.ctrRef = None
+            del self.pool[cut_name]
     
     def __len__(self):
         return len(self.pool)

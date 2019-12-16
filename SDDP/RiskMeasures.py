@@ -610,29 +610,27 @@ class DistRobustWassersteinCont(AbstractRiskMeasure):
             This method modifies the probabilities of the random vector for stage t+1.
         '''
         pass
-        #TODO: think how is the dynamic sampling scheme in this case
-        # Dual information is requiered
-        
-        #=======================================================================
-        # if t  == len(rnd_container.stage_vectors)-1:
-        #     #Last stage needs no update
-        #     return
-        # desc_rnd_vec = rnd_container[t+1] #Descendant outcomes
-        # p_w = np.zeros(desc_rnd_vec.outcomes_dim)
-        # for (i,j) in self.dro_ctrs:
-        #     p_w[j]  += self.dro_ctrs[(i,j)].Pi
-        # p_w = np.around(np.abs(p_w), 8)
-        # p_w = p_w/p_w.sum()
-        #
-        # desc_rnd_vec.modifyOutcomesProbabilities(p_w)
-        #=======================================================================
-        #=======================================================================
-        # if t== 0:
-        #     print(t, p_w)
-        #=======================================================================
+        #TODO: Implement dynamic sampling considering that the support changes
     
     def forward_prob_update_WassCont(self, stage, sp, rnd_cont):
-        #print('Stage!! ' ,  stage )
+        '''
+            Computes the worst-case probability distribution given the
+            solution to a particular stage problem. The worst-case 
+            distribution corresponds to the next stage. The support is
+            computed using the dual variables of the stage problem that
+            correspond to constrains modeling the norm in Mohajerin and
+            Kuhn (2018) paper.
+            Args:
+                stage (int): stage index
+                sp (StageProblem): stage problem solved in the forward pass
+                rnd_cont (RandomContainer): random container of the problem
+            Return:
+                new_support (list of ndarray): new support
+                new_pmf (ndarray): pmf of the new support
+            Note:
+                The worst-case distribution is stored as an attribute of the
+                corresponding random vector in the random container.
+        '''
         tup_ind, duals_vars = sp.cut_pool.get_non_zero_duals()
         new_support = []
         new_pmf = []
@@ -651,7 +649,8 @@ class DistRobustWassersteinCont(AbstractRiskMeasure):
                 new_supp_point[ele] = new_supp_point[ele] - delta_change / duals_vars[i]
             new_support.append(new_supp_point)
             support_map.append(set([out_i]))
-        # Support points might be repeated
+        
+        # Support points might be repeated, so they are merged if needed
         ix_1 = len(new_support) - 1
         while ix_1 > 0:
             ix_2 = ix_1 - 1
