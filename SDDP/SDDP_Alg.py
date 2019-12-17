@@ -13,13 +13,14 @@ import SDDP as cs
 from SDDP.MathProgs import StageProblem, not_optimal_sp,\
     StageOracleProblem
 
-from SDDP.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen
+from SDDP.RandomManager import alg_rnd_gen, in_sample_gen, out_sample_gen, reset_all_rnd_gen, reset_out_sample_gen
 
 from OutputAnalysis.SimulationAnalysis import SimResult
 from SDDP.RandomnessHandler import ScenarioTree
 from SDDP.RiskMeasures import Expectation
 from SDDP.WassersteinWorstCase import solve_worst_case_expectation
 from SDDP import check_options_concitency
+from Utils.timer_utils import Chronometer
 
 sddp_log = cs.logger
 
@@ -266,7 +267,7 @@ class SDDP(object):
                                    data_out_time=sp_output['datamanagement'],
                                    num_lp_ctrs=sp.model.num_constrs,
                                    iteration=self.pass_iteration)
-            if sp_output['risk_measure_info'] != None and i == 0:
+            if sp_output['risk_measure_info'] is not None and i == 0:
                 self.cutting_plane_max_vio = sp_output['risk_measure_info']
         
         self.upper_bounds.append(fp_ub_value)
@@ -388,7 +389,7 @@ class SDDP(object):
         '''
         Return the wall time since the begining of the algorithm
         '''
-        return time.time() - self.ini_time
+        return self.alg_chrono.elapsed()
     
     def iteration_update(self, fp_time, bp_time, force_print=False, last_iter=False):
         if (alg_options['outputlevel'] >= 2
@@ -421,7 +422,25 @@ class SDDP(object):
                 return True
         return False
     
-    def run(self, pre_sample_paths=None, instance_name='Default'):
+    def process_out_of_sample_simulation(self, out_of_sample_setup):
+        '''
+            If out_of_sample_setup is not None, performs an
+            out-of-sample simulation during the training phase of SDDP.
+            oos_setup (dict): see SDDP.run function for documentation.
+        '''
+        if out_of_sample_setup is not None and len(out_of_sample_setup['when']) > 0:
+            wall_time = self.get_wall_time()
+            self.alg_chrono.pause()  # pause to avoid counting the simulation time
+            if wall_time > out_of_sample_setup['when'][0]:
+                out_of_sample_setup['when'].pop(0)
+                oos_rnd_container = out_of_sample_setup['random_container']
+                sim = self.simulate_policy(oos_rnd_container)
+                oos_output = (self.pass_iteration, wall_time, sim)
+                out_of_sample_setup['output'].append(oos_output)
+                reset_out_sample_gen()
+            self.alg_chrono.resume()  # resume chronometer
+    
+    def run(self, pre_sample_paths=None, instance_name='Default', out_of_sample_setup=None):
         '''
         Starts the optimization routine in SDDP
         
@@ -429,13 +448,23 @@ class SDDP(object):
             pre_sample_paths(list of dict): list that contains sample paths
                 to run in the forward passes
             instance_name (string): descriptive name of the problem
+            out_of_sample_setup (dict): If passed (not None), runs an out-of-sample
+                simulation. The setup contains a list of time stamps, a random
+                container, and a output handler to save the simulations. the dictionary
+                is as follows:
+                    {'when' = [t1, t2, t3, t4, ...],
+                     'random_container = RandomContainer(),
+                     'output = [ ]}
+                After running SDDP, the output list is populated with the results in the form:
+                    (iteration, time, SimResult)
         '''
         '''
         ==================================================
             Algorithm setup
         ==================================================
         '''
-        self.ini_time = time.time()
+        self.alg_chrono = Chronometer()
+        self.alg_chrono.start()
         reset_all_rnd_gen()
         check_options_concitency()
         ev = alg_options['expected_value_problem']
@@ -462,7 +491,8 @@ class SDDP(object):
         fp_time = 0
         bp_time = 0
         termination = False
-        while termination == False:
+        while termination is False:
+            self.process_out_of_sample_simulation(out_of_sample_setup)
             '''
             ==================================================
             Forward pass
@@ -473,9 +503,9 @@ class SDDP(object):
             fp_outputs = []
             for i in range(0, alg_options['n_sample_paths']):
                 s_path = None
-                if pre_sample_paths == None and dynamic_sampling == False:
+                if pre_sample_paths is None and dynamic_sampling is False:
                     s_path, _ = self.random_container.getSamplePath(alg_rnd_gen, ev=ev)
-                elif pre_sample_paths != None:
+                elif pre_sample_paths is not None:
                     s_path = pre_sample_paths.pop()
                 else:
                     s_path = list()
@@ -593,17 +623,15 @@ class SDDP(object):
         for i in range(0, alg_options['sim_iter']):
             s_path, _ = out_of_sample_random_container.getSamplePath(out_sample_gen)
             #===================================================================
-            # if i in [2,60]:
-            #     #pass
-            #     print(s_path[3]['innovations[6]'],' ', s_path[9]['innovations[5]'])
+            # if i in [2, 60]:
+            #     #     #pass
+            #     print(s_path[3]['inflow[6]'],' ', s_path[9]['inflow[5]'])
             #===================================================================
             if alg_options['outputlevel'] >= 3:
                 sddp_log.debug('Simulation %i:' % (i))
                 sddp_log.debug(s_path)
             
             output_fp = self.forwardpass(sample_path=s_path, simulation=True)
-        self.ub = np.mean(self.upper_bounds)
-        self.ub_hw = 2 * np.std(self.upper_bounds) / np.sqrt(len(self.upper_bounds))
         sr = SimResult(self.instance, self.upper_bounds.copy())
         if alg_options['outputlevel'] >= 1:
             self.iteration_update(0, 0, force_print=True)

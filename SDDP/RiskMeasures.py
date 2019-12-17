@@ -13,7 +13,7 @@ import SDDP as cs
 import numpy as np
 
 sddp_log = cs.logger
-ds_beta = cs.options['dynamic_sampling_beta']
+
 
 
 class AbstractRiskMeasure(ABC):
@@ -300,6 +300,7 @@ class DistRobustWasserstein(AbstractRiskMeasure):
         p_w = np.around(np.abs(p_w), 8)
         p_w = p_w / p_w.sum()
         #Mix with nominal distribution
+        ds_beta = cs.options['dynamic_sampling_beta']
         p_w = ds_beta * p_w + (1 - ds_beta) * desc_rnd_vec.p_copy
         desc_rnd_vec.modifyOutcomesProbabilities(p_w)
     
@@ -847,6 +848,7 @@ class DistRobustDuality(AbstractRiskMeasure):
         p_w = np.around(np.abs(p_w), 8)
         p_w = p_w / p_w.sum()
         #Mix with nominal distribution
+        ds_beta = cs.options['dynamic_sampling_beta']
         p_w = ds_beta * p_w + (1 - ds_beta) * desc_rnd_vec.p_copy
         desc_rnd_vec.modifyOutcomesProbabilities(p_w)
 
@@ -1043,6 +1045,7 @@ class DistRobust(AbstractRiskMeasure):
                 zs[i] = next_sp_output['objval']
         
         p_worst = self.inner_solver.compute_worst_case_distribution(zs)
+        ds_beta = cs.options['dynamic_sampling_beta']
         p_w = ds_beta * p_worst + (1 - ds_beta) * next_rnd_vector.p_copy
         next_rnd_vector.modifyOutcomesProbabilities(p_w)
     

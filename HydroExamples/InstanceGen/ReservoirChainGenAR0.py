@@ -116,4 +116,4 @@ if __name__ == '__main__':
     file_name_path = hydro_path + f'/data/hydro_rnd_instance_R{nr}_T{T}_OUT10K_AR0.pkl'
     with open(file_name_path, 'wb') as output:
         instance = gen_instance(nr, T, num_outcomes=outcomes, simulate=True)
-        #pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)

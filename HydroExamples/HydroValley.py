@@ -364,8 +364,8 @@ def load_hydro_data(approach, dus_type):
             alg_iters = options['max_iter']
             alg_cpu_time = options['max_time']
             beta = options['dynamic_sampling_beta']
-            instance_name = f"Hydro_R{nr}_AR{lag}_T{T}_N_{N_data}_{N_training}_I_{alg_iters}_T{alg_cpu_time}" \
-                f"_{dus_type}_{approach}_{cut_type}_{sampling_type}_{n_dro_radius:.7f}_{DW_sampling}_{beta}"
+            instance_name = f"Hydro_R{nr}_AR{lag}_T{T}_N{N_data}_{N_training}_I{alg_iters}_CPUTime{alg_cpu_time}" \
+                f"_{dus_type}_{approach}_{cut_type}_{sampling_type}_r{n_dro_radius:.7f}_{DW_sampling}_B{beta}"
         
         return instance_name
     

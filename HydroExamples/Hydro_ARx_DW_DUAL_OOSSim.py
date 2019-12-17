@@ -34,7 +34,9 @@ if __name__ == '__main__':
                 norm=1,
                 radius=r_dro,
                 data_random_container=rnd_container_data)
-    lbs = algo.run(instance_name=instance_name)
+    
+    oos_setup = {'when': [10, 30, 60, 120, 180, 300], 'random_container': rnd_container_oos, 'output': []}
+    lbs = algo.run(instance_name=instance_name, out_of_sample_setup=oos_setup)
     
     save_path = hydro_path + '/Output/DW_Dual/%s_LBS.pickle' % (instance_name)
     write_object_results(save_path, (algo.instance, lbs))
