@@ -21,8 +21,8 @@ out_sample_gen = np.random.RandomState(1111)
 '''
 Random stream to design an instance
 '''
-experiment_desing_gen = np.random.RandomState(1928)  # 1928  # 2405
-seeds = {alg_rnd_gen: 0, in_sample_gen: 1234, out_sample_gen: 1111, experiment_desing_gen: 1928}
+experiment_desing_gen = np.random.RandomState(2405)  # 1928  # 2405
+seeds = {alg_rnd_gen: 0, in_sample_gen: 1234, out_sample_gen: 1111, experiment_desing_gen: 2405}
 
 
 def reset_alg_rnd_gen():

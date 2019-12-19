@@ -74,7 +74,7 @@ def build_demand(T, num_reservoir):
             2. Production function is concave, meaning that 1 unit of store generates more
             thant 1 unit of generation for little values of outflow (see pk, fk).
     '''
-    total_production = 1.5 * (MAX_LEVEL - MIN_LEVEL) * num_reservoir
+    total_production = 1.7 * (MAX_LEVEL - MIN_LEVEL) * num_reservoir
     multiplier = [1, 1, 1, 1, 1, 1.5, 2.5, 1.5, 1, 1, 1, 1]
     multiplier_sum = np.sum(multiplier)
     demand = []
