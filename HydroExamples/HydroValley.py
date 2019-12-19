@@ -3,7 +3,7 @@ Created on Dec 12, 2019
 
 @author: dduque
 
-Creates a simple hydro model.
+Creates a simple hydro valley model .
 '''
 from SDDP.RandomnessHandler import RandomContainer, StageRandomVector
 from SDDP.RandomManager import reset_experiment_desing_gen, experiment_desing_gen
@@ -18,12 +18,11 @@ import logging
 import sys
 print(sys.version_info)
 print('Gurobi: ', GRB.VERSION_MAJOR, GRB.VERSION_MINOR)
+import os
+hydro_path = os.path.dirname(os.path.realpath(__file__))
 '''
 Objects for Hydro scheduling examples
 '''
-import os
-import sys
-hydro_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class Turbine():
@@ -65,12 +64,23 @@ Spillage_Penalty = 0
 
 
 def build_demand(T, num_reservoir):
-    total_production = (MAX_LEVEL - MIN_LEVEL) * num_reservoir
-    multiplier = [0.9, 0.9, 0.9, 0.9, 0.9, 1.0, 1.5, 2.0, 1.5, 1.0, 0.9, 0.9]
+    '''
+        Creates a demand profile where the peak demand is in the summer.
+        Demand is relative to the number of reservoirs and their capacity.
+        We use 50% for of the capacity for the demand to account for several
+        facts:
+            1. Generation upsetream is used many times down stream, and hence
+                the 'real' capacity is (MAX_LEVEL - MIN_LEVEL) * (sum_{i=0}^{nr-1} (nr-i))
+            2. Production function is concave, meaning that 1 unit of store generates more
+            thant 1 unit of generation for little values of outflow (see pk, fk).
+    '''
+    total_production = 1.5 * (MAX_LEVEL - MIN_LEVEL) * num_reservoir
+    multiplier = [1, 1, 1, 1, 1, 1.5, 2.5, 1.5, 1, 1, 1, 1]
+    multiplier_sum = np.sum(multiplier)
     demand = []
     for t in range(T):
         month = t % SEASON
-        demand.append(multiplier[month] * total_production / SEASON)
+        demand.append(np.round(multiplier[month] * total_production / multiplier_sum, 0))
     return demand
 
 
@@ -84,7 +94,8 @@ def random_builder(valley_chain):
             if t > 0:
                 re = rv_t.addRandomElement('inflow[%i]' % (i), r.inflows[:, t])
             else:
-                re = rv_t.addRandomElement('inflow[%i]' % (i), [0.0])
+                #re = rv_t.addRandomElement('inflow[%i]' % (i), [0.0])
+                re = rv_t.addRandomElement('inflow[%i]' % (i), [r.inflows[:, t].mean()])
             rndVectors.append(rv_t)
     return rc
 
@@ -136,8 +147,16 @@ def model_builder(stage, valley_chain):
     out_state = [v.VarName for v in reservoir_level.values()]
     rhs_vars = [v.VarName for v in inflow.values()]
     
-    # Constraints
-    Ini_group = list(range(nr))
+    # ======================================================
+    # # Constraints
+    # ======================================================
+    
+    # List of reservoirs that start a chain. If Ini_group = [0]
+    # there is a single chain of reservoirs 0->1->..._>nr. If
+    # Ini_group = [0, 5], then the chains are:
+    #   0->1->2->3->4
+    #   5->6->...->nr
+    Ini_group = [0]  # list(range(nr))
     m.addConstrs((reservoir_level[i] == reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i]
                   for i in Ini_group), 'balance')
     m.addConstrs((reservoir_level[i] == reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i] +
@@ -147,7 +166,7 @@ def model_builder(stage, valley_chain):
     m.addConstr(
         generation == quicksum(r.turbine.powerknots[level] * dispatch[i, level] for (i, r) in enumerate(valley_chain)
                                for level in range(0, len(r.turbine.flowknots))), 'generationCtr')
-    #Demand
+    # Demand
     m.addConstr(generation + thermal >= demand[stage])
     
     # Flow out
@@ -156,17 +175,18 @@ def model_builder(stage, valley_chain):
             outflow[i] == quicksum(r.turbine.flowknots[level] * dispatch[i, level]
                                    for level in range(len(r.turbine.flowknots))), 'outflowCtr[%i]' % (i))
     
-    #Dispatched
+    # Dispatched
     for (i, r) in enumerate(valley_chain):
         m.addConstr(
             quicksum(dispatch[i, level] for level in range(len(r.turbine.flowknots))) <= 1, 'dispatchCtr[%i]' % (i))
-    #Thermal cost ctr
     
+    # Thermal cost ctr
+    # Breakpoints at (0,0), (10,10), (20,30)
     m.addConstr(thermal_cost >= 1 * thermal)
-    m.addConstr(thermal_cost >= 2 * thermal - 5)
-    m.addConstr(thermal_cost >= 8 * thermal - 65)
+    m.addConstr(thermal_cost >= 2 * thermal - 10)
+    m.addConstr(thermal_cost >= 8 * thermal - 130)
     
-    #Objective
+    # Objective
     objfun = thermal_cost + quicksum(r.spill_cost * spill[i] for (i, r) in enumerate(valley_chain)) + quicksum(
         r.pour_cost * pour[i] for (i, r) in enumerate(valley_chain))
     m.setObjective(objfun, GRB.MINIMIZE)
@@ -295,18 +315,19 @@ def load_hydro_data(approach, dus_type):
     prices = [18 + round(5 * np.sin(0.5 * (x - 2)), 2) for x in range(0, T)]
     demand = build_demand(T, nr)
     
-    hydro_instance = read_instance('hydro_rnd_instance_R30_T48_OUT10K_AR0.pkl', lag=lag)
-    RHSnoise_density = hydro_instance.RHS_noise[0:nr, :, 0:T]  #Total of 10,000 samples
+    hydro_instance = read_instance('hydro_rnd_instance_R10_T48_OUT10K_AR0.pkl', lag=lag)
+    RHSnoise_density = hydro_instance.RHS_noise[0:nr, :, 0:T]  # Total of 10_000 samples
     
-    valley_turbines = Turbine([50, 60, 70], [55, 65, 70])
+    #valley_turbines = Turbine([50, 60, 70], [55, 65, 70])
+    valley_turbines = Turbine([10, 25, 50], [11, 26, 50])
     
     N_data = N
     # Reset experiment design stream
     reset_experiment_desing_gen()
     
     # For out of sample performance measure
-    test_indeces = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])), size=9000, replace=False))
-    l_test = list(test_indeces)
+    test_indices = set(experiment_desing_gen.choice(range(len(RHSnoise_density[0])), size=9000, replace=False))
+    l_test = list(test_indices)
     l_test.sort()
     RHSnoise_oos = RHSnoise_density[:, l_test]
     valley_chain_oos = [
@@ -315,26 +336,26 @@ def load_hydro_data(approach, dus_type):
     ]
     
     # Train indices for Wasserstein distance
-    available_indices = set(range(len(RHSnoise_density[0]))) - test_indeces
+    available_indices = set(range(len(RHSnoise_density[0]))) - test_indices
     available_indices = np.array(list(available_indices))
-    # data_indeces=set(experiment_desing_gen.choice(list(available_indices), size=N_data, replace=False))
-    data_indeces = available_indices[0:N_data]
-    RHSnoise_data = RHSnoise_density[:, data_indeces]
+    # data_indices=set(experiment_desing_gen.choice(list(available_indices), size=N_data, replace=False))
+    data_indices = available_indices[0:N_data]
+    RHSnoise_data = RHSnoise_density[:, data_indices]
     valley_chain_data = [
         Reservoir(MIN_LEVEL, MAX_LEVEL, INI_LEVEL, valley_turbines, Water_Penalty, Spillage_Penalty, x)
         for x in RHSnoise_data
     ]
-    print(data_indeces)
+    print(data_indices)
     if DW_extended > 1 and dus_type == 'DW':
         #Generate additional data points from the data
         if DW_sampling is None or DW_sampling == 'none' or DW_sampling == 'None':
-            #available_indices = set(available_indices) - set(data_indeces)
+            #available_indices = set(available_indices) - set(data_indices)
             N_wasserstein = N_data * DW_extended
-            #train_indeces = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False))
-            train_indeces = available_indices[0:N_wasserstein]
-            assert set(data_indeces).issubset(train_indeces)
-            N_training = len(train_indeces)
-            l_train = list(train_indeces)
+            #train_indices = set(experiment_desing_gen.choice(list(available_indices), size=N_wasserstein, replace=False))
+            train_indices = available_indices[0:N_wasserstein]
+            assert set(data_indices).issubset(train_indices)
+            N_training = len(train_indices)
+            l_train = list(train_indices)
             l_train.sort()
             RHSnoise = RHSnoise_density[:, l_train]
         else:
@@ -348,7 +369,7 @@ def load_hydro_data(approach, dus_type):
             RHSnoise = np.hstack((RHSnoise_data, gen_data.transpose()))
             N_training = len(RHSnoise[0])
     else:
-        train_indeces = data_indeces
+        train_indices = data_indices
         N_training = N_data
         RHSnoise = np.copy(RHSnoise_data)
     

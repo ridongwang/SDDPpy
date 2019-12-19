@@ -16,7 +16,7 @@ import pickle
 from HydroModel import hydro_path
 
 
-def gen_instance(num_reservoirs=50, T=12, num_outcomes=30, simulate=False):
+def gen_instance(num_reservoirs=10, T=12, num_outcomes=30, simulate=False):
     '''
     Generate a random instance consisting of:
         - Autoregresive matrices (stored as dictionaries)
@@ -26,9 +26,13 @@ def gen_instance(num_reservoirs=50, T=12, num_outcomes=30, simulate=False):
     np.random.seed(0)
     season = 12
     
-    b = [10, 10, 10, 27, 10, 10, 10, 10, 15, 20, 15, 10]
-    mu = [1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1, 1.5, 1, 1.6]
-    sigma = [0.3, 0.3, 0.3, 0.7, 0.3, 0.3, 0.3, 0.3, 0.5, 0.6, 0.5, 0.3]
+    active_reservoirs = [0, 3, 6]  # list(range(num_reservoirs))
+    b = [5, 5, 5, 15, 5, 5, 5, 5, 5, 10, 5, 5]
+    mu = [0.6, 0.6, 0.6, 1.5, 0.6, 0.6, 0.6, 0.6, 0.6, 1, 0.6, 0.5]
+    sigma = [0.3, 0.3, 0.3, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3, 0.5, 0.3, 0.4]
+    # b = [10, 10, 10, 27, 10, 10, 10, 10, 15, 20, 15, 10]
+    # mu = [1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6, 1, 1.5, 1, 1.6]
+    # sigma = [0.3, 0.3, 0.3, 0.7, 0.3, 0.3, 0.3, 0.3, 0.5, 0.6, 0.5, 0.3]
     
     RHS_noise = np.zeros(shape=(num_reservoirs, num_outcomes, T))
     for t in range(T):
@@ -45,7 +49,7 @@ def gen_instance(num_reservoirs=50, T=12, num_outcomes=30, simulate=False):
         RHS_corralated = np.exp(np.random.multivariate_normal(mu_t, cov_mat, size=(num_outcomes)))
         RHS_corralated = RHS_corralated.transpose()
         if t < season:
-            RHS_noise[:, :, t] = np.maximum(0, b[t] - RHS_corralated)
+            RHS_noise[active_reservoirs, :, t] = np.maximum(0, b[t] - RHS_corralated[active_reservoirs, :])
         else:
             RHS_noise[:, :, t] = RHS_noise[:, :, t - season]
     
@@ -61,7 +65,7 @@ def simulate_model(RHS_noise, T, nrs):
     num_reservoirs = nr
     plt.figure(1)
     num_reps = 300
-    res_ref = [0, 1, 5]
+    res_ref = [0, 1, 3]
     np.random.seed(res_ref)
     mean_res_ref = {rr: np.zeros((T)) for rr in res_ref}
     for replica in range(num_reps):
@@ -109,7 +113,7 @@ def read_instance(file_name='hydro_rnd_instance_R200_UD1_T120_LAG1_OUT10K_AR.pkl
 
 
 if __name__ == '__main__':
-    nr = 30
+    nr = 10
     T = 48
     outcomes = 10_000
     file_name_pat = None
