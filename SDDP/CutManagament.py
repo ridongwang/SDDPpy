@@ -4,16 +4,17 @@ Created on Nov 17, 2017
 @author: dduque
 '''
 import numpy as np
-from gurobipy import *
+from gurobipy import quicksum
 from SDDP import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
 from abc import ABC, abstractmethod
+from collections import defaultdict
 
 
 class CutPool():
     def __init__(self, stage):
         self.stage = stage
         self.pool = {}
-        self.pool_order = []
+        self.pool_by_oracle = defaultdict(list)
         self.cut_selector = None
         self._requires_adjustment = False
         
@@ -37,11 +38,11 @@ class CutPool():
                 self._requires_adjustment = True
             assert new_cut.name not in self.pool
             self.pool[new_cut.name] = new_cut
-            self.pool_order.append(new_cut.name)
+            self.pool_by_oracle[new_cut.outcome].append(new_cut.name)
         
         if self.cut_selector is not None:
             self.cut_selector.add_recent_cuts([(c.name, c.is_active) for c in new_cuts])
-            self.cut_selector.select_cuts(model, self.pool, self.pool_order)
+            self.cut_selector.select_cuts(model, self.pool, self.pool_by_oracle)
     
     def needs_update(self):
         return self._requires_adjustment
@@ -56,16 +57,31 @@ class CutPool():
                 duals.append(opt_cut.ctrRef.Pi)
         return tup_ind, duals
     
-    def update_cut_pool_dro(self, model, cuts_left):
-        while len(self.pool) >= cuts_left:
-            cut_name = self.pool_order.pop(0)
-            cut = self.pool[cut_name]
-            try:
-                model.remove(cut.ctrRef)
-            except:
-                pass  #Constraint not found
-            cut.ctrRef = None
-            del self.pool[cut_name]
+    def update_cut_pool_dro(self, sp, model, cuts_left):
+        '''
+            Clean a model leaving only cuts_left. This is only used
+            when solving DRO models sequentially and hence the cuts
+            for a value of r_1 are valid for r_2 if r_1 < r_2.
+        '''
+        if sp._last_stage:
+            return
+        n_outcomes = sp.n_outmes
+        n_oracles = len(sp.oracle)
+        n_cuts_target = cuts_left if sp.multicut else cuts_left * n_outcomes
+        for i in range(n_oracles):
+            self.pool_by_oracle[i].sort(key=lambda x: self.pool[x].slack, reverse=True)
+            while len(self.pool_by_oracle[i]) > n_cuts_target:
+                cut_name = self.pool_by_oracle[i].pop(0)
+                cut = self.pool[cut_name]
+                if cut.ctrRef is not None:
+                    model.remove(cut.ctrRef)
+                cut.ctrRef = None
+                del self.pool[cut_name]
+            for cut_name in self.pool_by_oracle[i]:
+                cut = self.pool[cut_name]
+                if cut.ctrRef is None:
+                    self.ctrRef = model.addConstr(cut.lhs >= cut.rhs, cut.name)
+        assert sum(len(self.pool_by_oracle[i]) for i in range(n_oracles)) == len(self.pool)
     
     def __len__(self):
         return len(self.pool)
@@ -103,6 +119,7 @@ class Cut():
         self.rhs = intercept
         self.ind_rhs = ind_rhs
         self.dep_rhs_vector = dep_rhs_vector
+        self.ctrRef = None
         #=======================================================================
         # self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
         # self.is_active  = True
@@ -134,6 +151,13 @@ class Cut():
         dep_rhs = self.dep_rhs_vector.dot(omega_last).squeeze()
         new_rhs = dep_rhs + self.ind_rhs
         self.ctrRef.RHS = new_rhs
+    
+    @property
+    def slack(self):
+        try:
+            return self.lhs.getValue() - self.rhs
+        except AttributeError:
+            return 0
 
 
 class CutSelector(ABC):
@@ -278,40 +302,3 @@ class SlackBasedCutSelector(CutSelector):
                 self.cut_capacity = int(1.5 * self.cut_capacity)
                 #options['max_cuts_slack_based'] = int(1.5*options['max_cuts_slack_based'])
                 print('max_cuts_slack_based -- > ', self.cut_capacity, a)
-
-
-#    FLORIDA BRANCH - TODO: Delete this when version is stable again
-#===============================================================================
-# =======
-#
-#     def select_cuts(self, model, pool, pool_order):
-#         #Check unactive cuts
-#         new_unactive = []
-#         for u in self.unactive:
-#             if pool[u].lhs.getValue()  < pool[u].rhs:
-#                 self.active.append(u)
-#                 pool[u].ctrRef = model.addConstr( pool[u].lhs  >= pool[u].rhs, pool[u].name)
-#                 pool[u].is_active = True
-#                 self.active_stats[u] = 0
-#             else:
-#                 new_unactive.append(u)
-#         self.unactive = new_unactive
-#         new_active = []
-#         for a in self.active:
-#             if (a in self.active_stats) == False:
-#                 self.active_stats[a]=0
-#
-#             if pool[a].lhs.getValue() >= pool[a].rhs + options['slack_cut_selector']:
-#                 self.active_stats[a] +=1
-#
-#             if self.active_stats[a] >= options['slack_num_iters_cut_selector']:
-#                 pool[a].is_active = False
-#                 model.remove(pool[a].ctrRef)
-#                 pool[a].ctrRef = None
-#                 self.unactive.append(a)
-#             else:
-#                 new_active.append(a)
-#         self.active = new_active
-#
-# >>>>>>> SDDP_DSC_FLORIDA
-#===============================================================================

@@ -637,7 +637,7 @@ class SDDP(object):
             self.iteration_update(0, 0, force_print=True)
         return sr
     
-    def change_dro_radius(self, new_dro_r, cuts_left=100):
+    def change_dro_radius(self, new_dro_r, cuts_left=20):
         assert self.instance['risk_measure_params']['radius'] <= new_dro_r, 'Invalid change of DRO radius.'
         self.instance['risk_measure_params']['radius'] = new_dro_r
         for sp in self.stage_problems:

@@ -89,6 +89,7 @@ class StageProblem():
         # Add oracle var(s) and include it in the objective
         self.cx = self.model.getObjective()  # Get objective before adding oracle variable
         if last_stage == False:
+            self.n_outmes = next_stage_rnd_vector.outcomes_dim
             num_outcomes = next_stage_rnd_vector.outcomes_dim
             if multicut == False:  # Gen single cut variable
                 self.oracle = self.model.addVars(1, lb=lower_bound, vtype=GRB.CONTINUOUS, name='oracle[%i]' % (stage))
@@ -490,7 +491,7 @@ class StageProblem():
         self.model.update()
     
     def update_cut_pool_dro(self, cuts_left):
-        self.cut_pool.update_cut_pool_dro(self.model, cuts_left)
+        self.cut_pool.update_cut_pool_dro(self, self.model, cuts_left)
     
     def __repr__(self):
         return "SP(%i): #cuts:%i" % (self.stage, len(self.cut_pool.pool))
