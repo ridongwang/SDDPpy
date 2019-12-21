@@ -25,7 +25,7 @@ if __name__ == '__main__':
     load_algorithm_options()
     T, model_builder, random_builder, rnd_container_data, rnd_container_oos, r_dro, instance_name, _ = load_hydro_data(
         'PRIMAL', 'DW')
-    #options['cut_selector'] = SLACK_BASED_CUT_SELECTOR
+    
     algo = SDDP(T,
                 model_builder,
                 random_builder,

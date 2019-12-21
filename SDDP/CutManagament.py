@@ -196,6 +196,17 @@ class LastCutsSelector(CutSelector):
         self.cut_capacity = options['max_cuts_last_cuts_selector']
     
     def select_cuts(self, cut_pool: CutPool):
+        '''
+            Drop older cuts if the cut capacity is met. The capacity
+            is assumed to be specified for multicut algorithm. For
+            single-cut algorithm, this capacity will be scaled with
+            the number of outcomes of the stage. To avoid constantly 
+            updating the cut pool, this is only shinked to the capacity
+            when the number of cuts is at 110%. 
+            Args:
+                cut_pool (CutPool): an instance of the cut pool for a
+                 paticular stage problem.
+        '''
         sp = cut_pool.sp
         n_total_cuts = self.cut_capacity * sp.n_outmes
         if len(cut_pool) > n_total_cuts * 1.1:

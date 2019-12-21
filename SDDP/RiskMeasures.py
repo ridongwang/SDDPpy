@@ -75,19 +75,19 @@ class AbstractRiskMeasure(ABC):
         Returns:
             cut_intercepts (list of float): List of intercep(s) of the cut(s).
         '''
-        cut_gradiend_coeff = self._current_cut_gradient
+        cut_gradient_coeff = self._current_cut_gradient
         cut_intercepts = None
-        if sp.multicut == False:
-            probs = srv.p if type(p) == type(None) else p
+        if not sp.multicut:
+            probs = srv.p if p is None else p
             cut_intercepts = [
                 np.sum(probs[i] * soo[i]['objval']
-                       for (i, o) in enumerate(srv.outcomes)) - np.sum(spfs[vn] * cut_gradiend_coeff[0][vn]
+                       for (i, o) in enumerate(srv.outcomes)) - np.sum(spfs[vn] * cut_gradient_coeff[0][vn]
                                                                        for vn in sp.out_state)
             ]
         else:
             cut_intercepts = [0 for _ in srv.outcomes]
             for (i, o) in enumerate(srv.outcomes):
-                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn] * cut_gradiend_coeff[i][vn] for vn in sp.out_state)
+                cut_intercepts[i] = soo[i]['objval'] - sum(spfs[vn] * cut_gradient_coeff[i][vn] for vn in sp.out_state)
         return cut_intercepts
     
     @abstractmethod
@@ -962,7 +962,7 @@ class DistRobust(AbstractRiskMeasure):
         Return 
             pi_bar (list[dict]): Expected value of the duals. For the single cut algorithm
                 the list contains just one element.
-            cut_gradiend_coeff(list[dict]):
+            cut_gradient_coeff(list[dict]):
         '''
         #Solve inner max problem on the side
         zs = np.array([soo[i]['objval'] for i in range(len(srv.outcomes))])
@@ -970,7 +970,7 @@ class DistRobust(AbstractRiskMeasure):
         self._wors_case_dist = p
         
         #Get cut_gradient
-        cut_gradiend_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id, p)
+        cut_gradient_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id, p)
         
         #Add extra constraints for multicut implementation if needed.
         if sp.multicut:
@@ -983,8 +983,8 @@ class DistRobust(AbstractRiskMeasure):
 
             
         
-        self._current_cut_gradient = cut_gradiend_coeff
-        return cut_gradiend_coeff
+        self._current_cut_gradient = cut_gradient_coeff
+        return cut_gradient_coeff
     
     def compute_cut_intercept(self, sp, sp_next, srv, soo, spfs, cut_id):
         '''
