@@ -56,7 +56,7 @@ class StageProblem():
         self.risk_measure = risk_measure
         self.lower_bounds = []
         self._lower_bound_on = True
-        self.cut_pool = CutPool(stage)
+        self.cut_pool = CutPool(self)
         self.multicut = multicut
         
         self.states_map = {}

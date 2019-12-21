@@ -31,12 +31,13 @@ SP_UNBOUNDED = 'sp_unbounded'
 tolerances
 '''
 ZERO_TOL = 1E-9
+FEASIBILITY_TOL = 1E-6
 SDDP_OPT_TOL = 1E-3
 '''
 Cut selector
 '''
-LAST_CUTS_SELECTOR = 'last_cut_selector'
-SLACK_BASED_CUT_SELECTOR = 'slack_based_cut_selector'
+LAST_CUTS_SELECTOR = 'LCS'
+SLACK_BASED_CUT_SELECTOR = 'SBCS'
 '''
 Algorithm options
 '''
@@ -54,13 +55,12 @@ options['in_sample_ub'] = 200
 options['opt_tol'] = 1E-4
 options['dynamic_sampling'] = False
 options['dynamic_sampling_beta'] = 0.5
-options['max_cuts_last_cuts_selector'] = 2000
+options['max_cuts_last_cuts_selector'] = 50
 options['slack_cut_selector'] = 1E-4
 options['slack_num_iters_cut_selector'] = 200
 options['max_cuts_slack_based'] = options['max_cuts_last_cuts_selector']
 options['max_stage_with_oracle'] = 10
 options['max_iters_oracle_ini'] = 10
-options['max_cuts_last_cuts_selector'] = 1000
 options['cut_selector'] = None
 
 

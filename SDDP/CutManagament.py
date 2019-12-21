@@ -4,15 +4,16 @@ Created on Nov 17, 2017
 @author: dduque
 '''
 import numpy as np
-from gurobipy import quicksum
+from gurobipy import quicksum, Model
 from SDDP import ZERO_TOL, options, LAST_CUTS_SELECTOR, SLACK_BASED_CUT_SELECTOR
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
 
 class CutPool():
-    def __init__(self, stage):
-        self.stage = stage
+    def __init__(self, sp):
+        self.sp = sp
+        self.stage = sp.stage
         self.pool = {}
         self.pool_by_oracle = defaultdict(list)
         self.cut_selector = None
@@ -25,9 +26,9 @@ class CutPool():
         else:
             self.cut_selector = None
     
-    def addCuts(self, model, new_cuts):
+    def addCuts(self, model: Model, new_cuts: list):
         '''
-        Add cut to the pool manager
+        Add cuts to the pool manager that are non-redundant 
         
         Params:
             model(GRBModel): Model that contain the cuts
@@ -37,12 +38,13 @@ class CutPool():
             if new_cut.recomputable_rhs:
                 self._requires_adjustment = True
             assert new_cut.name not in self.pool
-            self.pool[new_cut.name] = new_cut
-            self.pool_by_oracle[new_cut.outcome].append(new_cut.name)
+            if new_cut.ctrRef is not None:
+                self.pool[new_cut.name] = new_cut
+                self.pool_by_oracle[new_cut.outcome].append(new_cut.name)
         
         if self.cut_selector is not None:
-            self.cut_selector.add_recent_cuts([(c.name, c.is_active) for c in new_cuts])
-            self.cut_selector.select_cuts(model, self.pool, self.pool_by_oracle)
+            #self.cut_selector.add_recent_cuts([(c.name, c.is_active) for c in new_cuts])
+            self.cut_selector.select_cuts(self)
     
     def needs_update(self):
         return self._requires_adjustment
@@ -120,12 +122,6 @@ class Cut():
         self.ind_rhs = ind_rhs
         self.dep_rhs_vector = dep_rhs_vector
         self.ctrRef = None
-        #=======================================================================
-        # self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
-        # self.is_active  = True
-        #=======================================================================
-        # self.ctrRef = m.addConstr( self.lhs >= self.rhs, self.name)
-        # m.update()
         try:
             # Try to evaluate LHS, is not possible if new vars were added to the cut
             # Add constraint and get a reference to it.
@@ -167,13 +163,13 @@ class CutSelector(ABC):
         self.unactive = []
     
     @abstractmethod
-    def select_cuts(self, model, pool, pool_order):
+    def select_cuts(self, sp, cut_pool: CutPool):
         '''
         Makes a selection of the cuts to consider in the model.
         Updates local active and unactive list as well as the 
         status of the cut (cut.is_active and cut.ctrRef)
         '''
-        raise 'Unimplmented method in a cut selection class.'
+        raise 'Un-implemented method in a cut selection class.'
     
     def enforce_all(self, model, pool):
         for u in self.unactive:
@@ -199,32 +195,19 @@ class LastCutsSelector(CutSelector):
         super().__init__()
         self.cut_capacity = options['max_cuts_last_cuts_selector']
     
-    def select_cuts(self, model, pool, pool_order):
-        if len(self.active) <= self.cut_capacity or len(self.active) == 0:
-            pass
-        else:
-            iters = 0
-            while len(self.active) > self.cut_capacity:
-                a = self.active[0]
-                if pool[a].lhs.getValue() > pool[a].rhs + 1E-6:  #todo: use other parameter
-                    pool[a].is_active = False
-                    model.remove(pool[a].ctrRef)
-                    pool[a].ctrRef = None
-                    self.unactive.append(a)
-                    self.active.pop(0)
-                else:
-                    iters += 1
-                    self.active.append(self.active.pop(0))
-                
-                if iters >= len(self.active):
-                    '''
-                    Cardinality of selected cuts can't be satisfied.
-                    Augmenting the maximum number of cuts
-                    '''
-                    self.cut_capacity = int(1.5 * self.cut_capacity)
-                    #options['max_cuts_last_cuts_selector'] = int(1.5*options['max_cuts_last_cuts_selector'])
-                    #print('max_cuts_last_cuts_selector -- > ' , self.cut_capacity , a)
-                    break
+    def select_cuts(self, cut_pool: CutPool):
+        sp = cut_pool.sp
+        n_total_cuts = self.cut_capacity * sp.n_outmes
+        if len(cut_pool) > n_total_cuts * 1.1:
+            n_cuts_target = self.cut_capacity if sp.multicut else n_total_cuts
+            pool_by_oracle = cut_pool.pool_by_oracle
+            for i in cut_pool.pool_by_oracle:
+                while len(pool_by_oracle[i]) > n_cuts_target:
+                    cut_name = pool_by_oracle[i].pop(0)
+                    cut = cut_pool.pool[cut_name]
+                    sp.model.remove(cut.ctrRef)
+                    cut.ctrRef = None
+                    del cut_pool.pool[cut_name]
 
 
 class SlackBasedCutSelector(CutSelector):

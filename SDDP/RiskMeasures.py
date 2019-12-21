@@ -11,9 +11,8 @@ from abc import ABC, abstractmethod
 from gurobipy import *
 import SDDP as cs
 import numpy as np
-
-sddp_log = cs.logger
-
+from SDDP import ZERO_TOL, FEASIBILITY_TOL
+from SDDP import logger as sddp_log
 
 
 class AbstractRiskMeasure(ABC):
@@ -973,12 +972,16 @@ class DistRobust(AbstractRiskMeasure):
         #Get cut_gradient
         cut_gradiend_coeff = super().compute_cut_gradient(sp, sp_next, srv, soo, spfs, cut_id, p)
         
-        #Add extra constraints for multicut implementation
+        #Add extra constraints for multicut implementation if needed.
         if sp.multicut:
-            sp.model.addConstr(lhs=self.global_oracle - quicksum(p[i] * sp.oracle[i] for i in sp.oracle),
-                               sense=GRB.GREATER_EQUAL,
-                               rhs=0,
-                               name='unicut[%i]' % (cut_id))
+            lhs_exp = self.global_oracle - quicksum(p[i] * sp.oracle[i] for i in sp.oracle)
+            try:
+                if -lhs_exp.getValue() > FEASIBILITY_TOL:
+                    sp.model.addConstr(lhs=lhs_exp,sense=GRB.GREATER_EQUAL,rhs=0,name='unicut[%i]' % (cut_id))
+            except AttributeError:
+                sp.model.addConstr(lhs=lhs_exp,sense=GRB.GREATER_EQUAL,rhs=0,name='unicut[%i]' % (cut_id))
+
+            
         
         self._current_cut_gradient = cut_gradiend_coeff
         return cut_gradiend_coeff
