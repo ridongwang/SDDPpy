@@ -159,8 +159,8 @@ def model_builder(stage, valley_chain):
     Ini_group = [0]  # list(range(nr))
     m.addConstrs((reservoir_level[i] == reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i]
                   for i in Ini_group), 'balance')
-    m.addConstrs((reservoir_level[i] == reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i] +
-                  outflow[i - 1] + spill[i - 1] for i in range(nr) if i not in Ini_group), 'balance')
+    m.addConstrs((reservoir_level[i] == reservoir_level0[i] + inflow[i] - outflow[i] - spill[i] + pour[i]
+                  + outflow[i - 1] + spill[i - 1] for i in range(nr) if i not in Ini_group), 'balance')
     
     # Hydro generation
     m.addConstr(
@@ -315,7 +315,7 @@ def load_hydro_data(approach, dus_type):
     prices = [18 + round(5 * np.sin(0.5 * (x - 2)), 2) for x in range(0, T)]
     demand = build_demand(T, nr)
     
-    hydro_instance = read_instance('hydro_rnd_instance_R10_T48_OUT10K_AR0.pkl', lag=lag)
+    hydro_instance = read_instance('hydro_rnd_instance_R10_T48_OUT10K_AR0_UNIFORM.pkl', lag=lag)
     RHSnoise_density = hydro_instance.RHS_noise[0:nr, :, 0:T]  # Total of 10_000 samples
     
     #valley_turbines = Turbine([50, 60, 70], [55, 65, 70])
