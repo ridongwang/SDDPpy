@@ -16,7 +16,7 @@ import pickle
 from HydroModel import hydro_path
 
 
-def gen_instance(num_reservoirs=10, T=12, num_outcomes=30, simulate=False):
+def gen_instance(num_reservoirs=10, T=12, num_outcomes=30, lognormal=True, simulate=False):
     '''
     Generate a random instance consisting of:
         - Autoregresive matrices (stored as dictionaries)
@@ -45,14 +45,18 @@ def gen_instance(num_reservoirs=10, T=12, num_outcomes=30, simulate=False):
                     cov_mat[i, j] = sigma[month]**2
                 else:
                     cov_mat[i, j] = sigma[month]**2 * 0.9
-        #RHS_corralated = np.exp(np.random.normal(mu_t, sigma[month], size=(num_reservoirs, num_outcomes)))
-        RHS_corralated = np.exp(np.random.multivariate_normal(mu_t, cov_mat, size=(num_outcomes)))
-        RHS_corralated = RHS_corralated.transpose()
-        if t < season:
-            RHS_noise[active_reservoirs, :, t] = np.maximum(0, b[t] - RHS_corralated[active_reservoirs, :])
+        if lognormal:
+            RHS_corralated = np.exp(np.random.multivariate_normal(mu_t, cov_mat, size=(num_outcomes)))
+            RHS_corralated = RHS_corralated.transpose()
+            if t < season:
+                RHS_noise[active_reservoirs, :, t] = np.maximum(0, b[t] - RHS_corralated[active_reservoirs, :])
+            else:
+                RHS_noise[:, :, t] = RHS_noise[:, :, t - season]
         else:
-            RHS_noise[:, :, t] = RHS_noise[:, :, t - season]
-    
+            if t < season:
+                RHS_noise[active_reservoirs, :, t] = np.random.uniform(0, b[t], size=(num_outcomes))
+            else:
+                RHS_noise[:, :, t] = RHS_noise[:, :, t - season]
     if simulate:
         simulate_model(RHS_noise, T, num_reservoirs)
     
@@ -117,7 +121,7 @@ if __name__ == '__main__':
     T = 48
     outcomes = 10_000
     file_name_pat = None
-    file_name_path = hydro_path + f'/data/hydro_rnd_instance_R{nr}_T{T}_OUT10K_AR0.pkl'
+    file_name_path = hydro_path + f'/data/hydro_rnd_instance_R{nr}_T{T}_OUT10K_AR0_UNIFORM.pkl'
     with open(file_name_path, 'wb') as output:
-        instance = gen_instance(nr, T, num_outcomes=outcomes, simulate=True)
+        instance = gen_instance(nr, T, num_outcomes=outcomes, lognormal=False, simulate=True)
         pickle.dump(instance, output, pickle.HIGHEST_PROTOCOL)

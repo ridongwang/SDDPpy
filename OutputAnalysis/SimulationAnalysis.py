@@ -28,7 +28,6 @@ class SimResult():
     '''
     Class the stors the information for a particular instance
     '''
-    
     def __init__(self, instance_params, simulation_upper_bounds):
         self.instance = instance_params
         self.sims_ub = simulation_upper_bounds
@@ -118,14 +117,17 @@ def plot_lbs(lb_s, lb_d, N, r_list, plot_path):
     writer.save()
 
 
-def plot_lbs_comp(lbs_by_r, plot_path):
+def plot_lbs_comp(lbs_by_r, plot_path, ylims=None):
     '''
         Plots a the lower bound evolution for different variants of 
         SDDP, namely, Dual vs Primal, Multi-cut vs Single-cut, and
         Empirical vs Dynamic sampling.
     '''
+    import colorsys
+    
     dash_styles = [(4, 1), (3, 2), (2, 3), (1, 4), (1, 1), (2, 2)]
-    plot_colors = ['black', 'red', 'blue', 'green', 'magenta', 'grey']
+    #plot_colors = ['black', 'red', 'blue',  'magenta', 'grey', 'yellow', 'peru', 'green', 'brown']
+    plot_colors = ['orange', 'red', 'brown', 'grey', 'magenta', 'blue', 'aqua', 'green', 'black']
     methods_names = ['Empirical', 'Dynamic']
     
     for r in lbs_by_r:
@@ -134,50 +136,62 @@ def plot_lbs_comp(lbs_by_r, plot_path):
         min_val = np.inf
         max_val = -np.inf
         max_time = np.inf
-        exp_ix = 0
+        
+        # N = 5
+        # HSV_tuples = [(x * 1.0 / N, 0.9, 0.5) for x in range(N)]
+        # plot_colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+        #lb_exps.sort(key=lambda x: x[0])
         for lbs_exp in lb_exps:
             exp_name = lbs_exp[0]
             lb_points = len(lbs_exp[1])
             lbs_data = lbs_exp[1]
+            exp_ix = lbs_exp[2]
             print(lb_points)  #, [lbs_data[i][1] for i in range(lb_points)])
-            #print(lb_points, [lbs_data[i][0] for i in range(lb_points)])
             
-            #===================================================================
-            # axarr.plot([lbs_data[i][1] for i in range(lb_points)],[lbs_data[i][0] for i in range(lb_points)], color=plot_colors[exp_ix], linestyle='--', dashes=dash_styles[exp_ix], label='%s' %(exp_name))
-            # min_val = np.minimum(min_val,lbs_data[80][0])
-            # max_val = np.maximum(max_val,lbs_data[-1][0])
-            # max_time = np.minimum(max_time, lbs_data[-1][1])
-            # exp_ix = exp_ix +1
-            #===================================================================
+            axarr.plot(
+                [lbs_data[i][1] for i in range(lb_points)],
+                [lbs_data[i][0] for i in range(lb_points)],
+                color=plot_colors[exp_ix % len(plot_colors)],
+                linestyle='solid',
+                #dashes=dash_styles[exp_ix % len(dash_styles)],
+                label='%s' % (exp_name),
+                #marker='|',
+            )
             
-            axarr.plot([lbs_data[i][1] for i in range(lb_points)], [lbs_data[i][0] for i in range(lb_points)],
-                       color=plot_colors[exp_ix],
-                       linestyle='--',
-                       dashes=dash_styles[exp_ix],
-                       label='%s' % (exp_name))
-            min_val = np.minimum(min_val, lbs_data[10][0])
+            step = 50
+            axarr.plot(
+                [lbs_data[i][1] for i in range(0, lb_points, step)],
+                [lbs_data[i][0] for i in range(0, lb_points, step)],
+                color=plot_colors[exp_ix % len(plot_colors)],
+                linestyle='None',
+                marker='x',
+            )
+            
+            min_val = np.minimum(min_val, lbs_data[100][0])
             max_val = np.maximum(max_val, lbs_data[-1][0])
             max_time = np.minimum(max_time, lb_points)
-            exp_ix = exp_ix + 1
         
         # max_time = 2000
-        # min_val = -120_000
+        #min_val = max_val - 100
         # max_time = 100
         print(min_val, max_val, max_time)
         axarr.legend(loc='lower right', shadow=True, fontsize='small')
-        axarr.set_ylim(min_val, max_val + 0.01 * np.abs(max_val - min_val))
-        axarr.yaxis.set_minor_locator(MultipleLocator(1000))
+        if ylims is None:
+            axarr.set_ylim(min_val, max_val + 0.01 * np.abs(max_val - min_val))
+        else:
+            axarr.set_ylim(*ylims)
+        axarr.yaxis.set_minor_locator(MultipleLocator(50))
         axarr.set_ylabel('Lower bound')
         
-        #axarr.set_xlim(0, max_time)
-        # axarr.xaxis.set_minor_locator(MultipleLocator(10))
+        #axarr.set_xlim(0, 300)
+        #axarr.xaxis.set_minor_locator(MultipleLocator(10))
         axarr.set_xlabel('Time (s)')
         
         axarr.grid(which='minor', alpha=0.2)
         axarr.grid(which='major', alpha=0.5)
         #step = int(len(lb_s[k])/10)
         #axarr.set_xticks(np.arange(0,len(lb_s[k]),step))
-        complete_file_name = plot_path + 'r_%f.pdf' % (r)
+        complete_file_name = plot_path + 'r_%.0f.pdf' % (r)
         plt.tight_layout()
         pp = PdfPages(complete_file_name)
         pp.savefig(f)
@@ -256,7 +270,8 @@ def plot_sim_results(sp_sim, sim_results, plot_path, N, plot_type='means', excel
         axarr.semilogx(r, dro_q_down, color='k', linestyle='--', dashes=(3, 1))
         min_val = -125000  #550 for cap expansion
         max_val = 100000  #860 for cap exapnsion
-        axarr.set_ylim(min_val, max_val)
+        axarr.set_xlim(0.01, 10)
+        #axarr.set_ylim(500, 2500)
         axarr.set_ylabel('Out-of-sample performance')
     elif plot_type == 'vars':
         #axR = axarr.twinx()
@@ -464,6 +479,78 @@ def plot_oos_alg_gaps(sddp_algs, sim_results):
     plt.show()
 
 
+def lower_bounds_plots(kwargs):
+    ptf_primal = kwargs['ptf_primal']
+    ptf_dual = kwargs['ptf_dual']
+    instance_name = kwargs['exp_file']
+    dro_r = kwargs['r']
+    n = int(kwargs['n'])
+    print(type(dro_r), '%10.7f' % dro_r)
+    lbs_by_r = {}
+    config_numbers = {
+        ('DUAL', 'MC', 'ES', '0'): 0,
+        ('DUAL', 'MC', 'DS', '0.5'): 1,
+        ('DUAL', 'MC', 'DS', '0.95'): 2,
+        ('PRIMAL', 'MC', 'ES', '0'): 3,
+        ('PRIMAL', 'MC', 'DS', '0.5'): 4,
+        ('PRIMAL', 'MC', 'DS', '0.95'): 5,
+        ('PRIMAL', 'SC', 'ES', '0'): 6,
+        ('PRIMAL', 'SC', 'DS', '0.5'): 7,
+        ('PRIMAL', 'SC', 'DS', '0.95'): 8,
+    }
+    for alg_class in ['DUAL', 'PRIMAL']:
+        ptf = ptf_primal if alg_class == 'PRIMAL' else ptf_dual
+        cut_types = {'DUAL': ['MC'], 'PRIMAL': ['MC', 'SC']}
+        for cut_type in cut_types[alg_class]:
+            
+            for sampling_sche in ['ES', 'DS']:
+                for beta in ['0', '0.5', '0.95']:
+                    try:
+                        file_name = ptf + instance_name + '_DW_%s_%s_%s_r%.7f_None_B%s_LBS.pickle' % (
+                            alg_class, cut_type, sampling_sche, dro_r, beta)
+                        instance, lb_data = pickle.load(open('%s' % (file_name), 'rb'))
+                        r_instance = instance['risk_measure_params']['radius']
+                        exp_name = f'{alg_class}_{cut_type}_{sampling_sche}_B{beta}'
+                        config_number = config_numbers[(alg_class, cut_type, sampling_sche, beta)]
+                        if r_instance not in lbs_by_r:
+                            lbs_by_r[r_instance] = [(exp_name, lb_data, config_number)]
+                        else:
+                            lbs_by_r[r_instance].append((exp_name, lb_data, config_number))
+                    except:
+                        print(f'File {file_name} is missing ')
+            
+            # plot_path = path_to_files + instance_name + f"{alg_class}_{cut_type}"
+            # plot_lbs_comp(lbs_by_r, plot_path, ylims=(1900, 2300))
+            # lbs_by_r = {}
+    
+    lbs_by_r = {}
+    for alg_class in ['DUAL', 'PRIMAL']:
+        ptf = ptf_primal if alg_class == 'PRIMAL' else ptf_dual
+        cut_types = {'DUAL': ['MC'], 'PRIMAL': ['MC', 'SC']}
+        for cut_type in cut_types[alg_class]:
+            for sampling_sche in ['DS', 'ES']:  #
+                for beta in ['0', '0.95']:
+                    if (alg_class == 'DUAL' and beta == '0.95') or (alg_class == 'PRIMAL' and cut_type in ['SC', 'MC']):
+                        try:
+                            file_name = ptf + instance_name + '_DW_%s_%s_%s_r%.7f_None_B%s_LBS.pickle' % (
+                                alg_class, cut_type, sampling_sche, dro_r, beta)
+                            instance, lb_data = pickle.load(open('%s' % (file_name), 'rb'))
+                            r_instance = instance['risk_measure_params']['radius']
+                            exp_name = f'{alg_class}_{cut_type}_{sampling_sche}_B{beta}'
+                            config_number = config_numbers[(alg_class, cut_type, sampling_sche, beta)]
+                            if r_instance not in lbs_by_r:
+                                lbs_by_r[r_instance] = [(exp_name, lb_data, config_number)]
+                            else:
+                                lbs_by_r[r_instance].append((exp_name, lb_data, config_number))
+                        except:
+                            print(f'File {file_name} is missing ')
+    
+    plot_path = path_to_files + instance_name + "ALL"
+    ylims = {5: (1800, 1900), 10: (1500, 1900), 40: (2200, 2250)}
+    plot_lbs_comp(lbs_by_r, plot_path, ylims=ylims[n])
+    lbs_by_r = {}
+
+
 if __name__ == '__main__':
     argv = sys.argv
     positional_args, kwargs = parse_args(argv[1:])
@@ -490,7 +577,7 @@ if __name__ == '__main__':
         file_n = kwargs['exp_file']
     else:
         raise "Experiment file (exp_file) parameter is necessary."
-    
+    print(kwargs)
     if plot_type == 'OOS':
         print(path_to_files, file_n)
         sampling = kwargs['sampling']
@@ -498,19 +585,22 @@ if __name__ == '__main__':
         dw_sampling = 'None' if kwargs['dw_sam'] == None else kwargs['dw_sam']
         max_time = kwargs['max_time']
         n = kwargs['n']
-        print(path_to_files)
+        beta = kwargs['beta']
+        print(path_to_files, file_n)
         experiment_files = os.listdir(path_to_files)
         sim_results = []
         for f in experiment_files:
-            #print(f)
-            #print(file_n in f , f[-6:]=='pickle' , '%s_OOS' %(dw_sampling) in f ,  '%s_%s' %(cut_type,sampling) in f , 'Time%i_' %(max_time) in f , dw_sampling in f)
-            if file_n in f and f[-6:] == 'pickle' and '%s_OOS' % (dw_sampling) in f and '%s_%s' % (
-                    cut_type, sampling) in f and 'Time%i_' % (max_time) in f and dw_sampling in f:
+            # print(f)
+            # print(file_n in f, f[-6:] == 'pickle', '%s_0.95_OOS' % (dw_sampling) in f,
+            #       '%s_%s' % (cut_type, sampling) in f, 'Time%i_' % (max_time) in f, dw_sampling in f)
+            #HydroU_R10_AR1_T48_N10_10_I200000_CPUTime3600_DW_DUAL_MC_ES_r9500.0000000_None_B_OOS
+            if file_n in f and f[-6:] == 'pickle' and f'{beta}_OOS' in f and '%s_%s' % (
+                    cut_type, sampling) in f and 'CPUTime%i_' % (max_time) in f and dw_sampling in f:
                 print(f)
                 new_sim = pickle.load(open('%s%s' % (path_to_files, f), 'rb'))
                 sim_results.append(new_sim)
         
-        sp_file = 'Hydro_R10_AR1_T12_N%i_%i_I100001' % (n, n)
+        sp_file = 'HydroU_R10_AR1_T48_N%i_%i_I200000' % (n, n)
         sp_sim = pickle.load(
             open(
                 '%s%s%s%i%s' % ('/Users/dduque/Dropbox/WORKSPACE/SDDP/HydroExamples/Output/DW_Dual/', sp_file, '_Time',
@@ -531,45 +621,12 @@ if __name__ == '__main__':
             print(sim_results[0].instance)
             raise 'Unknown dro params'
         alg_type = 'Primal' if 'Primal' in path_to_files else 'Dual'
-        plot_path = '%s%s_%s_%s_%s_%s_Time%i.pdf' % (path_to_files, file_n, alg_type, cut_type, sampling, dw_sampling,
-                                                     max_time)
+        plot_path = '%s%s_%s_%s_%s_%s_Time%i_B%s.pdf' % (path_to_files, file_n, alg_type, cut_type, sampling,
+                                                         dw_sampling, max_time, beta)
         N = kwargs['N']
         plot_sim_results(sp_sim, sim_results, plot_path, N, excel_file=False)
     elif plot_type == 'LBS':
-        print(kwargs)
-        ptf_primal = kwargs['ptf_primal']
-        ptf_dual = kwargs['ptf_dual']
-        instance_name = kwargs['exp_file']
-        dro_r = kwargs['r']
-        print(type(dro_r), '%10.7f' % dro_r)
-        lbs_by_r = {}
-        for sampling_sche in ['DS', 'ES']:
-            try:
-                file_name = ptf_dual + instance_name + '_DW_DUAL_MC_%s_%.7f_None_LBS.pickle' % (sampling_sche, dro_r)
-                instance, lb_data = pickle.load(open('%s' % (file_name), 'rb'))
-                r_instance = instance['risk_measure_params']['radius']
-                exp_name = 'DUAL_MC_%s' % (sampling_sche)
-                if r_instance not in lbs_by_r:
-                    lbs_by_r[r_instance] = [(exp_name, lb_data)]
-                else:
-                    lbs_by_r[r_instance].append((exp_name, lb_data))
-            except:
-                print(file_name, '  is missing ')
-            for cut_type in ['MC', 'SC']:
-                try:
-                    file_name = ptf_primal + instance_name + '_DW_PRIMAL_%s_%s_%.7f_None_LBS.pickle' % (
-                        cut_type, sampling_sche, dro_r)
-                    instance, lb_data = pickle.load(open('%s' % (file_name), 'rb'))
-                    exp_name = 'PRIMAL_%s_%s' % (cut_type, sampling_sche)
-                    if r_instance not in lbs_by_r:
-                        lbs_by_r[r_instance] = [(exp_name, lb_data)]
-                    else:
-                        lbs_by_r[r_instance].append((exp_name, lb_data))
-                except:
-                    print(file_name, '  is missing ')
-        
-        plot_path = path_to_files + instance_name + "_DW_LBS"
-        plot_lbs_comp(lbs_by_r, plot_path)
+        lower_bounds_plots(kwargs)
     elif plot_type == "OOSGAP":
         #compare out of sample performance as gaps
         N = kwargs['N']
